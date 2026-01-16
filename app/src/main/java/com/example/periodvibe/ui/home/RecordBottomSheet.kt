@@ -65,13 +65,14 @@ fun RecordBottomSheet(
     initialNotes: String? = null,
     recordMode: RecordMode = RecordMode.AUTO,
     hasCurrentCycle: Boolean = false,
+    existingRecord: com.example.periodvibe.domain.model.DailyRecord? = null,
     onDismiss: () -> Unit,
     onSave: (flowLevel: FlowLevel?, symptoms: List<Symptom>, notes: String?) -> Unit
 ) {
-    var selectedDate by remember { mutableStateOf(initialDate) }
-    var flowLevel by remember { mutableStateOf(initialFlowLevel) }
-    val selectedSymptoms = remember { mutableStateListOf<Symptom>().apply { addAll(initialSymptoms) } }
-    var notes by remember { mutableStateOf(initialNotes ?: "") }
+    var selectedDate by remember { mutableStateOf(existingRecord?.date ?: initialDate) }
+    var flowLevel by remember { mutableStateOf(existingRecord?.flowLevel ?: initialFlowLevel) }
+    val selectedSymptoms = remember { mutableStateListOf<Symptom>().apply { addAll(existingRecord?.symptoms ?: initialSymptoms) } }
+    var notes by remember { mutableStateOf(existingRecord?.notes ?: initialNotes ?: "") }
     var showDatePicker by remember { mutableStateOf(false) }
     var selectedMode by remember { mutableStateOf(recordMode) }
 
@@ -105,7 +106,9 @@ fun RecordBottomSheet(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = when {
+                        text = if (existingRecord != null) {
+                            "编辑记录"
+                        } else when {
                             hasCurrentCycle -> "记录今日状态"
                             selectedMode == RecordMode.NEW_CYCLE -> "开始新周期"
                             selectedMode == RecordMode.SYMPTOM_ONLY -> "记录症状"

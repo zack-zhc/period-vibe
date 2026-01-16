@@ -26,6 +26,9 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.EditNote
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -35,6 +38,7 @@ import androidx.compose.material3.FloatingActionButtonMenu
 import androidx.compose.material3.FloatingActionButtonMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Surface
@@ -72,12 +76,14 @@ fun HomeScreen(
     val showRecordSheet by viewModel.showRecordSheet.collectAsState()
     val showNewCycleSheet by viewModel.showNewCycleSheet.collectAsState()
     val showNewSymptomSheet by viewModel.showNewSymptomSheet.collectAsState()
+    val showEndCycleMenu by viewModel.showEndCycleMenu.collectAsState()
     val selectedDate by viewModel.selectedDate.collectAsState()
     val recordMode by viewModel.recordMode.collectAsState()
     val suggestedIsPeriod by viewModel.suggestedIsPeriod.collectAsState()
+    val existingRecord by viewModel.existingRecord.collectAsState()
 
     val hasCurrentCycle = when (val state = homeData) {
-        is HomeUiState.Success -> state.hasData
+        is HomeUiState.Success -> state.hasCurrentCycle
         else -> false
     }
 
@@ -85,7 +91,10 @@ fun HomeScreen(
         modifier = modifier.fillMaxSize(),
         floatingActionButton = {
             if (hasCurrentCycle) {
-                RecordFAB(onClick = { viewModel.showRecordSheet() })
+                RecordFAB(
+                    onClick = { viewModel.showEndCycleMenu() },
+                    onEditClick = { viewModel.showRecordSheet() }
+                )
             } else {
                 RecordFABGroup(
                     onNewCycleClick = { viewModel.showNewCycleSheet() },
@@ -137,6 +146,7 @@ fun HomeScreen(
             initialDate = selectedDate,
             recordMode = recordMode,
             hasCurrentCycle = hasCurrentCycle,
+            existingRecord = existingRecord,
             onDismiss = { viewModel.hideRecordSheet() },
             onSave = { flowLevel, symptoms, notes ->
                 viewModel.saveDailyRecord(flowLevel, symptoms, notes)
@@ -145,8 +155,11 @@ fun HomeScreen(
     }
 
     if (showNewCycleSheet) {
-        NewCycleBottomSheet(
+        RecordBottomSheet(
             initialDate = selectedDate,
+            recordMode = RecordMode.NEW_CYCLE,
+            hasCurrentCycle = false,
+            existingRecord = existingRecord,
             onDismiss = { viewModel.hideNewCycleSheet() },
             onSave = { flowLevel, symptoms, notes ->
                 viewModel.saveNewCycle(flowLevel, symptoms, notes)
@@ -155,12 +168,22 @@ fun HomeScreen(
     }
 
     if (showNewSymptomSheet) {
-        NewSymptomBottomSheet(
+        RecordBottomSheet(
             initialDate = selectedDate,
+            recordMode = RecordMode.SYMPTOM_ONLY,
+            hasCurrentCycle = false,
+            existingRecord = existingRecord,
             onDismiss = { viewModel.hideNewSymptomSheet() },
-            onSave = { symptoms, notes ->
+            onSave = { flowLevel, symptoms, notes ->
                 viewModel.saveNewSymptom(symptoms, notes)
             }
+        )
+    }
+
+    if (showEndCycleMenu) {
+        EndCycleConfirmationDialog(
+            onDismiss = { viewModel.hideEndCycleMenu() },
+            onConfirm = { viewModel.endCycle() }
         )
     }
 }
@@ -362,18 +385,42 @@ private fun TodaySummaryCard(
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun RecordFAB(onClick: () -> Unit) {
-    FloatingActionButton(
-        onClick = onClick,
-        containerColor = MaterialTheme.colorScheme.primaryContainer,
-        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-        shape = CircleShape
+private fun RecordFAB(
+    onClick: () -> Unit,
+    onEditClick: () -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    FloatingActionButtonMenu(
+        expanded = expanded,
+        button = {
+            ToggleFloatingActionButton(
+                checked = expanded, onCheckedChange = { expanded = it }
+            ) {
+                Icon(
+                    imageVector = if (expanded) Icons.Default.Close else Icons.Default.Add,
+                    contentDescription = null
+                )
+            }
+        }
     ) {
-        Icon(
-            imageVector = Icons.Default.Add,
-            contentDescription = "记录",
-            modifier = Modifier.size(24.dp)
+        FloatingActionButtonMenuItem(
+            text = { Text("结束周期") },
+            icon = { Icon(Icons.Default.CalendarToday, contentDescription = "结束周期") },
+            onClick = {
+                expanded = false
+                onClick()
+            }
+        )
+        FloatingActionButtonMenuItem(
+            text = { Text("修改记录") },
+            icon = { Icon(Icons.Default.EditNote, contentDescription = "修改记录") },
+            onClick = {
+                expanded = false
+                onEditClick()
+            }
         )
     }
 }
@@ -452,4 +499,45 @@ private fun NoDataState() {
             textAlign = TextAlign.Center
         )
     }
+}
+
+@Composable
+private fun EndCycleConfirmationDialog(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "结束周期",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Text(
+                text = "确定要结束当前周期吗？这将标记当前周期的结束日期。",
+                style = MaterialTheme.typography.bodyMedium
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
+            ) {
+                Text("确定")
+            }
+        },
+        dismissButton = {
+            OutlinedButton(
+                onClick = onDismiss
+            ) {
+                Text("取消")
+            }
+        }
+    )
 }

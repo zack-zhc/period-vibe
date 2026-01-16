@@ -5,10 +5,10 @@ import androidx.lifecycle.viewModelScope
 import com.example.periodvibe.data.repository.CycleRepository
 import com.example.periodvibe.domain.usecase.GetHomeDataUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import javax.inject.Inject
@@ -46,12 +46,21 @@ class HomeViewModel @Inject constructor(
     private val _suggestedIsPeriod = MutableStateFlow(false)
     val suggestedIsPeriod: StateFlow<Boolean> = _suggestedIsPeriod.asStateFlow()
 
+    private val _existingRecord = MutableStateFlow<com.example.periodvibe.domain.model.DailyRecord?>(null)
+    val existingRecord: StateFlow<com.example.periodvibe.domain.model.DailyRecord?> = _existingRecord.asStateFlow()
+
+    private val _showEndCycleMenu = MutableStateFlow(false)
+    val showEndCycleMenu: StateFlow<Boolean> = _showEndCycleMenu.asStateFlow()
+
+    private var loadJob: Job? = null
+
     init {
         loadHomeData()
     }
 
     private fun loadHomeData() {
-        viewModelScope.launch {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
             getHomeDataUseCase().collect { data ->
                 _homeData.value = if (data.cycleInfo != null) {
                     HomeUiState.Success(
@@ -59,7 +68,8 @@ class HomeViewModel @Inject constructor(
                         daysUntilPeriod = data.cycleInfo.daysUntilNextPeriod ?: 0,
                         phase = data.cycleInfo.phase,
                         totalCycles = data.totalCycles,
-                        hasData = data.hasData
+                        hasData = data.hasData,
+                        hasCurrentCycle = data.cycleInfo.cycle.isCurrentCycle
                     )
                 } else {
                     HomeUiState.NoData
@@ -73,6 +83,7 @@ class HomeViewModel @Inject constructor(
         _recordMode.value = RecordMode.AUTO
         viewModelScope.launch {
             _suggestedIsPeriod.value = inferSuggestedIsPeriod(date, RecordMode.AUTO)
+            _existingRecord.value = cycleRepository.getDailyRecordByDate(date)
         }
         _showRecordSheet.value = true
     }
@@ -82,6 +93,7 @@ class HomeViewModel @Inject constructor(
         _recordMode.value = mode
         viewModelScope.launch {
             _suggestedIsPeriod.value = inferSuggestedIsPeriod(date, mode)
+            _existingRecord.value = cycleRepository.getDailyRecordByDate(date)
         }
         _showRecordSheet.value = true
     }
@@ -103,24 +115,33 @@ class HomeViewModel @Inject constructor(
 
     fun hideRecordSheet() {
         _showRecordSheet.value = false
+        _existingRecord.value = null
     }
 
     fun showNewCycleSheet(date: LocalDate = LocalDate.now()) {
         _selectedDate.value = date
+        viewModelScope.launch {
+            _existingRecord.value = cycleRepository.getDailyRecordByDate(date)
+        }
         _showNewCycleSheet.value = true
     }
 
     fun hideNewCycleSheet() {
         _showNewCycleSheet.value = false
+        _existingRecord.value = null
     }
 
     fun showNewSymptomSheet(date: LocalDate = LocalDate.now()) {
         _selectedDate.value = date
+        viewModelScope.launch {
+            _existingRecord.value = cycleRepository.getDailyRecordByDate(date)
+        }
         _showNewSymptomSheet.value = true
     }
 
     fun hideNewSymptomSheet() {
         _showNewSymptomSheet.value = false
+        _existingRecord.value = null
     }
 
     fun saveDailyRecord(
@@ -274,6 +295,26 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    fun showEndCycleMenu() {
+        _showEndCycleMenu.value = true
+    }
+
+    fun hideEndCycleMenu() {
+        _showEndCycleMenu.value = false
+    }
+
+    fun endCycle() {
+        viewModelScope.launch {
+            try {
+                cycleRepository.endCurrentCycle(LocalDate.now())
+                hideEndCycleMenu()
+                refresh()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
     fun refresh() {
         loadHomeData()
     }
@@ -287,6 +328,7 @@ sealed class HomeUiState {
         val daysUntilPeriod: Int,
         val phase: com.example.periodvibe.domain.model.CyclePhase,
         val totalCycles: Int,
-        val hasData: Boolean
+        val hasData: Boolean,
+        val hasCurrentCycle: Boolean
     ) : HomeUiState()
 }
