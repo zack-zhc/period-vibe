@@ -10,8 +10,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.SettingsBrightness
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -287,17 +291,20 @@ fun ThemeSettingsDialog(
                 ThemeOption(
                     text = "浅色模式",
                     selected = selectedTheme == 0,
-                    onClick = { selectedTheme = 0 }
+                    onClick = { selectedTheme = 0 },
+                    icon = Icons.Default.LightMode
                 )
                 ThemeOption(
                     text = "深色模式",
                     selected = selectedTheme == 1,
-                    onClick = { selectedTheme = 1 }
+                    onClick = { selectedTheme = 1 },
+                    icon = Icons.Default.DarkMode
                 )
                 ThemeOption(
                     text = "跟随系统",
                     selected = selectedTheme == 2,
-                    onClick = { selectedTheme = 2 }
+                    onClick = { selectedTheme = 2 },
+                    icon = Icons.Default.SettingsBrightness
                 )
             }
         },
@@ -325,7 +332,8 @@ fun ThemeSettingsDialog(
 fun ThemeOption(
     text: String,
     selected: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    icon: androidx.compose.ui.graphics.vector.ImageVector
 ) {
     Surface(
         onClick = onClick,
@@ -342,6 +350,12 @@ fun ThemeOption(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(end = 12.dp)
+            )
             Text(
                 text = text,
                 style = MaterialTheme.typography.bodyLarge,
@@ -349,7 +363,7 @@ fun ThemeOption(
             )
             if (selected) {
                 Icon(
-                    imageVector = Icons.Default.CalendarMonth,
+                    imageVector = Icons.Default.Check,
                     contentDescription = "已选择",
                     tint = MaterialTheme.colorScheme.primary
                 )

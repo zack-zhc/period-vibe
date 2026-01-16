@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -18,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.periodvibe.domain.model.Settings
 import com.example.periodvibe.ui.home.HomeScreen
 import com.example.periodvibe.ui.home.PeriodBottomNavigation
 import com.example.periodvibe.ui.history.HistoryScreen
@@ -34,11 +36,27 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            PeriodVibeTheme {
-                val mainViewModel: MainViewModel = hiltViewModel()
-                val showOnboarding by mainViewModel.showOnboarding.collectAsStateWithLifecycle()
-                var showSetup by remember { mutableStateOf(false) }
-                var currentRoute by remember { mutableStateOf("home") }
+            val mainViewModel: MainViewModel = hiltViewModel()
+            val showOnboarding by mainViewModel.showOnboarding.collectAsStateWithLifecycle()
+            var showSetup by remember { mutableStateOf(false) }
+            var currentRoute by remember { mutableStateOf("home") }
+            var themeMode by remember { mutableStateOf(Settings.ThemeMode.SYSTEM) }
+
+            LaunchedEffect(Unit) {
+                mainViewModel.getSettings().collect { settings ->
+                    settings?.let {
+                        themeMode = it.themeMode
+                    }
+                }
+            }
+
+            val darkTheme = when (themeMode) {
+                Settings.ThemeMode.LIGHT -> false
+                Settings.ThemeMode.DARK -> true
+                Settings.ThemeMode.SYSTEM -> isSystemInDarkTheme()
+            }
+
+            PeriodVibeTheme(darkTheme = darkTheme) {
 
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     when {
