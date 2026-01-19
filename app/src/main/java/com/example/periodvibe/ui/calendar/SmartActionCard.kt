@@ -41,6 +41,7 @@ fun SmartActionCard(
     onEndCycleClick: () -> Unit,
     onNewCycleClick: () -> Unit,
     onEditClick: () -> Unit,
+    onRecordSymptomClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = determineActionContext(day, activeCycle)
@@ -74,7 +75,8 @@ fun SmartActionCard(
                 onRecordClick = onRecordClick,
                 onEndCycleClick = onEndCycleClick,
                 onNewCycleClick = onNewCycleClick,
-                onEditClick = onEditClick
+                onEditClick = onEditClick,
+                onRecordSymptomClick = onRecordSymptomClick
             )
         }
     }
@@ -238,7 +240,8 @@ private fun ActionButtons(
     onRecordClick: () -> Unit,
     onEndCycleClick: () -> Unit,
     onNewCycleClick: () -> Unit,
-    onEditClick: () -> Unit
+    onEditClick: () -> Unit,
+    onRecordSymptomClick: () -> Unit
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -259,7 +262,7 @@ private fun ActionButtons(
             }
             ActionContext.OUT_CYCLE_NO_RECORD -> {
                 NewCycleButton(onClick = onNewCycleClick)
-                RecordSymptomButton(onClick = onRecordClick)
+                RecordSymptomButton(onClick = onRecordSymptomClick)
             }
         }
     }

@@ -67,6 +67,7 @@ fun CalendarScreen(
     val showLegendDialog by viewModel.showLegendDialog.collectAsState()
     var showRecordSheet by remember { mutableStateOf(false) }
     var recordDate by remember { mutableStateOf(java.time.LocalDate.now()) }
+    var recordMode by remember { mutableStateOf(RecordMode.AUTO) }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -130,15 +131,23 @@ fun CalendarScreen(
                         onTodayClick = { viewModel.navigateToToday() },
                         onRecordClick = { date ->
                             recordDate = date
+                            recordMode = RecordMode.AUTO
                             showRecordSheet = true
                         },
                         onEndCycleClick = { viewModel.showEndCycleDialog() },
                         onNewCycleClick = { date ->
                             recordDate = date
+                            recordMode = RecordMode.NEW_CYCLE
                             showRecordSheet = true
                         },
                         onEditClick = { date ->
                             recordDate = date
+                            recordMode = RecordMode.AUTO
+                            showRecordSheet = true
+                        },
+                        onRecordSymptomClick = { date ->
+                            recordDate = date
+                            recordMode = RecordMode.SYMPTOM_ONLY
                             showRecordSheet = true
                         },
                         modifier = Modifier
@@ -171,11 +180,14 @@ fun CalendarScreen(
     if (showRecordSheet) {
         RecordBottomSheet(
             initialDate = recordDate,
-            recordMode = RecordMode.AUTO,
+            recordMode = recordMode,
             hasCurrentCycle = currentActiveCycle != null && currentActiveCycle.isCurrentCycle,
             existingRecord = null,
             onDismiss = { showRecordSheet = false },
-            onSave = { _, _, _, _ -> showRecordSheet = false }
+            onSave = { date, flowLevel, symptoms, notes ->
+                viewModel.saveRecord(date, recordMode, flowLevel, symptoms, notes)
+                showRecordSheet = false
+            }
         )
     }
 }
@@ -194,6 +206,7 @@ private fun CalendarContent(
     onEndCycleClick: () -> Unit,
     onNewCycleClick: (java.time.LocalDate) -> Unit,
     onEditClick: (java.time.LocalDate) -> Unit,
+    onRecordSymptomClick: (java.time.LocalDate) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -233,7 +246,8 @@ private fun CalendarContent(
                     onRecordClick = { onRecordClick(date) },
                     onEndCycleClick = onEndCycleClick,
                     onNewCycleClick = { onNewCycleClick(date) },
-                    onEditClick = { onEditClick(date) }
+                    onEditClick = { onEditClick(date) },
+                    onRecordSymptomClick = { onRecordSymptomClick(date) }
                 )
             }
         } else {

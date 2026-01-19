@@ -116,6 +116,75 @@ class CalendarViewModel @Inject constructor(
             }
         }
     }
+
+    fun saveRecord(
+        date: LocalDate,
+        mode: com.example.periodvibe.ui.home.RecordMode,
+        flowLevel: com.example.periodvibe.domain.model.FlowLevel?,
+        symptoms: List<com.example.periodvibe.domain.model.Symptom>,
+        notes: String?
+    ) {
+        viewModelScope.launch {
+            try {
+                val existingRecord = cycleRepository.getDailyRecordByDate(date)
+                val activeCycle = cycleRepository.getActiveCycle()
+
+                val isPeriod = when (mode) {
+                    com.example.periodvibe.ui.home.RecordMode.NEW_CYCLE -> true
+                    com.example.periodvibe.ui.home.RecordMode.SYMPTOM_ONLY -> false
+                    com.example.periodvibe.ui.home.RecordMode.AUTO -> true
+                }
+
+                var targetCycle: com.example.periodvibe.domain.model.Cycle? = null
+
+                when (mode) {
+                    com.example.periodvibe.ui.home.RecordMode.NEW_CYCLE -> {
+                        targetCycle = cycleRepository.startNewCycle(date)
+                    }
+                    com.example.periodvibe.ui.home.RecordMode.SYMPTOM_ONLY -> {
+                        targetCycle = null
+                    }
+                    com.example.periodvibe.ui.home.RecordMode.AUTO -> {
+                        if (activeCycle != null) {
+                            targetCycle = activeCycle
+                        } else {
+                            targetCycle = cycleRepository.startNewCycle(date)
+                        }
+                    }
+                }
+
+                val record = if (existingRecord != null) {
+                    existingRecord.copy(
+                        isPeriod = isPeriod,
+                        flowLevel = flowLevel,
+                        symptoms = symptoms,
+                        notes = notes,
+                        cycleId = targetCycle?.id ?: existingRecord.cycleId
+                    )
+                } else {
+                    com.example.periodvibe.domain.model.DailyRecord(
+                        date = date,
+                        cycleId = targetCycle?.id,
+                        isPeriod = isPeriod,
+                        flowLevel = flowLevel,
+                        symptoms = symptoms,
+                        notes = notes
+                    )
+                }
+
+                if (existingRecord != null) {
+                    cycleRepository.updateDailyRecord(record)
+                } else {
+                    cycleRepository.saveDailyRecord(record)
+                }
+
+                loadActiveCycle()
+                loadCalendarData()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
 }
 
 sealed class CalendarUiState {
