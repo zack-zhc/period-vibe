@@ -23,7 +23,8 @@ enum class RecordMode {
 class HomeViewModel @Inject constructor(
     private val getHomeDataUseCase: GetHomeDataUseCase,
     private val cycleRepository: CycleRepository,
-    private val saveRecordUseCase: com.example.periodvibe.domain.usecase.SaveRecordUseCase
+    private val saveRecordUseCase: com.example.periodvibe.domain.usecase.SaveRecordUseCase,
+    private val endCycleUseCase: com.example.periodvibe.domain.usecase.EndCycleUseCase
 ) : ViewModel() {
 
     private val _homeData = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
@@ -208,13 +209,14 @@ class HomeViewModel @Inject constructor(
 
     fun endCycle() {
         viewModelScope.launch {
-            try {
-                cycleRepository.endCurrentCycle(LocalDate.now())
-                hideEndCycleMenu()
-                refresh()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+            endCycleUseCase(java.time.LocalDate.now())
+                .onSuccess {
+                    hideEndCycleMenu()
+                    refresh()
+                }
+                .onFailure { e ->
+                    e.printStackTrace()
+                }
         }
     }
 

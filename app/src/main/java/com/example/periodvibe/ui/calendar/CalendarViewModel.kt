@@ -17,7 +17,8 @@ import javax.inject.Inject
 class CalendarViewModel @Inject constructor(
     private val getCalendarDataUseCase: GetCalendarDataUseCase,
     private val cycleRepository: CycleRepository,
-    private val saveRecordUseCase: com.example.periodvibe.domain.usecase.SaveRecordUseCase
+    private val saveRecordUseCase: com.example.periodvibe.domain.usecase.SaveRecordUseCase,
+    private val endCycleUseCase: com.example.periodvibe.domain.usecase.EndCycleUseCase
 ) : ViewModel() {
 
     private val _calendarData = MutableStateFlow<CalendarUiState>(CalendarUiState.Loading)
@@ -107,14 +108,15 @@ class CalendarViewModel @Inject constructor(
 
     fun endCycle(endDate: LocalDate) {
         viewModelScope.launch {
-            try {
-                cycleRepository.endCurrentCycle(endDate)
-                hideEndCycleDialog()
-                clearSelectedDate()
-                loadActiveCycle()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+            endCycleUseCase(endDate)
+                .onSuccess {
+                    hideEndCycleDialog()
+                    clearSelectedDate()
+                    loadActiveCycle()
+                }
+                .onFailure { e ->
+                    e.printStackTrace()
+                }
         }
     }
 
