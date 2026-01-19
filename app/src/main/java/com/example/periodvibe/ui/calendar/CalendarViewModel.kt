@@ -2,6 +2,7 @@ package com.example.periodvibe.ui.calendar
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.periodvibe.data.repository.CycleRepository
 import com.example.periodvibe.domain.usecase.GetCalendarDataUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,7 +15,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class CalendarViewModel @Inject constructor(
-    private val getCalendarDataUseCase: GetCalendarDataUseCase
+    private val getCalendarDataUseCase: GetCalendarDataUseCase,
+    private val cycleRepository: CycleRepository
 ) : ViewModel() {
 
     private val _calendarData = MutableStateFlow<CalendarUiState>(CalendarUiState.Loading)
@@ -26,8 +28,15 @@ class CalendarViewModel @Inject constructor(
     private val _selectedDate = MutableStateFlow<LocalDate?>(null)
     val selectedDate: StateFlow<LocalDate?> = _selectedDate.asStateFlow()
 
+    private val _showEndCycleDialog = MutableStateFlow(false)
+    val showEndCycleDialog: StateFlow<Boolean> = _showEndCycleDialog.asStateFlow()
+
+    private val _activeCycle = MutableStateFlow<com.example.periodvibe.domain.model.Cycle?>(null)
+    val activeCycle: StateFlow<com.example.periodvibe.domain.model.Cycle?> = _activeCycle.asStateFlow()
+
     init {
         loadCalendarData()
+        loadActiveCycle()
     }
 
     private fun loadCalendarData() {
@@ -40,6 +49,13 @@ class CalendarViewModel @Inject constructor(
                     hasData = data.hasData
                 )
             }
+        }
+    }
+
+    private fun loadActiveCycle() {
+        viewModelScope.launch {
+            val cycle = cycleRepository.getActiveCycle()
+            _activeCycle.value = cycle
         }
     }
 
@@ -67,6 +83,27 @@ class CalendarViewModel @Inject constructor(
         _currentYearMonth.value = YearMonth.now()
         _selectedDate.value = LocalDate.now()
         loadCalendarData()
+    }
+
+    fun showEndCycleDialog() {
+        _showEndCycleDialog.value = true
+    }
+
+    fun hideEndCycleDialog() {
+        _showEndCycleDialog.value = false
+    }
+
+    fun endCycle(endDate: LocalDate) {
+        viewModelScope.launch {
+            try {
+                cycleRepository.endCurrentCycle(endDate)
+                hideEndCycleDialog()
+                clearSelectedDate()
+                loadActiveCycle()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 }
 

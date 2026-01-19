@@ -51,6 +51,8 @@ fun CalendarScreen(
     val calendarData by viewModel.calendarData.collectAsState()
     val currentYearMonth by viewModel.currentYearMonth.collectAsState()
     val selectedDate by viewModel.selectedDate.collectAsState()
+    val activeCycle by viewModel.activeCycle.collectAsState()
+    val showEndCycleDialog by viewModel.showEndCycleDialog.collectAsState()
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -96,6 +98,7 @@ fun CalendarScreen(
                         yearMonth = state.yearMonth,
                         days = state.days,
                         selectedDate = selectedDate,
+                        activeCycle = activeCycle,
                         onDateClick = { date ->
                             viewModel.selectDate(date)
                             onDateClick(date)
@@ -103,6 +106,19 @@ fun CalendarScreen(
                         onPreviousMonth = { viewModel.navigateToPreviousMonth() },
                         onNextMonth = { viewModel.navigateToNextMonth() },
                         onTodayClick = { viewModel.navigateToToday() },
+                        onRecordClick = { date ->
+                            viewModel.clearSelectedDate()
+                            onDateClick(date)
+                        },
+                        onEndCycleClick = { viewModel.showEndCycleDialog() },
+                        onNewCycleClick = { date ->
+                            viewModel.clearSelectedDate()
+                            onDateClick(date)
+                        },
+                        onEditClick = { date ->
+                            viewModel.clearSelectedDate()
+                            onDateClick(date)
+                        },
                         modifier = Modifier
                             .fillMaxSize()
                             .verticalScroll(rememberScrollState())
@@ -111,6 +127,17 @@ fun CalendarScreen(
             }
         }
     }
+
+    if (showEndCycleDialog) {
+        EndCycleConfirmationDialog(
+            onDismiss = { viewModel.hideEndCycleDialog() },
+            onConfirm = {
+                selectedDate?.let { date ->
+                    viewModel.endCycle(date)
+                }
+            }
+        )
+    }
 }
 
 @Composable
@@ -118,10 +145,15 @@ private fun CalendarContent(
     yearMonth: java.time.YearMonth,
     days: List<com.example.periodvibe.domain.usecase.CalendarDay>,
     selectedDate: java.time.LocalDate?,
+    activeCycle: com.example.periodvibe.domain.model.Cycle?,
     onDateClick: (java.time.LocalDate) -> Unit,
     onPreviousMonth: () -> Unit,
     onNextMonth: () -> Unit,
     onTodayClick: () -> Unit,
+    onRecordClick: (java.time.LocalDate) -> Unit,
+    onEndCycleClick: () -> Unit,
+    onNewCycleClick: (java.time.LocalDate) -> Unit,
+    onEditClick: (java.time.LocalDate) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -158,7 +190,14 @@ private fun CalendarContent(
                 it is com.example.periodvibe.domain.usecase.CalendarDay.Data && it.date == date 
             }
             if (selectedDay is com.example.periodvibe.domain.usecase.CalendarDay.Data) {
-                SelectedDateCard(day = selectedDay)
+                SmartActionCard(
+                    day = selectedDay,
+                    activeCycle = activeCycle,
+                    onRecordClick = { onRecordClick(date) },
+                    onEndCycleClick = onEndCycleClick,
+                    onNewCycleClick = { onNewCycleClick(date) },
+                    onEditClick = { onEditClick(date) }
+                )
             }
         }
     }
