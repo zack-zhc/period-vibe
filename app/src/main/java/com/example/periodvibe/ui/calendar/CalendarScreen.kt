@@ -16,13 +16,17 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.surfaceColorAtElevation
@@ -53,6 +57,7 @@ fun CalendarScreen(
     val selectedDate by viewModel.selectedDate.collectAsState()
     val activeCycle by viewModel.activeCycle.collectAsState()
     val showEndCycleDialog by viewModel.showEndCycleDialog.collectAsState()
+    val showLegendDialog by viewModel.showLegendDialog.collectAsState()
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -64,6 +69,14 @@ fun CalendarScreen(
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
+                },
+                actions = {
+                    IconButton(onClick = { viewModel.showLegendDialog() }) {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = "图例"
+                        )
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface
@@ -138,6 +151,12 @@ fun CalendarScreen(
             }
         )
     }
+
+    if (showLegendDialog) {
+        LegendDialog(
+            onDismiss = { viewModel.hideLegendDialog() }
+        )
+    }
 }
 
 @Composable
@@ -179,10 +198,6 @@ private fun CalendarContent(
             onDateClick = onDateClick
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        LegendCard()
-
         Spacer(modifier = Modifier.height(8.dp))
 
         selectedDate?.let { date ->
@@ -199,51 +214,6 @@ private fun CalendarContent(
                     onEditClick = { onEditClick(date) }
                 )
             }
-        }
-    }
-}
-
-@Composable
-private fun LegendCard() {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text(
-                text = "图例",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            LegendItem(
-                color = Color(0xFFFF6B6B),
-                label = "已记录经期"
-            )
-
-            LegendItem(
-                color = Color(0xFFFFCDD2),
-                label = "预测经期"
-            )
-
-            LegendItem(
-                color = Color(0xFF4ECDC4),
-                label = "排卵期"
-            )
-
-            LegendItem(
-                color = Color(0xFFFFB6C1),
-                label = "易孕期"
-            )
         }
     }
 }
@@ -269,6 +239,52 @@ private fun LegendItem(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
+}
+
+@Composable
+private fun LegendDialog(
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "图例",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                LegendItem(
+                    color = Color(0xFFFF6B6B),
+                    label = "已记录经期"
+                )
+
+                LegendItem(
+                    color = Color(0xFFFFCDD2),
+                    label = "预测经期"
+                )
+
+                LegendItem(
+                    color = Color(0xFF4ECDC4),
+                    label = "排卵期"
+                )
+
+                LegendItem(
+                    color = Color(0xFFFFB6C1),
+                    label = "易孕期"
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("关闭")
+            }
+        }
+    )
 }
 
 @Composable
