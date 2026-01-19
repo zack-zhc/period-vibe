@@ -78,11 +78,13 @@ fun SettingsScreen(
                 val state = uiState as SettingsUiState.Success
 
                 CycleParametersSection(
+                    autoCalculateCycle = state.autoCalculateCycle,
                     cycleLengthDefault = state.cycleLengthDefault,
                     periodLengthDefault = state.periodLengthDefault,
                     cycleLengthRange = state.cycleLengthRange,
                     periodLengthRange = state.periodLengthRange,
-                    onClick = { viewModel.showCycleDialog() }
+                    onClick = { viewModel.showCycleDialog() },
+                    onAutoCalculateToggle = { viewModel.toggleAutoCalculateCycle(it) }
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))

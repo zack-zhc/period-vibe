@@ -9,6 +9,9 @@ data class SettingsEntity(
     @PrimaryKey
     val id: Int = 1,
 
+    @ColumnInfo(name = "auto_calculate_cycle")
+    val autoCalculateCycle: Boolean,
+
     @ColumnInfo(name = "cycle_length_default")
     val cycleLengthDefault: Int,
 

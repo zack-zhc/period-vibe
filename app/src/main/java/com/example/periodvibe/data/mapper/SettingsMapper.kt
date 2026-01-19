@@ -15,6 +15,7 @@ class SettingsMapper @Inject constructor() {
 
     fun toDomain(entity: SettingsEntity): Settings {
         return Settings(
+            autoCalculateCycle = entity.autoCalculateCycle,
             cycleLengthDefault = entity.cycleLengthDefault,
             periodLengthDefault = entity.periodLengthDefault,
             cycleLengthRange = entity.cycleLengthMin..entity.cycleLengthMax,
@@ -33,6 +34,7 @@ class SettingsMapper @Inject constructor() {
     fun toEntity(domain: Settings): SettingsEntity {
         return SettingsEntity(
             id = 1,
+            autoCalculateCycle = domain.autoCalculateCycle,
             cycleLengthDefault = domain.cycleLengthDefault,
             periodLengthDefault = domain.periodLengthDefault,
             cycleLengthMin = domain.cycleLengthRange.first,

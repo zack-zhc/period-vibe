@@ -62,6 +62,14 @@ object DatabaseModule {
         }
     }
 
+    private val MIGRATION_3_4 = object : Migration(3, 4) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL(
+                "ALTER TABLE settings ADD COLUMN auto_calculate_cycle INTEGER NOT NULL DEFAULT 1"
+            )
+        }
+    }
+
     @Provides
     @Singleton
     fun provideAppDatabase(
@@ -71,7 +79,7 @@ object DatabaseModule {
             context,
             AppDatabase::class.java,
             "period_vibe_database"
-        ).addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+        ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
          .build()
     }
 

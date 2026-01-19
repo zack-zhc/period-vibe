@@ -3,6 +3,7 @@ package com.example.periodvibe.domain.model
 import java.time.LocalTime
 
 data class Settings(
+    val autoCalculateCycle: Boolean = true,
     val cycleLengthDefault: Int = 28,
     val periodLengthDefault: Int = 5,
     val cycleLengthRange: IntRange = 21..35,

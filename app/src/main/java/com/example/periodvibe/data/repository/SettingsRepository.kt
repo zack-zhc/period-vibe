@@ -40,6 +40,7 @@ class SettingsRepository @Inject constructor(
         periodLength: Int
     ) {
         val settings = Settings(
+            autoCalculateCycle = true,
             cycleLengthDefault = cycleLength,
             periodLengthDefault = periodLength
         )

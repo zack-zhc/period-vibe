@@ -1,5 +1,6 @@
 package com.example.periodvibe.ui.settings.components
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -39,26 +40,35 @@ import java.time.LocalTime
 
 @Composable
 fun CycleParametersSection(
+    autoCalculateCycle: Boolean,
     cycleLengthDefault: Int,
     periodLengthDefault: Int,
     cycleLengthRange: IntRange,
     periodLengthRange: IntRange,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onAutoCalculateToggle: (Boolean) -> Unit
 ) {
-    SettingsSection(
-        title = "周期参数",
-        onClick = onClick
-    ) {
-        SettingItem(
-            label = "平均周期长度",
-            value = "$cycleLengthDefault 天",
-            showChevron = true
+    SettingsSection(title = "周期参数") {
+        SettingItemWithSwitch(
+            label = "自动计算周期",
+            description = if (autoCalculateCycle) "根据历史数据自动计算" else "使用手动设置的值",
+            checked = autoCalculateCycle,
+            onCheckedChange = onAutoCalculateToggle
         )
-        SettingItem(
-            label = "平均经期天数",
-            value = "$periodLengthDefault 天",
-            showChevron = true
-        )
+        if (!autoCalculateCycle) {
+            SettingItem(
+                label = "平均周期长度",
+                value = "$cycleLengthDefault 天",
+                showChevron = true,
+                onClick = onClick
+            )
+            SettingItem(
+                label = "平均经期天数",
+                value = "$periodLengthDefault 天",
+                showChevron = true,
+                onClick = onClick
+            )
+        }
     }
 }
 
@@ -600,11 +610,19 @@ fun SettingItem(
     label: String,
     value: String,
     showChevron: Boolean = false,
-    valueColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurfaceVariant
+    valueColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    onClick: (() -> Unit)? = null
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .let { modifier ->
+                if (onClick != null) {
+                    modifier.clickable(onClick = onClick)
+                } else {
+                    modifier
+                }
+            }
             .padding(16.dp),
         horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically

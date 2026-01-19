@@ -46,6 +46,7 @@ class SettingsViewModel @Inject constructor(
             settingsRepository.getSettings().collect { settings ->
                 if (settings != null) {
                     _uiState.value = SettingsUiState.Success(
+                        autoCalculateCycle = settings.autoCalculateCycle,
                         cycleLengthDefault = settings.cycleLengthDefault,
                         periodLengthDefault = settings.periodLengthDefault,
                         cycleLengthRange = settings.cycleLengthRange,
@@ -127,6 +128,16 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun toggleAutoCalculateCycle(enabled: Boolean) {
+        viewModelScope.launch {
+            val currentSettings = settingsRepository.getSettingsSync()
+            currentSettings?.let {
+                val updatedSettings = it.copy(autoCalculateCycle = enabled)
+                settingsRepository.updateSettings(updatedSettings)
+            }
+        }
+    }
+
     fun updateNotificationSettings(
         enabled: Boolean,
         daysBefore: Int,
@@ -183,6 +194,7 @@ class SettingsViewModel @Inject constructor(
 sealed class SettingsUiState {
     object Loading : SettingsUiState()
     data class Success(
+        val autoCalculateCycle: Boolean,
         val cycleLengthDefault: Int,
         val periodLengthDefault: Int,
         val cycleLengthRange: IntRange,

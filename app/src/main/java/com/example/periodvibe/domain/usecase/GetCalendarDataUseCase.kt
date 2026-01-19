@@ -125,8 +125,18 @@ class GetCalendarDataUseCase @Inject constructor(
         if (cycles.isEmpty()) return null
 
         val latestCycle = cycles.firstOrNull() ?: return null
-        val cycleLength = latestCycle.cycleLength ?: settings?.cycleLengthDefault ?: 28
-        val periodLength = latestCycle.periodLength ?: settings?.periodLengthDefault ?: 5
+        
+        val cycleLength = if (settings?.autoCalculateCycle == true) {
+            latestCycle.cycleLength ?: settings?.cycleLengthDefault ?: 28
+        } else {
+            settings?.cycleLengthDefault ?: 28
+        }
+        
+        val periodLength = if (settings?.autoCalculateCycle == true) {
+            latestCycle.periodLength ?: settings?.periodLengthDefault ?: 5
+        } else {
+            settings?.periodLengthDefault ?: 5
+        }
 
         val predictedNextPeriodStart = latestCycle.startDate!!.plusDays(cycleLength.toLong())
 
