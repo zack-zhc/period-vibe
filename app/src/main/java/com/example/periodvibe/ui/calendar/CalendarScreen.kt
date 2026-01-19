@@ -33,14 +33,20 @@ import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.periodvibe.ui.home.PeriodBottomNavigation
+import com.example.periodvibe.ui.home.RecordBottomSheet
+import com.example.periodvibe.ui.home.RecordMode
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,6 +64,8 @@ fun CalendarScreen(
     val activeCycle by viewModel.activeCycle.collectAsState()
     val showEndCycleDialog by viewModel.showEndCycleDialog.collectAsState()
     val showLegendDialog by viewModel.showLegendDialog.collectAsState()
+    var showRecordSheet by remember { mutableStateOf(false) }
+    var recordDate by remember { mutableStateOf(java.time.LocalDate.now()) }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -120,17 +128,17 @@ fun CalendarScreen(
                         onNextMonth = { viewModel.navigateToNextMonth() },
                         onTodayClick = { viewModel.navigateToToday() },
                         onRecordClick = { date ->
-                            viewModel.clearSelectedDate()
-                            onDateClick(date)
+                            recordDate = date
+                            showRecordSheet = true
                         },
                         onEndCycleClick = { viewModel.showEndCycleDialog() },
                         onNewCycleClick = { date ->
-                            viewModel.clearSelectedDate()
-                            onDateClick(date)
+                            recordDate = date
+                            showRecordSheet = true
                         },
                         onEditClick = { date ->
-                            viewModel.clearSelectedDate()
-                            onDateClick(date)
+                            recordDate = date
+                            showRecordSheet = true
                         },
                         modifier = Modifier
                             .fillMaxSize()
@@ -155,6 +163,18 @@ fun CalendarScreen(
     if (showLegendDialog) {
         LegendDialog(
             onDismiss = { viewModel.hideLegendDialog() }
+        )
+    }
+
+    val currentActiveCycle = activeCycle
+    if (showRecordSheet) {
+        RecordBottomSheet(
+            initialDate = recordDate,
+            recordMode = RecordMode.AUTO,
+            hasCurrentCycle = currentActiveCycle != null && currentActiveCycle.isCurrentCycle,
+            existingRecord = null,
+            onDismiss = { showRecordSheet = false },
+            onSave = { _, _, _ -> showRecordSheet = false }
         )
     }
 }
