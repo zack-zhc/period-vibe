@@ -175,7 +175,7 @@ fun CalendarScreen(
             hasCurrentCycle = currentActiveCycle != null && currentActiveCycle.isCurrentCycle,
             existingRecord = null,
             onDismiss = { showRecordSheet = false },
-            onSave = { _, _, _ -> showRecordSheet = false }
+            onSave = { _, _, _, _ -> showRecordSheet = false }
         )
     }
 }

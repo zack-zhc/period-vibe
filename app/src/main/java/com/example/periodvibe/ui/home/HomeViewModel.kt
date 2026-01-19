@@ -145,13 +145,14 @@ class HomeViewModel @Inject constructor(
     }
 
     fun saveDailyRecord(
+        date: LocalDate,
         flowLevel: com.example.periodvibe.domain.model.FlowLevel?,
         symptoms: List<com.example.periodvibe.domain.model.Symptom>,
         notes: String?
     ) {
         viewModelScope.launch {
             try {
-                val existingRecord = cycleRepository.getDailyRecordByDate(_selectedDate.value)
+                val existingRecord = cycleRepository.getDailyRecordByDate(date)
                 val activeCycle = cycleRepository.getActiveCycle()
                 val recordMode = _recordMode.value
 
@@ -165,7 +166,7 @@ class HomeViewModel @Inject constructor(
 
                 when (recordMode) {
                     RecordMode.NEW_CYCLE -> {
-                        targetCycle = cycleRepository.startNewCycle(_selectedDate.value)
+                        targetCycle = cycleRepository.startNewCycle(date)
                     }
                     RecordMode.SYMPTOM_ONLY -> {
                         targetCycle = null
@@ -174,7 +175,7 @@ class HomeViewModel @Inject constructor(
                         if (activeCycle != null) {
                             targetCycle = activeCycle
                         } else {
-                            targetCycle = cycleRepository.startNewCycle(_selectedDate.value)
+                            targetCycle = cycleRepository.startNewCycle(date)
                         }
                     }
                 }
@@ -189,7 +190,7 @@ class HomeViewModel @Inject constructor(
                     )
                 } else {
                     com.example.periodvibe.domain.model.DailyRecord(
-                        date = _selectedDate.value,
+                        date = date,
                         cycleId = targetCycle?.id,
                         isPeriod = isPeriod,
                         flowLevel = flowLevel,
@@ -213,14 +214,15 @@ class HomeViewModel @Inject constructor(
     }
 
     fun saveNewCycle(
+        date: LocalDate,
         flowLevel: com.example.periodvibe.domain.model.FlowLevel?,
         symptoms: List<com.example.periodvibe.domain.model.Symptom>,
         notes: String?
     ) {
         viewModelScope.launch {
             try {
-                val existingRecord = cycleRepository.getDailyRecordByDate(_selectedDate.value)
-                val targetCycle = cycleRepository.startNewCycle(_selectedDate.value)
+                val existingRecord = cycleRepository.getDailyRecordByDate(date)
+                val targetCycle = cycleRepository.startNewCycle(date)
 
                 val record = if (existingRecord != null) {
                     existingRecord.copy(
@@ -232,7 +234,7 @@ class HomeViewModel @Inject constructor(
                     )
                 } else {
                     com.example.periodvibe.domain.model.DailyRecord(
-                        date = _selectedDate.value,
+                        date = date,
                         cycleId = targetCycle.id,
                         isPeriod = true,
                         flowLevel = flowLevel,
@@ -256,12 +258,13 @@ class HomeViewModel @Inject constructor(
     }
 
     fun saveNewSymptom(
+        date: LocalDate,
         symptoms: List<com.example.periodvibe.domain.model.Symptom>,
         notes: String?
     ) {
         viewModelScope.launch {
             try {
-                val existingRecord = cycleRepository.getDailyRecordByDate(_selectedDate.value)
+                val existingRecord = cycleRepository.getDailyRecordByDate(date)
 
                 val record = if (existingRecord != null) {
                     existingRecord.copy(
@@ -272,7 +275,7 @@ class HomeViewModel @Inject constructor(
                     )
                 } else {
                     com.example.periodvibe.domain.model.DailyRecord(
-                        date = _selectedDate.value,
+                        date = date,
                         cycleId = null,
                         isPeriod = false,
                         flowLevel = null,

@@ -67,7 +67,7 @@ fun RecordBottomSheet(
     hasCurrentCycle: Boolean = false,
     existingRecord: com.example.periodvibe.domain.model.DailyRecord? = null,
     onDismiss: () -> Unit,
-    onSave: (flowLevel: FlowLevel?, symptoms: List<Symptom>, notes: String?) -> Unit
+    onSave: (date: LocalDate, flowLevel: FlowLevel?, symptoms: List<Symptom>, notes: String?) -> Unit
 ) {
     var selectedDate by remember { mutableStateOf(existingRecord?.date ?: initialDate) }
     var flowLevel by remember { mutableStateOf(existingRecord?.flowLevel ?: initialFlowLevel) }
@@ -251,6 +251,7 @@ fun RecordBottomSheet(
                                 RecordMode.AUTO -> true
                             }
                             onSave(
+                                selectedDate,
                                 if (finalIsPeriod) flowLevel else null,
                                 selectedSymptoms.toList(),
                                 notes.takeIf { it.isNotBlank() }

@@ -148,8 +148,8 @@ fun HomeScreen(
             hasCurrentCycle = hasCurrentCycle,
             existingRecord = existingRecord,
             onDismiss = { viewModel.hideRecordSheet() },
-            onSave = { flowLevel, symptoms, notes ->
-                viewModel.saveDailyRecord(flowLevel, symptoms, notes)
+            onSave = { date, flowLevel, symptoms, notes ->
+                viewModel.saveDailyRecord(date, flowLevel, symptoms, notes)
             }
         )
     }
@@ -161,8 +161,8 @@ fun HomeScreen(
             hasCurrentCycle = false,
             existingRecord = existingRecord,
             onDismiss = { viewModel.hideNewCycleSheet() },
-            onSave = { flowLevel, symptoms, notes ->
-                viewModel.saveNewCycle(flowLevel, symptoms, notes)
+            onSave = { date, flowLevel, symptoms, notes ->
+                viewModel.saveNewCycle(date, flowLevel, symptoms, notes)
             }
         )
     }
@@ -174,8 +174,8 @@ fun HomeScreen(
             hasCurrentCycle = false,
             existingRecord = existingRecord,
             onDismiss = { viewModel.hideNewSymptomSheet() },
-            onSave = { flowLevel, symptoms, notes ->
-                viewModel.saveNewSymptom(symptoms, notes)
+            onSave = { date, flowLevel, symptoms, notes ->
+                viewModel.saveNewSymptom(date, symptoms, notes)
             }
         )
     }
