@@ -22,7 +22,8 @@ enum class RecordMode {
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val getHomeDataUseCase: GetHomeDataUseCase,
-    private val cycleRepository: CycleRepository
+    private val cycleRepository: CycleRepository,
+    private val saveRecordUseCase: com.example.periodvibe.domain.usecase.SaveRecordUseCase
 ) : ViewModel() {
 
     private val _homeData = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
@@ -151,65 +152,14 @@ class HomeViewModel @Inject constructor(
         notes: String?
     ) {
         viewModelScope.launch {
-            try {
-                val existingRecord = cycleRepository.getDailyRecordByDate(date)
-                val activeCycle = cycleRepository.getActiveCycle()
-                val recordMode = _recordMode.value
-
-                val isPeriod = when (recordMode) {
-                    RecordMode.NEW_CYCLE -> true
-                    RecordMode.SYMPTOM_ONLY -> false
-                    RecordMode.AUTO -> true
+            saveRecordUseCase(date, _recordMode.value, flowLevel, symptoms, notes)
+                .onSuccess {
+                    hideRecordSheet()
+                    refresh()
                 }
-
-                var targetCycle: com.example.periodvibe.domain.model.Cycle? = null
-
-                when (recordMode) {
-                    RecordMode.NEW_CYCLE -> {
-                        targetCycle = cycleRepository.startNewCycle(date)
-                    }
-                    RecordMode.SYMPTOM_ONLY -> {
-                        targetCycle = null
-                    }
-                    RecordMode.AUTO -> {
-                        if (activeCycle != null) {
-                            targetCycle = activeCycle
-                        } else {
-                            targetCycle = cycleRepository.startNewCycle(date)
-                        }
-                    }
+                .onFailure { e ->
+                    e.printStackTrace()
                 }
-
-                val record = if (existingRecord != null) {
-                    existingRecord.copy(
-                        isPeriod = isPeriod,
-                        flowLevel = flowLevel,
-                        symptoms = symptoms,
-                        notes = notes,
-                        cycleId = targetCycle?.id ?: existingRecord.cycleId
-                    )
-                } else {
-                    com.example.periodvibe.domain.model.DailyRecord(
-                        date = date,
-                        cycleId = targetCycle?.id,
-                        isPeriod = isPeriod,
-                        flowLevel = flowLevel,
-                        symptoms = symptoms,
-                        notes = notes
-                    )
-                }
-
-                if (existingRecord != null) {
-                    cycleRepository.updateDailyRecord(record)
-                } else {
-                    cycleRepository.saveDailyRecord(record)
-                }
-
-                hideRecordSheet()
-                refresh()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
         }
     }
 
@@ -220,40 +170,14 @@ class HomeViewModel @Inject constructor(
         notes: String?
     ) {
         viewModelScope.launch {
-            try {
-                val existingRecord = cycleRepository.getDailyRecordByDate(date)
-                val targetCycle = cycleRepository.startNewCycle(date)
-
-                val record = if (existingRecord != null) {
-                    existingRecord.copy(
-                        isPeriod = true,
-                        flowLevel = flowLevel,
-                        symptoms = symptoms,
-                        notes = notes,
-                        cycleId = targetCycle.id
-                    )
-                } else {
-                    com.example.periodvibe.domain.model.DailyRecord(
-                        date = date,
-                        cycleId = targetCycle.id,
-                        isPeriod = true,
-                        flowLevel = flowLevel,
-                        symptoms = symptoms,
-                        notes = notes
-                    )
+            saveRecordUseCase(date, RecordMode.NEW_CYCLE, flowLevel, symptoms, notes)
+                .onSuccess {
+                    hideNewCycleSheet()
+                    refresh()
                 }
-
-                if (existingRecord != null) {
-                    cycleRepository.updateDailyRecord(record)
-                } else {
-                    cycleRepository.saveDailyRecord(record)
+                .onFailure { e ->
+                    e.printStackTrace()
                 }
-
-                hideNewCycleSheet()
-                refresh()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
         }
     }
 
@@ -263,38 +187,14 @@ class HomeViewModel @Inject constructor(
         notes: String?
     ) {
         viewModelScope.launch {
-            try {
-                val existingRecord = cycleRepository.getDailyRecordByDate(date)
-
-                val record = if (existingRecord != null) {
-                    existingRecord.copy(
-                        isPeriod = false,
-                        flowLevel = null,
-                        symptoms = symptoms,
-                        notes = notes
-                    )
-                } else {
-                    com.example.periodvibe.domain.model.DailyRecord(
-                        date = date,
-                        cycleId = null,
-                        isPeriod = false,
-                        flowLevel = null,
-                        symptoms = symptoms,
-                        notes = notes
-                    )
+            saveRecordUseCase(date, RecordMode.SYMPTOM_ONLY, null, symptoms, notes)
+                .onSuccess {
+                    hideNewSymptomSheet()
+                    refresh()
                 }
-
-                if (existingRecord != null) {
-                    cycleRepository.updateDailyRecord(record)
-                } else {
-                    cycleRepository.saveDailyRecord(record)
+                .onFailure { e ->
+                    e.printStackTrace()
                 }
-
-                hideNewSymptomSheet()
-                refresh()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
         }
     }
 

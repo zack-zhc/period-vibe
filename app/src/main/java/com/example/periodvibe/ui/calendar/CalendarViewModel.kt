@@ -16,7 +16,8 @@ import javax.inject.Inject
 @HiltViewModel
 class CalendarViewModel @Inject constructor(
     private val getCalendarDataUseCase: GetCalendarDataUseCase,
-    private val cycleRepository: CycleRepository
+    private val cycleRepository: CycleRepository,
+    private val saveRecordUseCase: com.example.periodvibe.domain.usecase.SaveRecordUseCase
 ) : ViewModel() {
 
     private val _calendarData = MutableStateFlow<CalendarUiState>(CalendarUiState.Loading)
@@ -125,64 +126,14 @@ class CalendarViewModel @Inject constructor(
         notes: String?
     ) {
         viewModelScope.launch {
-            try {
-                val existingRecord = cycleRepository.getDailyRecordByDate(date)
-                val activeCycle = cycleRepository.getActiveCycle()
-
-                val isPeriod = when (mode) {
-                    com.example.periodvibe.ui.home.RecordMode.NEW_CYCLE -> true
-                    com.example.periodvibe.ui.home.RecordMode.SYMPTOM_ONLY -> false
-                    com.example.periodvibe.ui.home.RecordMode.AUTO -> true
+            saveRecordUseCase(date, mode, flowLevel, symptoms, notes)
+                .onSuccess {
+                    loadActiveCycle()
+                    loadCalendarData()
                 }
-
-                var targetCycle: com.example.periodvibe.domain.model.Cycle? = null
-
-                when (mode) {
-                    com.example.periodvibe.ui.home.RecordMode.NEW_CYCLE -> {
-                        targetCycle = cycleRepository.startNewCycle(date)
-                    }
-                    com.example.periodvibe.ui.home.RecordMode.SYMPTOM_ONLY -> {
-                        targetCycle = null
-                    }
-                    com.example.periodvibe.ui.home.RecordMode.AUTO -> {
-                        if (activeCycle != null) {
-                            targetCycle = activeCycle
-                        } else {
-                            targetCycle = cycleRepository.startNewCycle(date)
-                        }
-                    }
+                .onFailure { e ->
+                    e.printStackTrace()
                 }
-
-                val record = if (existingRecord != null) {
-                    existingRecord.copy(
-                        isPeriod = isPeriod,
-                        flowLevel = flowLevel,
-                        symptoms = symptoms,
-                        notes = notes,
-                        cycleId = targetCycle?.id ?: existingRecord.cycleId
-                    )
-                } else {
-                    com.example.periodvibe.domain.model.DailyRecord(
-                        date = date,
-                        cycleId = targetCycle?.id,
-                        isPeriod = isPeriod,
-                        flowLevel = flowLevel,
-                        symptoms = symptoms,
-                        notes = notes
-                    )
-                }
-
-                if (existingRecord != null) {
-                    cycleRepository.updateDailyRecord(record)
-                } else {
-                    cycleRepository.saveDailyRecord(record)
-                }
-
-                loadActiveCycle()
-                loadCalendarData()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
         }
     }
 }
