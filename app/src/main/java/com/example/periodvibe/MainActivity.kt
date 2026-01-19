@@ -20,8 +20,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.periodvibe.domain.model.Settings
+import com.example.periodvibe.ui.calendar.CalendarScreen
 import com.example.periodvibe.ui.home.HomeScreen
 import com.example.periodvibe.ui.home.PeriodBottomNavigation
+import com.example.periodvibe.ui.home.RecordBottomSheet
+import com.example.periodvibe.ui.home.RecordMode
 import com.example.periodvibe.ui.history.HistoryScreen
 import com.example.periodvibe.ui.onboarding.OnboardingScreen
 import com.example.periodvibe.ui.setup.InitialSetupScreen
@@ -41,6 +44,9 @@ class MainActivity : ComponentActivity() {
             var showSetup by remember { mutableStateOf(false) }
             var currentRoute by remember { mutableStateOf("home") }
             var themeMode by remember { mutableStateOf(Settings.ThemeMode.SYSTEM) }
+            var showRecordSheet by remember { mutableStateOf(false) }
+            var recordMode by remember { mutableStateOf(RecordMode.AUTO) }
+            var selectedDate by remember { mutableStateOf(java.time.LocalDate.now()) }
 
             LaunchedEffect(Unit) {
                 mainViewModel.getSettings().collect { settings ->
@@ -99,9 +105,15 @@ class MainActivity : ComponentActivity() {
                                     )
                                 }
                                 "calendar" -> {
-                                    Text(
-                                        text = "日历",
-                                        modifier = Modifier.padding(innerPadding)
+                                    CalendarScreen(
+                                        onNavigateToHome = { currentRoute = "home" },
+                                        onNavigateToHistory = { currentRoute = "history" },
+                                        onNavigateToSettings = { currentRoute = "settings" },
+                                        onDateClick = { date ->
+                                            selectedDate = date
+                                            showRecordSheet = true
+                                        },
+                                        modifier = Modifier.fillMaxSize()
                                     )
                                 }
                                 "history" -> {
@@ -142,6 +154,17 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     }
+                }
+
+                if (showRecordSheet) {
+                    RecordBottomSheet(
+                        initialDate = selectedDate,
+                        recordMode = recordMode,
+                        hasCurrentCycle = false,
+                        existingRecord = null,
+                        onDismiss = { showRecordSheet = false },
+                        onSave = { _, _, _ -> showRecordSheet = false }
+                    )
                 }
             }
         }
