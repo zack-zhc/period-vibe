@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -475,26 +476,44 @@ fun DataManagementDialog(
 
 @Composable
 fun AboutSection(
-    onClick: () -> Unit
+    onAppIntroClick: () -> Unit,
+    onDeveloperOptionsClick: () -> Unit
 ) {
-    SettingsSection(
-        title = "关于",
-        onClick = onClick
-    ) {
+    var clickCount by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    var firstClickTime by androidx.compose.runtime.remember { androidx.compose.runtime.mutableLongStateOf(0L) }
+
+    SettingsSection(title = "关于") {
+        SettingItem(
+            label = "应用介绍",
+            value = "",
+            showChevron = true,
+            onClick = onAppIntroClick
+        )
         SettingItem(
             label = "版本信息",
             value = "v1.0.0",
-            showChevron = true
-        )
-        SettingItem(
-            label = "隐私政策",
-            value = "",
-            showChevron = true
-        )
-        SettingItem(
-            label = "用户协议",
-            value = "",
-            showChevron = true
+            showChevron = false,
+            onClick = {
+                val currentTime = System.currentTimeMillis()
+                
+                if (firstClickTime == 0L) {
+                    firstClickTime = currentTime
+                } else {
+                    val elapsedTime = currentTime - firstClickTime
+                    if (elapsedTime > 8000) {
+                        clickCount = 1
+                        firstClickTime = currentTime
+                    } else {
+                        clickCount++
+                    }
+                }
+                
+                if (clickCount >= 10) {
+                    clickCount = 1
+                    firstClickTime = currentTime
+                    onDeveloperOptionsClick()
+                }
+            }
         )
     }
 }
@@ -520,25 +539,6 @@ fun AboutDialog(
                     .fillMaxWidth()
                     .padding(24.dp)
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "关于",
-                        style = MaterialTheme.typography.titleLarge
-                    )
-                    IconButton(onClick = onDismiss) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "关闭"
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
                 Text(
                     text = "Period Vibe",
                     style = MaterialTheme.typography.headlineSmall,

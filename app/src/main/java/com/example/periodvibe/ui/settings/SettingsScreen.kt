@@ -41,6 +41,7 @@ fun SettingsScreen(
     onNavigateToHome: () -> Unit,
     onNavigateToCalendar: () -> Unit,
     onNavigateToHistory: () -> Unit,
+    onNavigateToDeveloperOptions: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
@@ -121,7 +122,8 @@ fun SettingsScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 AboutSection(
-                    onClick = { viewModel.showAboutDialog() }
+                    onAppIntroClick = { viewModel.showAboutDialog() },
+                    onDeveloperOptionsClick = onNavigateToDeveloperOptions
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
