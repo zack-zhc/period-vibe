@@ -498,6 +498,7 @@ fun AboutSection(
                 
                 if (firstClickTime == 0L) {
                     firstClickTime = currentTime
+                    clickCount = 1
                 } else {
                     val elapsedTime = currentTime - firstClickTime
                     if (elapsedTime > 8000) {
