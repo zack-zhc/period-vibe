@@ -67,9 +67,9 @@ class MainActivity : ComponentActivity() {
             }
 
             LaunchedEffect(showOnboarding) {
-                android.util.Log.d("MainActivity", "LaunchedEffect: showOnboarding=$showOnboarding, currentScreen=$currentScreen")
+                // android.util.Log.d("MainActivity", "LaunchedEffect: showOnboarding=$showOnboarding, currentScreen=$currentScreen")
                 if (showOnboarding != null && currentScreen is AppScreen.Loading) {
-                    android.util.Log.d("MainActivity", "Loading complete: showOnboarding=$showOnboarding")
+                    // android.util.Log.d("MainActivity", "Loading complete: showOnboarding=$showOnboarding")
                     currentScreen = if (showOnboarding == true) {
                         AppScreen.Onboarding
                     } else {
@@ -194,9 +194,9 @@ class MainActivity : ComponentActivity() {
                                         .fillMaxSize()
                                         .padding(paddingValues),
                                     onResetOnboarding = {
-                                        android.util.Log.d("MainActivity", "Reset onboarding clicked")
+                                        // android.util.Log.d("MainActivity", "Reset onboarding clicked")
                                         mainViewModel.resetOnboarding {
-                                            android.util.Log.d("MainActivity", "Reset complete, setting Onboarding")
+                                            // android.util.Log.d("MainActivity", "Reset complete, setting Onboarding")
                                             currentScreen = AppScreen.Onboarding
                                         }
                                     }

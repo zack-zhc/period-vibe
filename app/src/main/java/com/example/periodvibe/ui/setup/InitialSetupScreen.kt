@@ -58,10 +58,10 @@ fun InitialSetupScreen(
     modifier: Modifier = Modifier,
     viewModel: InitialSetupViewModel = hiltViewModel()
 ) {
-    android.util.Log.d("InitialSetupScreen", "Composed")
+    // android.util.Log.d("InitialSetupScreen", "Composed")
 
     LaunchedEffect(Unit) {
-        android.util.Log.d("InitialSetupScreen", "Calling resetState() once")
+        // android.util.Log.d("InitialSetupScreen", "Calling resetState() once")
         viewModel.resetState()
     }
 
@@ -81,9 +81,9 @@ fun InitialSetupScreen(
     )
 
     LaunchedEffect(onCompleteEvent) {
-        android.util.Log.d("InitialSetupScreen", "onCompleteEvent=$onCompleteEvent")
+        // android.util.Log.d("InitialSetupScreen", "onCompleteEvent=$onCompleteEvent")
         if (onCompleteEvent) {
-            android.util.Log.d("InitialSetupScreen", "Triggering completion")
+            // android.util.Log.d("InitialSetupScreen", "Triggering completion")
             onComplete()
         }
     }

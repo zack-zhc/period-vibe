@@ -43,10 +43,10 @@ fun OnboardingScreen(
     onComplete: (() -> Unit)? = null,
     viewModel: OnboardingViewModel = hiltViewModel()
 ) {
-    android.util.Log.d("OnboardingScreen", "Composed")
+    // android.util.Log.d("OnboardingScreen", "Composed")
 
     LaunchedEffect(Unit) {
-        android.util.Log.d("OnboardingScreen", "Calling resetState() once")
+        // android.util.Log.d("OnboardingScreen", "Calling resetState() once")
         viewModel.resetState()
     }
 
@@ -59,9 +59,9 @@ fun OnboardingScreen(
     val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(onCompleteEvent) {
-        android.util.Log.d("OnboardingScreen", "onCompleteEvent=$onCompleteEvent")
+        // android.util.Log.d("OnboardingScreen", "onCompleteEvent=$onCompleteEvent")
         if (onCompleteEvent) {
-            android.util.Log.d("OnboardingScreen", "Triggering completion")
+            // android.util.Log.d("OnboardingScreen", "Triggering completion")
             onGetStarted()
             onComplete?.invoke()
         }
