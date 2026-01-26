@@ -22,6 +22,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Text
@@ -204,23 +205,45 @@ fun InitialSetupScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        Button(
-            onClick = viewModel::onComplete,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            enabled = viewModel.isValid(),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = if (viewModel.isValid()) Color(0xFFE91E63) else Color(0xFFBDBDBD),
-                contentColor = Color.White
-            ),
-            shape = RoundedCornerShape(28.dp)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(
-                text = "完成",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold
-            )
+            OutlinedButton(
+                onClick = viewModel::skip,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(56.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = Color(0xFFE91E63)
+                ),
+                shape = RoundedCornerShape(28.dp)
+            ) {
+                Text(
+                    text = "跳过",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+
+            Button(
+                onClick = viewModel::onComplete,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(56.dp),
+                enabled = viewModel.isValid(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (viewModel.isValid()) Color(0xFFE91E63) else Color(0xFFBDBDBD),
+                    contentColor = Color.White
+                ),
+                shape = RoundedCornerShape(28.dp)
+            ) {
+                Text(
+                    text = "完成",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -303,13 +326,13 @@ private fun DatePickerField(
 @Composable
 private fun NumberInputField(
     label: String,
-    value: Int,
+    value: Int?,
     onValueChange: (Int) -> Unit,
     range: IntRange,
     hint: String,
     modifier: Modifier = Modifier
 ) {
-    var textValue by remember { mutableStateOf(value.toString()) }
+    var textValue by remember(value) { mutableStateOf(value?.toString() ?: "") }
     var isError by remember { mutableStateOf(false) }
 
     Column(modifier = modifier) {
@@ -326,12 +349,16 @@ private fun NumberInputField(
             value = textValue,
             onValueChange = { newValue ->
                 textValue = newValue
-                newValue.toIntOrNull()?.let { intValue ->
-                    if (intValue in range) {
-                        isError = false
-                        onValueChange(intValue)
-                    } else {
-                        isError = true
+                if (newValue.isEmpty()) {
+                    isError = false
+                } else {
+                    newValue.toIntOrNull()?.let { intValue ->
+                        if (intValue in range) {
+                            isError = false
+                            onValueChange(intValue)
+                        } else {
+                            isError = true
+                        }
                     }
                 }
             },

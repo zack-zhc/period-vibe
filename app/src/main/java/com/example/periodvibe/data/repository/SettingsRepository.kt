@@ -37,10 +37,11 @@ class SettingsRepository @Inject constructor(
 
     suspend fun saveInitialSettings(
         cycleLength: Int,
-        periodLength: Int
+        periodLength: Int,
+        autoCalculateCycle: Boolean = true
     ) {
         val settings = Settings(
-            autoCalculateCycle = true,
+            autoCalculateCycle = autoCalculateCycle,
             cycleLengthDefault = cycleLength,
             periodLengthDefault = periodLength
         )
@@ -51,6 +52,13 @@ class SettingsRepository @Inject constructor(
         val settings = getSettingsSync()
         settings?.let {
             updateSettings(it.copy(onboardingVersion = version))
+        }
+    }
+
+    suspend fun setAutoCalculateCycle(enabled: Boolean) {
+        val settings = getSettingsSync()
+        settings?.let {
+            updateSettings(it.copy(autoCalculateCycle = enabled))
         }
     }
 }

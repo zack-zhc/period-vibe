@@ -13,12 +13,14 @@ class SaveInitialSetupUseCase @Inject constructor(
 
     suspend operator fun invoke(
         lastPeriodStartDate: LocalDate?,
-        cycleLength: Int,
-        periodLength: Int
+        cycleLength: Int?,
+        periodLength: Int?,
+        autoCalculateCycle: Boolean
     ): Cycle? {
         settingsRepository.saveInitialSettings(
-            cycleLength = cycleLength,
-            periodLength = periodLength
+            cycleLength = cycleLength ?: 28,
+            periodLength = periodLength ?: 5,
+            autoCalculateCycle = autoCalculateCycle
         )
 
         return if (lastPeriodStartDate != null) {

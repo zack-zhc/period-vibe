@@ -2,6 +2,7 @@ package com.example.periodvibe.ui.setup
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.periodvibe.data.repository.SettingsRepository
 import com.example.periodvibe.domain.usecase.SaveInitialSetupUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,7 +14,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class InitialSetupViewModel @Inject constructor(
-    private val saveInitialSetupUseCase: SaveInitialSetupUseCase
+    private val saveInitialSetupUseCase: SaveInitialSetupUseCase,
+    private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
     private val _setupData = MutableStateFlow(InitialSetupData())
@@ -45,13 +47,22 @@ class InitialSetupViewModel @Inject constructor(
     fun onComplete() {
         viewModelScope.launch {
             if (_setupData.value.isValid()) {
+                val hasData = _setupData.value.hasCycleOrPeriodData()
                 saveInitialSetupUseCase(
                     lastPeriodStartDate = _setupData.value.lastPeriodStartDate,
                     cycleLength = _setupData.value.cycleLength,
-                    periodLength = _setupData.value.periodLength
+                    periodLength = _setupData.value.periodLength,
+                    autoCalculateCycle = !hasData
                 )
                 _onComplete.value = true
             }
+        }
+    }
+
+    fun skip() {
+        viewModelScope.launch {
+            settingsRepository.setAutoCalculateCycle(true)
+            _onComplete.value = true
         }
     }
 
