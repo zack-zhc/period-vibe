@@ -40,19 +40,30 @@ import kotlinx.coroutines.launch
 fun OnboardingScreen(
     onGetStarted: () -> Unit,
     modifier: Modifier = Modifier,
+    onComplete: (() -> Unit)? = null,
     viewModel: OnboardingViewModel = hiltViewModel()
 ) {
+    android.util.Log.d("OnboardingScreen", "Composed")
+
+    LaunchedEffect(Unit) {
+        android.util.Log.d("OnboardingScreen", "Calling resetState() once")
+        viewModel.resetState()
+    }
+
     val currentPage by viewModel.currentPage.collectAsState()
-    val onComplete by viewModel.onComplete.collectAsState()
+    val onCompleteEvent by viewModel.onComplete.collectAsState()
     val pagerState = rememberPagerState(
         initialPage = 0,
         pageCount = { viewModel.totalPages }
     )
     val coroutineScope = rememberCoroutineScope()
 
-    LaunchedEffect(onComplete) {
-        if (onComplete) {
+    LaunchedEffect(onCompleteEvent) {
+        android.util.Log.d("OnboardingScreen", "onCompleteEvent=$onCompleteEvent")
+        if (onCompleteEvent) {
+            android.util.Log.d("OnboardingScreen", "Triggering completion")
             onGetStarted()
+            onComplete?.invoke()
         }
     }
 

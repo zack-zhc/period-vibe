@@ -55,6 +55,11 @@ class InitialSetupViewModel @Inject constructor(
         }
     }
 
+    fun resetState() {
+        _setupData.value = InitialSetupData()
+        _onComplete.value = false
+    }
+
     fun isValid(): Boolean {
         return _setupData.value.isValid()
     }

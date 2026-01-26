@@ -22,6 +22,10 @@ class OnboardingManager @Inject constructor(
         settingsRepository.updateOnboardingVersion(CURRENT_ONBOARDING_VERSION)
     }
 
+    suspend fun resetOnboarding() {
+        settingsRepository.updateOnboardingVersion(0)
+    }
+
     suspend fun getOnboardingVersion(): Int {
         val settings = settingsRepository.getSettingsSync()
         return settings?.onboardingVersion ?: 0

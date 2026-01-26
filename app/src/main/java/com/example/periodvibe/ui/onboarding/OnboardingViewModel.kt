@@ -71,6 +71,11 @@ class OnboardingViewModel @Inject constructor(
         }
     }
 
+    fun resetState() {
+        _currentPage.value = 0
+        _onComplete.value = false
+    }
+
     fun isLastPage(): Boolean {
         return _currentPage.value == totalPages - 1
     }

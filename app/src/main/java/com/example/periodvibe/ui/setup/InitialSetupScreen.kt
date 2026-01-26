@@ -58,6 +58,13 @@ fun InitialSetupScreen(
     modifier: Modifier = Modifier,
     viewModel: InitialSetupViewModel = hiltViewModel()
 ) {
+    android.util.Log.d("InitialSetupScreen", "Composed")
+
+    LaunchedEffect(Unit) {
+        android.util.Log.d("InitialSetupScreen", "Calling resetState() once")
+        viewModel.resetState()
+    }
+
     val setupData by viewModel.setupData.collectAsState()
     val onCompleteEvent by viewModel.onComplete.collectAsState()
 
@@ -74,7 +81,9 @@ fun InitialSetupScreen(
     )
 
     LaunchedEffect(onCompleteEvent) {
+        android.util.Log.d("InitialSetupScreen", "onCompleteEvent=$onCompleteEvent")
         if (onCompleteEvent) {
+            android.util.Log.d("InitialSetupScreen", "Triggering completion")
             onComplete()
         }
     }
@@ -164,6 +173,15 @@ fun InitialSetupScreen(
                 hint = "请输入21-35之间的数字"
             )
 
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "可选，不输入将根据历史记录自动计算",
+                style = MaterialTheme.typography.bodySmall,
+                color = Color(0xFF757575),
+                modifier = Modifier.padding(start = 4.dp)
+            )
+
             Spacer(modifier = Modifier.height(24.dp))
 
             NumberInputField(
@@ -172,6 +190,15 @@ fun InitialSetupScreen(
                 onValueChange = viewModel::updatePeriodLength,
                 range = 3..7,
                 hint = "请输入3-7之间的数字"
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "可选，不输入将根据历史记录自动计算",
+                style = MaterialTheme.typography.bodySmall,
+                color = Color(0xFF757575),
+                modifier = Modifier.padding(start = 4.dp)
             )
         }
 

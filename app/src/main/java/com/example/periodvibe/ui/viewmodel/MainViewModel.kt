@@ -38,5 +38,17 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    fun resetOnboarding(onComplete: () -> Unit) {
+        android.util.Log.d("MainViewModel", "resetOnboarding called")
+        viewModelScope.launch {
+            onboardingManager.resetOnboarding()
+            android.util.Log.d("MainViewModel", "Database reset complete")
+            _showOnboarding.value = true
+            android.util.Log.d("MainViewModel", "showOnboarding set to true")
+            onComplete()
+            android.util.Log.d("MainViewModel", "onComplete callback called")
+        }
+    }
+
     fun getSettings() = settingsRepository.getSettings()
 }
