@@ -12,13 +12,16 @@ import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -28,6 +31,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.periodvibe.domain.model.Settings
 import com.example.periodvibe.ui.applock.AppLockScreen
 import com.example.periodvibe.ui.applock.PinSetupScreen
+import com.example.periodvibe.ui.applock.PinSetupViewModel
 import com.example.periodvibe.ui.calendar.CalendarScreen
 import com.example.periodvibe.ui.home.HomeScreen
 import com.example.periodvibe.ui.home.PeriodBottomNavigation
@@ -39,11 +43,11 @@ import com.example.periodvibe.ui.settings.SettingsScreen
 import com.example.periodvibe.ui.theme.PeriodVibeTheme
 import com.example.periodvibe.ui.viewmodel.MainViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 
 sealed class AppScreen {
     object Loading : AppScreen()
     object AppLock : AppScreen()
-    object PinSetup : AppScreen()
     object Onboarding : AppScreen()
     object InitialSetup : AppScreen()
     data class Main(val route: String) : AppScreen()
@@ -58,10 +62,15 @@ class MainActivity : FragmentActivity() {
         enableEdgeToEdge()
         setContent {
             val mainViewModel: MainViewModel = hiltViewModel()
+            val pinSetupViewModel: PinSetupViewModel = hiltViewModel()
             val showOnboarding by mainViewModel.showOnboarding.collectAsStateWithLifecycle()
             var currentScreen by remember { mutableStateOf<AppScreen>(AppScreen.Loading) }
             var themeMode by remember { mutableStateOf(Settings.ThemeMode.SYSTEM) }
             var appLockEnabled by remember { mutableStateOf(false) }
+
+            var showPinSetupSheet by remember { mutableStateOf(false) }
+            val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+            val scope = rememberCoroutineScope()
 
             LaunchedEffect(Unit) {
                 mainViewModel.getSettings().collect { settings ->
@@ -89,6 +98,29 @@ class MainActivity : FragmentActivity() {
             }
 
             PeriodVibeTheme(darkTheme = darkTheme) {
+                if (showPinSetupSheet) {
+                    ModalBottomSheet(
+                        onDismissRequest = {
+                            pinSetupViewModel.resetPin()
+                            showPinSetupSheet = false
+                        },
+                        sheetState = sheetState,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        PinSetupScreen(
+                            onPinSet = {
+                                scope.launch {
+                                    sheetState.hide()
+                                }.invokeOnCompletion {
+                                    if (!sheetState.isVisible) {
+                                        showPinSetupSheet = false
+                                    }
+                                }
+                            },
+                            viewModel = pinSetupViewModel
+                        )
+                    }
+                }
 
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     when (val screen = currentScreen) {
@@ -98,6 +130,7 @@ class MainActivity : FragmentActivity() {
                                 modifier = Modifier.padding(innerPadding)
                             )
                         }
+
                         is AppScreen.AppLock -> {
                             AppLockScreen(onUnlock = {
                                 currentScreen = if (showOnboarding == true) {
@@ -107,11 +140,7 @@ class MainActivity : FragmentActivity() {
                                 }
                             })
                         }
-                        is AppScreen.PinSetup -> {
-                            PinSetupScreen(onPinSet = {
-                                currentScreen = AppScreen.Main("settings")
-                            })
-                        }
+
                         is AppScreen.Onboarding -> {
                             OnboardingScreen(
                                 onGetStarted = {
@@ -125,6 +154,7 @@ class MainActivity : FragmentActivity() {
                                     .padding(innerPadding)
                             )
                         }
+
                         is AppScreen.InitialSetup -> {
                             InitialSetupScreen(
                                 onComplete = {
@@ -135,6 +165,7 @@ class MainActivity : FragmentActivity() {
                                     .padding(innerPadding)
                             )
                         }
+
                         is AppScreen.Main -> {
                             when (screen.route) {
                                 "home" -> {
@@ -146,15 +177,17 @@ class MainActivity : FragmentActivity() {
                                         modifier = Modifier.fillMaxSize()
                                     )
                                 }
+
                                 "calendar" -> {
                                     CalendarScreen(
                                         onNavigateToHome = { currentScreen = AppScreen.Main("home") },
                                         onNavigateToHistory = { currentScreen = AppScreen.Main("history") },
                                         onNavigateToSettings = { currentScreen = AppScreen.Main("settings") },
-                                        onDateClick = { },
+                                        onDateClick = {},
                                         modifier = Modifier.fillMaxSize()
                                     )
                                 }
+
                                 "history" -> {
                                     HistoryScreen(
                                         onNavigateToHome = { currentScreen = AppScreen.Main("home") },
@@ -163,6 +196,7 @@ class MainActivity : FragmentActivity() {
                                         modifier = Modifier.fillMaxSize()
                                     )
                                 }
+
                                 "settings" -> {
                                     androidx.compose.material3.Scaffold(
                                         modifier = Modifier.fillMaxSize(),
@@ -180,7 +214,7 @@ class MainActivity : FragmentActivity() {
                                             onNavigateToCalendar = { currentScreen = AppScreen.Main("calendar") },
                                             onNavigateToHistory = { currentScreen = AppScreen.Main("history") },
                                             onNavigateToDeveloperOptions = { currentScreen = AppScreen.DeveloperOptions },
-                                            onNavigateToPinSetup = { currentScreen = AppScreen.PinSetup },
+                                            onNavigateToPinSetup = { showPinSetupSheet = true },
                                             modifier = Modifier
                                                 .fillMaxSize()
                                                 .padding(paddingValues)
@@ -189,6 +223,7 @@ class MainActivity : FragmentActivity() {
                                 }
                             }
                         }
+
                         is AppScreen.DeveloperOptions -> {
                             Scaffold(
                                 modifier = Modifier.fillMaxSize(),

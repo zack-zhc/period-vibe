@@ -25,16 +25,20 @@ class PinSetupViewModel @Inject constructor(
     val confirmPin = mutableStateOf("")
 
     fun onPinChange(newPin: String) {
-        pin.value = newPin
+        if (newPin.length <= 4) {
+            pin.value = newPin
+        }
     }
 
     fun onConfirmPinChange(newPin: String) {
-        confirmPin.value = newPin
+        if (newPin.length <= 4) {
+            confirmPin.value = newPin
+        }
     }
 
     fun onSetPin() {
         if (pin.value.length < 4) {
-            _uiState.value = PinSetupUiState.Error("PIN must be at least 4 digits")
+            _uiState.value = PinSetupUiState.Error("PIN must be 4 digits")
             return
         }
 
@@ -44,6 +48,7 @@ class PinSetupViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
+            _uiState.value = PinSetupUiState.Loading
             securityRepository.savePin(pin.value)
             val currentSettings = settingsRepository.getSettingsSync()
             currentSettings?.let {
@@ -53,10 +58,21 @@ class PinSetupViewModel @Inject constructor(
             _uiState.value = PinSetupUiState.PinSet
         }
     }
+
+    fun resetPin() {
+        pin.value = ""
+        confirmPin.value = ""
+        _uiState.value = PinSetupUiState.Idle
+    }
+
+    fun resetErrorState() {
+        _uiState.value = PinSetupUiState.Idle
+    }
 }
 
 sealed class PinSetupUiState {
     object Idle : PinSetupUiState()
+    object Loading : PinSetupUiState()
     object PinSet : PinSetupUiState()
     data class Error(val message: String) : PinSetupUiState()
 }
