@@ -45,6 +45,7 @@ fun SettingsScreen(
     onNavigateToCalendar: () -> Unit,
     onNavigateToHistory: () -> Unit,
     onNavigateToDeveloperOptions: () -> Unit,
+    onNavigateToPinSetup: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
@@ -115,7 +116,13 @@ fun SettingsScreen(
                 PrivacySettingsSection(
                     appLockEnabled = state.appLockEnabled,
                     privacyModeEnabled = state.privacyModeEnabled,
-                    onAppLockToggle = { viewModel.toggleAppLock(it) },
+                    onAppLockToggle = { enabled ->
+                        if (enabled) {
+                            onNavigateToPinSetup()
+                        } else {
+                            viewModel.toggleAppLock(false)
+                        }
+                    },
                     onPrivacyModeToggle = { viewModel.togglePrivacyMode(it) }
                 )
 

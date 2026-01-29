@@ -1,7 +1,6 @@
 package com.example.periodvibe
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -23,9 +22,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.fragment.app.FragmentActivity
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.periodvibe.domain.model.Settings
+import com.example.periodvibe.ui.applock.AppLockScreen
+import com.example.periodvibe.ui.applock.PinSetupScreen
 import com.example.periodvibe.ui.calendar.CalendarScreen
 import com.example.periodvibe.ui.home.HomeScreen
 import com.example.periodvibe.ui.home.PeriodBottomNavigation
@@ -40,6 +42,8 @@ import dagger.hilt.android.AndroidEntryPoint
 
 sealed class AppScreen {
     object Loading : AppScreen()
+    object AppLock : AppScreen()
+    object PinSetup : AppScreen()
     object Onboarding : AppScreen()
     object InitialSetup : AppScreen()
     data class Main(val route: String) : AppScreen()
@@ -48,7 +52,7 @@ sealed class AppScreen {
 
 @AndroidEntryPoint
 @OptIn(ExperimentalMaterial3Api::class)
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -57,23 +61,23 @@ class MainActivity : ComponentActivity() {
             val showOnboarding by mainViewModel.showOnboarding.collectAsStateWithLifecycle()
             var currentScreen by remember { mutableStateOf<AppScreen>(AppScreen.Loading) }
             var themeMode by remember { mutableStateOf(Settings.ThemeMode.SYSTEM) }
+            var appLockEnabled by remember { mutableStateOf(false) }
 
             LaunchedEffect(Unit) {
                 mainViewModel.getSettings().collect { settings ->
                     settings?.let {
                         themeMode = it.themeMode
+                        appLockEnabled = it.appLockEnabled
                     }
                 }
             }
 
-            LaunchedEffect(showOnboarding) {
-                // android.util.Log.d("MainActivity", "LaunchedEffect: showOnboarding=$showOnboarding, currentScreen=$currentScreen")
+            LaunchedEffect(showOnboarding, appLockEnabled) {
                 if (showOnboarding != null && currentScreen is AppScreen.Loading) {
-                    // android.util.Log.d("MainActivity", "Loading complete: showOnboarding=$showOnboarding")
-                    currentScreen = if (showOnboarding == true) {
-                        AppScreen.Onboarding
-                    } else {
-                        AppScreen.Main("home")
+                    currentScreen = when {
+                        appLockEnabled -> AppScreen.AppLock
+                        showOnboarding == true -> AppScreen.Onboarding
+                        else -> AppScreen.Main("home")
                     }
                 }
             }
@@ -93,6 +97,20 @@ class MainActivity : ComponentActivity() {
                                 text = "加载中...",
                                 modifier = Modifier.padding(innerPadding)
                             )
+                        }
+                        is AppScreen.AppLock -> {
+                            AppLockScreen(onUnlock = {
+                                currentScreen = if (showOnboarding == true) {
+                                    AppScreen.Onboarding
+                                } else {
+                                    AppScreen.Main("home")
+                                }
+                            })
+                        }
+                        is AppScreen.PinSetup -> {
+                            PinSetupScreen(onPinSet = {
+                                currentScreen = AppScreen.Main("settings")
+                            })
                         }
                         is AppScreen.Onboarding -> {
                             OnboardingScreen(
@@ -162,6 +180,7 @@ class MainActivity : ComponentActivity() {
                                             onNavigateToCalendar = { currentScreen = AppScreen.Main("calendar") },
                                             onNavigateToHistory = { currentScreen = AppScreen.Main("history") },
                                             onNavigateToDeveloperOptions = { currentScreen = AppScreen.DeveloperOptions },
+                                            onNavigateToPinSetup = { currentScreen = AppScreen.PinSetup },
                                             modifier = Modifier
                                                 .fillMaxSize()
                                                 .padding(paddingValues)
@@ -194,9 +213,7 @@ class MainActivity : ComponentActivity() {
                                         .fillMaxSize()
                                         .padding(paddingValues),
                                     onResetOnboarding = {
-                                        // android.util.Log.d("MainActivity", "Reset onboarding clicked")
                                         mainViewModel.resetOnboarding {
-                                            // android.util.Log.d("MainActivity", "Reset complete, setting Onboarding")
                                             currentScreen = AppScreen.Onboarding
                                         }
                                     }

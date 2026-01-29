@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.periodvibe.data.repository.CycleRepository
+import com.example.periodvibe.data.repository.SecurityRepository
 import com.example.periodvibe.data.repository.SettingsRepository
 import com.example.periodvibe.utils.AlarmScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -20,7 +21,8 @@ import javax.inject.Inject
 class SettingsViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val settingsRepository: SettingsRepository,
-    private val cycleRepository: CycleRepository
+    private val cycleRepository: CycleRepository,
+    private val securityRepository: SecurityRepository
 ) : ViewModel() {
 
     private val alarmScheduler = AlarmScheduler(context)
@@ -202,10 +204,15 @@ class SettingsViewModel @Inject constructor(
 
     fun toggleAppLock(enabled: Boolean) {
         viewModelScope.launch {
-            val currentSettings = settingsRepository.getSettingsSync()
-            currentSettings?.let {
-                val updatedSettings = it.copy(appLockEnabled = enabled)
-                settingsRepository.updateSettings(updatedSettings)
+            if (enabled && !securityRepository.hasPin()) {
+                // Should navigate to PinSetupScreen, but ViewModel can't navigate.
+                // This is handled in the UI layer (SettingsScreen)
+            } else {
+                val currentSettings = settingsRepository.getSettingsSync()
+                currentSettings?.let {
+                    val updatedSettings = it.copy(appLockEnabled = enabled)
+                    settingsRepository.updateSettings(updatedSettings)
+                }
             }
         }
     }
