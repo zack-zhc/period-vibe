@@ -12,11 +12,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 
 @Composable
 fun DeveloperOptionsScreen(
     modifier: Modifier = Modifier,
-    onResetOnboarding: () -> Unit
+    onResetOnboarding: () -> Unit,
+    viewModel: DeveloperOptionsViewModel = hiltViewModel()
 ) {
     Column(
         modifier = modifier
@@ -43,6 +45,15 @@ fun DeveloperOptionsScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("重置欢迎引导页")
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Button(
+            onClick = { viewModel.sendTestNotification() },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("测试通知")
         }
     }
 }

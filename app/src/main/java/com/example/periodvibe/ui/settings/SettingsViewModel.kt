@@ -1,9 +1,12 @@
 package com.example.periodvibe.ui.settings
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.periodvibe.data.repository.SettingsRepository
+import com.example.periodvibe.utils.AlarmScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,8 +16,11 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val settingsRepository: SettingsRepository
 ) : ViewModel() {
+
+    private val alarmScheduler = AlarmScheduler(context)
 
     private val _uiState = MutableStateFlow<SettingsUiState>(SettingsUiState.Loading)
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
@@ -170,6 +176,11 @@ class SettingsViewModel @Inject constructor(
             currentSettings?.let {
                 val updatedSettings = it.updateNotificationSettings(enabled, daysBefore, time)
                 settingsRepository.updateSettings(updatedSettings)
+                if (updatedSettings.notificationEnabled) {
+                    alarmScheduler.schedule(updatedSettings.notificationTime, "Period Reminder", "Your period is coming soon!")
+                } else {
+                    alarmScheduler.cancel()
+                }
             }
             hideNotificationDialog()
         }
@@ -212,6 +223,11 @@ class SettingsViewModel @Inject constructor(
             currentSettings?.let {
                 val updatedSettings = it.copy(notificationEnabled = enabled)
                 settingsRepository.updateSettings(updatedSettings)
+                if (updatedSettings.notificationEnabled) {
+                    alarmScheduler.schedule(updatedSettings.notificationTime, "Period Reminder", "Your period is coming soon!")
+                } else {
+                    alarmScheduler.cancel()
+                }
             }
         }
     }
@@ -222,6 +238,9 @@ class SettingsViewModel @Inject constructor(
             currentSettings?.let {
                 val updatedSettings = it.copy(notificationDaysBefore = daysBefore)
                 settingsRepository.updateSettings(updatedSettings)
+                if (updatedSettings.notificationEnabled) {
+                    alarmScheduler.schedule(updatedSettings.notificationTime, "Period Reminder", "Your period is coming soon!")
+                }
             }
             hideDaysBeforeDialog()
         }
@@ -233,6 +252,9 @@ class SettingsViewModel @Inject constructor(
             currentSettings?.let {
                 val updatedSettings = it.copy(notificationTime = time)
                 settingsRepository.updateSettings(updatedSettings)
+                if (updatedSettings.notificationEnabled) {
+                    alarmScheduler.schedule(updatedSettings.notificationTime, "Period Reminder", "Your period is coming soon!")
+                }
             }
             hideTimeDialog()
         }
