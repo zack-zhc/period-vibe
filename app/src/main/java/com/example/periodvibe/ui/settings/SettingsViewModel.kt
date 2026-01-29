@@ -3,6 +3,7 @@ package com.example.periodvibe.ui.settings
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.periodvibe.data.repository.CycleRepository
 import com.example.periodvibe.data.repository.SettingsRepository
 import com.example.periodvibe.utils.AlarmScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -11,13 +12,15 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.time.LocalDateTime
 import java.time.LocalTime
 import javax.inject.Inject
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val cycleRepository: CycleRepository
 ) : ViewModel() {
 
     private val alarmScheduler = AlarmScheduler(context)
@@ -177,7 +180,7 @@ class SettingsViewModel @Inject constructor(
                 val updatedSettings = it.updateNotificationSettings(enabled, daysBefore, time)
                 settingsRepository.updateSettings(updatedSettings)
                 if (updatedSettings.notificationEnabled) {
-                    alarmScheduler.schedule(updatedSettings.notificationTime, "Period Reminder", "Your period is coming soon!")
+                    scheduleNotification(updatedSettings)
                 } else {
                     alarmScheduler.cancel()
                 }
@@ -224,7 +227,7 @@ class SettingsViewModel @Inject constructor(
                 val updatedSettings = it.copy(notificationEnabled = enabled)
                 settingsRepository.updateSettings(updatedSettings)
                 if (updatedSettings.notificationEnabled) {
-                    alarmScheduler.schedule(updatedSettings.notificationTime, "Period Reminder", "Your period is coming soon!")
+                    scheduleNotification(updatedSettings)
                 } else {
                     alarmScheduler.cancel()
                 }
@@ -239,7 +242,7 @@ class SettingsViewModel @Inject constructor(
                 val updatedSettings = it.copy(notificationDaysBefore = daysBefore)
                 settingsRepository.updateSettings(updatedSettings)
                 if (updatedSettings.notificationEnabled) {
-                    alarmScheduler.schedule(updatedSettings.notificationTime, "Period Reminder", "Your period is coming soon!")
+                    scheduleNotification(updatedSettings)
                 }
             }
             hideDaysBeforeDialog()
@@ -253,10 +256,27 @@ class SettingsViewModel @Inject constructor(
                 val updatedSettings = it.copy(notificationTime = time)
                 settingsRepository.updateSettings(updatedSettings)
                 if (updatedSettings.notificationEnabled) {
-                    alarmScheduler.schedule(updatedSettings.notificationTime, "Period Reminder", "Your period is coming soon!")
+                    scheduleNotification(updatedSettings)
                 }
             }
             hideTimeDialog()
+        }
+    }
+
+    private suspend fun scheduleNotification(settings: com.example.periodvibe.domain.model.Settings) {
+        val latestCycle = cycleRepository.getLatestCycle()
+        if (latestCycle != null) {
+            val cycleLength = latestCycle.cycleLength ?: settings.cycleLengthDefault
+            val nextPeriodDate = latestCycle.startDate.plusDays(cycleLength.toLong())
+            val notificationDateTime = LocalDateTime.of(
+                nextPeriodDate.minusDays(settings.notificationDaysBefore.toLong()),
+                settings.notificationTime
+            )
+            alarmScheduler.schedule(
+                notificationDateTime,
+                "Period Reminder",
+                "Your period is expected to start in ${settings.notificationDaysBefore} days!"
+            )
         }
     }
 
