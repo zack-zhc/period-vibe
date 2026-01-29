@@ -33,6 +33,9 @@ class SettingsViewModel @Inject constructor(
     private val _showCycleDialog = MutableStateFlow(false)
     val showCycleDialog: StateFlow<Boolean> = _showCycleDialog.asStateFlow()
 
+    private val _showDisableAppLockDialog = MutableStateFlow(false)
+    val showDisableAppLockDialog: StateFlow<Boolean> = _showDisableAppLockDialog.asStateFlow()
+
     private val _showNotificationDialog = MutableStateFlow(false)
     val showNotificationDialog: StateFlow<Boolean> = _showNotificationDialog.asStateFlow()
 
@@ -89,6 +92,14 @@ class SettingsViewModel @Inject constructor(
 
     fun hideCycleDialog() {
         _showCycleDialog.value = false
+    }
+
+    fun showDisableAppLockDialog() {
+        _showDisableAppLockDialog.value = true
+    }
+
+    fun hideDisableAppLockDialog() {
+        _showDisableAppLockDialog.value = false
     }
 
     fun showNotificationDialog() {
@@ -214,6 +225,7 @@ class SettingsViewModel @Inject constructor(
                     settingsRepository.updateSettings(updatedSettings)
                 }
             }
+            hideDisableAppLockDialog()
         }
     }
 

@@ -33,6 +33,7 @@ import com.example.periodvibe.ui.settings.components.AboutSection
 import com.example.periodvibe.ui.settings.components.AboutDialog
 import com.example.periodvibe.ui.settings.components.CycleParametersDialog
 import com.example.periodvibe.ui.settings.components.DataManagementDialog
+import com.example.periodvibe.ui.settings.components.DisableAppLockConfirmationDialog
 import com.example.periodvibe.ui.settings.components.ThemeSettingsDialog
 import com.example.periodvibe.ui.settings.components.DaysBeforeDialog
 import com.example.periodvibe.ui.settings.components.NotificationTimeDialog
@@ -51,6 +52,7 @@ fun SettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val showCycleDialog by viewModel.showCycleDialog.collectAsState()
+    val showDisableAppLockDialog by viewModel.showDisableAppLockDialog.collectAsState()
     val showDaysBeforeDialog by viewModel.showDaysBeforeDialog.collectAsState()
     val showTimeDialog by viewModel.showTimeDialog.collectAsState()
     val showDataManagementDialog by viewModel.showDataManagementDialog.collectAsState()
@@ -120,7 +122,7 @@ fun SettingsScreen(
                         if (enabled) {
                             onNavigateToPinSetup()
                         } else {
-                            viewModel.toggleAppLock(false)
+                            viewModel.showDisableAppLockDialog()
                         }
                     },
                     onPrivacyModeToggle = { viewModel.togglePrivacyMode(it) }
@@ -155,6 +157,13 @@ fun SettingsScreen(
             onConfirm = { cycleLength, periodLength ->
                 viewModel.updateCycleParameters(cycleLength, periodLength)
             }
+        )
+    }
+
+    if (showDisableAppLockDialog) {
+        DisableAppLockConfirmationDialog(
+            onDismiss = { viewModel.hideDisableAppLockDialog() },
+            onConfirm = { viewModel.toggleAppLock(false) }
         )
     }
 

@@ -47,6 +47,28 @@ import androidx.compose.ui.window.DialogProperties
 import java.time.LocalTime
 
 @Composable
+fun DisableAppLockConfirmationDialog(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("确认操作") },
+        text = { Text("确定要关闭应用锁吗？") },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text("确定")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        }
+    )
+}
+
+@Composable
 fun CycleParametersSection(
     autoCalculateCycle: Boolean,
     cycleLengthDefault: Int,
