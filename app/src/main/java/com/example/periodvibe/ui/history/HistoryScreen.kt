@@ -464,220 +464,190 @@ private fun TimelineCycleCard(
         label = "rotation"
     )
 
-    Row(
-        modifier = Modifier.fillMaxWidth()
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (isExpanded) 4.dp else 2.dp
+        ),
+        border = androidx.compose.foundation.BorderStroke(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+        )
     ) {
-        Box(
-            modifier = Modifier
-                .width(20.dp)
-                .fillMaxWidth()
-        ) {
-            Box(
-                modifier = Modifier
-                    .width(2.dp)
-                    .fillMaxHeight()
-                    .background(
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
-                    )
-                    .align(Alignment.CenterStart)
-            )
-            
-            Box(
-                modifier = Modifier
-                    .size(12.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary)
-                    .align(Alignment.CenterStart)
-            )
-        }
-
-        Spacer(modifier = Modifier.width(12.dp))
-
-        Card(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(onClick = onClick),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            ),
-            elevation = CardDefaults.cardElevation(
-                defaultElevation = if (isExpanded) 4.dp else 2.dp
-            ),
-            border = androidx.compose.foundation.BorderStroke(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
-            )
+                .padding(16.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFFF6B6B).copy(alpha = 0.1f)),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Box(
+                        Icon(
+                            imageVector = Icons.Outlined.CalendarToday,
+                            contentDescription = null,
+                            tint = Color(0xFFFF6B6B),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    Column {
+                        Text(
+                            text = cycleWithRecords.startDateFormatted,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = buildString {
+                                append("周期长度 ")
+                                append(cycle.cycleLength?.toString() ?: "未记录")
+                                append(" 天 · 经期 ")
+                                append(cycle.periodLength?.toString() ?: "未记录")
+                                append(" 天")
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                Icon(
+                    imageVector = if (isExpanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
+                    contentDescription = if (isExpanded) "收起" else "展开",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .size(24.dp)
+                        .rotate(rotation)
+                )
+            }
+
+            AnimatedVisibility(
+                visible = isExpanded,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 12.dp)
+                ) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                        )
+                    ) {
+                        Row(
                             modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .background(Color(0xFFFF6B6B).copy(alpha = 0.1f)),
-                            contentAlignment = Alignment.Center
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            horizontalArrangement = Arrangement.SpaceAround
                         ) {
-                            Icon(
-                                imageVector = Icons.Outlined.CalendarToday,
-                                contentDescription = null,
-                                tint = Color(0xFFFF6B6B),
-                                modifier = Modifier.size(20.dp)
+                            StatItem(
+                                icon = Icons.Outlined.DateRange,
+                                label = "持续天数",
+                                value = "${cycleWithRecords.durationDays}天"
                             )
-                        }
-
-                        Spacer(modifier = Modifier.width(12.dp))
-
-                        Column {
-                            Text(
-                                text = cycleWithRecords.startDateFormatted,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
+                            StatItem(
+                                icon = Icons.Outlined.DateRange,
+                                label = "经期天数",
+                                value = "${cycleWithRecords.periodDaysCount}天"
                             )
-                            Text(
-                                text = buildString {
-                                    append("周期长度 ")
-                                    append(cycle.cycleLength?.toString() ?: "未记录")
-                                    append(" 天 · 经期 ")
-                                    append(cycle.periodLength?.toString() ?: "未记录")
-                                    append(" 天")
-                                },
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            if (cycleWithRecords.averageFlowLevel != null) {
+                                StatItem(
+                                    icon = Icons.Outlined.DateRange,
+                                    label = "平均经量",
+                                    value = cycleWithRecords.averageFlowLevel?.displayName ?: ""
+                                )
+                            }
                         }
                     }
 
-                    Icon(
-                        imageVector = if (isExpanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
-                        contentDescription = if (isExpanded) "收起" else "展开",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier
-                            .size(24.dp)
-                            .rotate(rotation)
-                    )
-                }
+                    if (cycleWithRecords.records.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        
+                        Text(
+                            text = "每日记录",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
 
-                AnimatedVisibility(
-                    visible = isExpanded,
-                    enter = expandVertically() + fadeIn(),
-                    exit = shrinkVertically() + fadeOut()
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 12.dp)
-                    ) {
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
                             colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
                             )
                         ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(12.dp),
-                                horizontalArrangement = Arrangement.SpaceAround
+                            Column(
+                                modifier = Modifier.padding(8.dp)
                             ) {
-                                StatItem(
-                                    icon = Icons.Outlined.DateRange,
-                                    label = "持续天数",
-                                    value = "${cycleWithRecords.durationDays}天"
-                                )
-                                StatItem(
-                                    icon = Icons.Outlined.DateRange,
-                                    label = "经期天数",
-                                    value = "${cycleWithRecords.periodDaysCount}天"
-                                )
-                                if (cycleWithRecords.averageFlowLevel != null) {
-                                    StatItem(
-                                        icon = Icons.Outlined.DateRange,
-                                        label = "平均经量",
-                                        value = cycleWithRecords.averageFlowLevel?.displayName ?: ""
+                                cycleWithRecords.records.take(5).forEach { record ->
+                                    DailyRecordItem(
+                                        record = record,
+                                        onEditClick = { onRecordEditClick(record) }
+                                    )
+                                }
+
+                                if (cycleWithRecords.records.size > 5) {
+                                    Text(
+                                        text = "还有 ${cycleWithRecords.records.size - 5} 条记录...",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 4.dp),
+                                        textAlign = TextAlign.Center
                                     )
                                 }
                             }
                         }
+                    }
 
-                        if (cycleWithRecords.records.isNotEmpty()) {
-                            Spacer(modifier = Modifier.height(12.dp))
-                            
-                            Text(
-                                text = "每日记录",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.padding(vertical = 4.dp)
-                            )
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                                )
-                            ) {
-                                Column(
-                                    modifier = Modifier.padding(8.dp)
-                                ) {
-                                    cycleWithRecords.records.take(5).forEach { record ->
-                                        DailyRecordItem(
-                                            record = record,
-                                            onEditClick = { onRecordEditClick(record) }
-                                        )
-                                    }
-
-                                    if (cycleWithRecords.records.size > 5) {
-                                        Text(
-                                            text = "还有 ${cycleWithRecords.records.size - 5} 条记录...",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(vertical = 4.dp),
-                                            textAlign = TextAlign.Center
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Button(
-                            onClick = onLongClick,
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer,
-                                contentColor = MaterialTheme.colorScheme.onErrorContainer
-                            ),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "删除此周期",
-                                style = MaterialTheme.typography.labelMedium
-                            )
-                        }
+                    Button(
+                        onClick = onLongClick,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                            contentColor = MaterialTheme.colorScheme.onErrorContainer
+                        ),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "删除此周期",
+                            style = MaterialTheme.typography.labelMedium
+                        )
                     }
                 }
             }

@@ -1,6 +1,8 @@
 package com.example.periodvibe.ui.settings.components
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,6 +21,8 @@ import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.SettingsBrightness
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -26,6 +30,9 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.TimePickerState
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -136,145 +143,37 @@ fun CycleParametersDialog(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationSettingsSection(
     enabled: Boolean,
     daysBefore: Int,
     time: LocalTime,
-    onClick: () -> Unit
+    onDaysBeforeClick: () -> Unit,
+    onTimeClick: () -> Unit,
+    onEnabledToggle: (Boolean) -> Unit
 ) {
-    SettingsSection(
-        title = "提醒设置",
-        onClick = onClick
-    ) {
-        SettingItem(
+    SettingsSection(title = "提醒设置") {
+        SettingItemWithSwitch(
             label = "经期提醒",
-            value = if (enabled) "开启" else "关闭",
-            showChevron = true
+            description = if (enabled) "在经期前提醒您" else "关闭所有提醒",
+            checked = enabled,
+            onCheckedChange = onEnabledToggle
         )
-        SettingItem(
-            label = "提前天数",
-            value = "$daysBefore 天",
-            showChevron = true
-        )
-        SettingItem(
-            label = "提醒时间",
-            value = "${time.hour.toString().padStart(2, '0')}:${time.minute.toString().padStart(2, '0')}",
-            showChevron = true
-        )
-    }
-}
-
-@Composable
-fun NotificationSettingsDialog(
-    enabled: Boolean,
-    daysBefore: Int,
-    time: LocalTime,
-    onDismiss: () -> Unit,
-    onConfirm: (Boolean, Int, LocalTime) -> Unit
-) {
-    var enabledValue by remember { mutableIntStateOf(if (enabled) 1 else 0) }
-    var daysBeforeValue by remember { mutableIntStateOf(daysBefore) }
-    var timeValue by remember { mutableIntStateOf(time.hour * 60 + time.minute) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("提醒设置") },
-        text = {
-            Column {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "启用提醒",
-                        modifier = Modifier.weight(1f)
-                    )
-                    androidx.compose.material3.Switch(
-                        checked = enabledValue == 1,
-                        onCheckedChange = { enabledValue = if (it) 1 else 0 }
-                    )
-                }
-
-                OutlinedTextField(
-                    value = daysBeforeValue.toString(),
-                    onValueChange = { value ->
-                        value.toIntOrNull()?.let {
-                            if (it in 1..7) {
-                                daysBeforeValue = it
-                            }
-                        }
-                    },
-                    label = { Text("提前天数 (1-7)") },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 16.dp),
-                    enabled = enabledValue == 1
-                )
-
-                OutlinedTextField(
-                    value = "${(timeValue / 60).toString().padStart(2, '0')}:${(timeValue % 60).toString().padStart(2, '0')}",
-                    onValueChange = { value ->
-                        val parts = value.split(":")
-                        if (parts.size == 2) {
-                            val hour = parts[0].toIntOrNull()
-                            val minute = parts[1].toIntOrNull()
-                            if (hour != null && minute != null && hour in 0..23 && minute in 0..59) {
-                                timeValue = hour * 60 + minute
-                            }
-                        }
-                    },
-                    label = { Text("提醒时间 (HH:MM)") },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 16.dp),
-                    enabled = enabledValue == 1
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                onConfirm(
-                    enabledValue == 1,
-                    daysBeforeValue,
-                    LocalTime.of(timeValue / 60, timeValue % 60)
-                )
-            }) {
-                Text("保存")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("取消")
-            }
+        if (enabled) {
+            SettingItem(
+                label = "提前天数",
+                value = "$daysBefore 天",
+                showChevron = true,
+                onClick = onDaysBeforeClick
+            )
+            SettingItem(
+                label = "提醒时间",
+                value = "${time.hour.toString().padStart(2, '0')}:${time.minute.toString().padStart(2, '0')}",
+                showChevron = true,
+                onClick = onTimeClick
+            )
         }
-    )
-}
-
-@Composable
-fun ThemeSettingsSection(
-    themeMode: com.example.periodvibe.domain.model.Settings.ThemeMode,
-    onClick: () -> Unit
-) {
-    val themeText = when (themeMode) {
-        com.example.periodvibe.domain.model.Settings.ThemeMode.LIGHT -> "浅色"
-        com.example.periodvibe.domain.model.Settings.ThemeMode.DARK -> "深色"
-        com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM -> "跟随系统"
-    }
-
-    SettingsSection(
-        title = "主题设置",
-        onClick = onClick
-    ) {
-        SettingItem(
-            label = "主题模式",
-            value = themeText,
-            showChevron = true
-        )
     }
 }
 
@@ -337,6 +236,103 @@ fun ThemeSettingsDialog(
             }
         }
     )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun NotificationTimeDialog(
+    time: LocalTime,
+    onDismiss: () -> Unit,
+    onConfirm: (LocalTime) -> Unit
+) {
+    val timePickerState = remember { TimePickerState(initialHour = time.hour, initialMinute = time.minute, is24Hour = true) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("提醒时间设置") },
+        text = {
+            TimePicker(
+                state = timePickerState
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                onConfirm(LocalTime.of(timePickerState.hour, timePickerState.minute))
+            }) {
+                Text("确定")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        }
+    )
+}
+
+@Composable
+fun DaysBeforeDialog(
+    daysBefore: Int,
+    onDismiss: () -> Unit,
+    onConfirm: (Int) -> Unit
+) {
+    var daysBeforeValue by remember { mutableIntStateOf(daysBefore) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("提前天数设置") },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = daysBeforeValue.toString(),
+                    onValueChange = { value ->
+                        value.toIntOrNull()?.let {
+                            if (it in 1..7) {
+                                daysBeforeValue = it
+                            }
+                        }
+                    },
+                    label = { Text("提前天数 (1-7)") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(daysBeforeValue) }) {
+                Text("保存")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        }
+    )
+}
+
+@Composable
+fun ThemeSettingsSection(
+    themeMode: com.example.periodvibe.domain.model.Settings.ThemeMode,
+    onClick: () -> Unit
+) {
+    val themeText = when (themeMode) {
+        com.example.periodvibe.domain.model.Settings.ThemeMode.LIGHT -> "浅色"
+        com.example.periodvibe.domain.model.Settings.ThemeMode.DARK -> "深色"
+        com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM -> "跟随系统"
+    }
+
+    SettingsSection(
+        title = "主题设置",
+        onClick = onClick
+    ) {
+        SettingItem(
+            label = "主题模式",
+            value = themeText,
+            showChevron = true
+        )
+    }
 }
 
 @Composable

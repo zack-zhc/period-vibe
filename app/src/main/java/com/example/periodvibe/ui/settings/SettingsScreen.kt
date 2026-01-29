@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.periodvibe.domain.model.Settings
 import com.example.periodvibe.ui.settings.components.CycleParametersSection
 import com.example.periodvibe.ui.settings.components.DataManagementSection
 import com.example.periodvibe.ui.settings.components.NotificationSettingsSection
@@ -32,8 +33,10 @@ import com.example.periodvibe.ui.settings.components.AboutSection
 import com.example.periodvibe.ui.settings.components.AboutDialog
 import com.example.periodvibe.ui.settings.components.CycleParametersDialog
 import com.example.periodvibe.ui.settings.components.DataManagementDialog
-import com.example.periodvibe.ui.settings.components.NotificationSettingsDialog
 import com.example.periodvibe.ui.settings.components.ThemeSettingsDialog
+import com.example.periodvibe.ui.settings.components.DaysBeforeDialog
+import com.example.periodvibe.ui.settings.components.NotificationTimeDialog
+import java.time.LocalTime
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,7 +50,8 @@ fun SettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val showCycleDialog by viewModel.showCycleDialog.collectAsState()
-    val showNotificationDialog by viewModel.showNotificationDialog.collectAsState()
+    val showDaysBeforeDialog by viewModel.showDaysBeforeDialog.collectAsState()
+    val showTimeDialog by viewModel.showTimeDialog.collectAsState()
     val showDataManagementDialog by viewModel.showDataManagementDialog.collectAsState()
     val showThemeDialog by viewModel.showThemeDialog.collectAsState()
     val showPrivacyDialog by viewModel.showPrivacyDialog.collectAsState()
@@ -94,7 +98,9 @@ fun SettingsScreen(
                     enabled = state.notificationEnabled,
                     daysBefore = state.notificationDaysBefore,
                     time = state.notificationTime,
-                    onClick = { viewModel.showNotificationDialog() }
+                    onDaysBeforeClick = { viewModel.showDaysBeforeDialog() },
+                    onTimeClick = { viewModel.showTimeDialog() },
+                    onEnabledToggle = { viewModel.toggleNotificationEnabled(it) }
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -145,19 +151,6 @@ fun SettingsScreen(
         )
     }
 
-    if (showNotificationDialog && uiState is SettingsUiState.Success) {
-        val state = uiState as SettingsUiState.Success
-        NotificationSettingsDialog(
-            enabled = state.notificationEnabled,
-            daysBefore = state.notificationDaysBefore,
-            time = state.notificationTime,
-            onDismiss = { viewModel.hideNotificationDialog() },
-            onConfirm = { enabled, daysBefore, time ->
-                viewModel.updateNotificationSettings(enabled, daysBefore, time)
-            }
-        )
-    }
-
     if (showDataManagementDialog) {
         DataManagementDialog(
             onDismiss = { viewModel.hideDataManagementDialog() },
@@ -170,13 +163,35 @@ fun SettingsScreen(
         ThemeSettingsDialog(
             currentThemeMode = state.themeMode,
             onDismiss = { viewModel.hideThemeDialog() },
-            onConfirm = { mode -> viewModel.updateThemeMode(mode) }
+            onConfirm = { mode: Settings.ThemeMode -> viewModel.updateThemeMode(mode) }
         )
     }
 
     if (showAboutDialog) {
         AboutDialog(
             onDismiss = { viewModel.hideAboutDialog() }
+        )
+    }
+
+    if (showDaysBeforeDialog && uiState is SettingsUiState.Success) {
+        val state = uiState as SettingsUiState.Success
+        DaysBeforeDialog(
+            daysBefore = state.notificationDaysBefore,
+            onDismiss = { viewModel.hideDaysBeforeDialog() },
+            onConfirm = { daysBefore ->
+                viewModel.updateNotificationDaysBefore(daysBefore)
+            }
+        )
+    }
+
+    if (showTimeDialog && uiState is SettingsUiState.Success) {
+        val state = uiState as SettingsUiState.Success
+        NotificationTimeDialog(
+            time = state.notificationTime,
+            onDismiss = { viewModel.hideTimeDialog() },
+            onConfirm = { time: LocalTime ->
+                viewModel.updateNotificationTime(time)
+            }
         )
     }
 }

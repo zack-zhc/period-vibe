@@ -25,6 +25,12 @@ class SettingsViewModel @Inject constructor(
     private val _showNotificationDialog = MutableStateFlow(false)
     val showNotificationDialog: StateFlow<Boolean> = _showNotificationDialog.asStateFlow()
 
+    private val _showDaysBeforeDialog = MutableStateFlow(false)
+    val showDaysBeforeDialog: StateFlow<Boolean> = _showDaysBeforeDialog.asStateFlow()
+
+    private val _showTimeDialog = MutableStateFlow(false)
+    val showTimeDialog: StateFlow<Boolean> = _showTimeDialog.asStateFlow()
+
     private val _showDataManagementDialog = MutableStateFlow(false)
     val showDataManagementDialog: StateFlow<Boolean> = _showDataManagementDialog.asStateFlow()
 
@@ -80,6 +86,22 @@ class SettingsViewModel @Inject constructor(
 
     fun hideNotificationDialog() {
         _showNotificationDialog.value = false
+    }
+
+    fun showDaysBeforeDialog() {
+        _showDaysBeforeDialog.value = true
+    }
+
+    fun hideDaysBeforeDialog() {
+        _showDaysBeforeDialog.value = false
+    }
+
+    fun showTimeDialog() {
+        _showTimeDialog.value = true
+    }
+
+    fun hideTimeDialog() {
+        _showTimeDialog.value = false
     }
 
     fun showDataManagementDialog() {
@@ -181,6 +203,38 @@ class SettingsViewModel @Inject constructor(
                 val updatedSettings = it.copy(privacyModeEnabled = enabled)
                 settingsRepository.updateSettings(updatedSettings)
             }
+        }
+    }
+
+    fun toggleNotificationEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            val currentSettings = settingsRepository.getSettingsSync()
+            currentSettings?.let {
+                val updatedSettings = it.copy(notificationEnabled = enabled)
+                settingsRepository.updateSettings(updatedSettings)
+            }
+        }
+    }
+
+    fun updateNotificationDaysBefore(daysBefore: Int) {
+        viewModelScope.launch {
+            val currentSettings = settingsRepository.getSettingsSync()
+            currentSettings?.let {
+                val updatedSettings = it.copy(notificationDaysBefore = daysBefore)
+                settingsRepository.updateSettings(updatedSettings)
+            }
+            hideDaysBeforeDialog()
+        }
+    }
+
+    fun updateNotificationTime(time: LocalTime) {
+        viewModelScope.launch {
+            val currentSettings = settingsRepository.getSettingsSync()
+            currentSettings?.let {
+                val updatedSettings = it.copy(notificationTime = time)
+                settingsRepository.updateSettings(updatedSettings)
+            }
+            hideTimeDialog()
         }
     }
 
