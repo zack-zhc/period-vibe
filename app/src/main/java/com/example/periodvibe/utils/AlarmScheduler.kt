@@ -1,5 +1,6 @@
 package com.example.periodvibe.utils
 
+import android.annotation.SuppressLint
 import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
@@ -11,6 +12,7 @@ class AlarmScheduler(private val context: Context) {
 
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
+    @SuppressLint("ScheduleExactAlarm")
     fun schedule(dateTime: LocalDateTime, title: String, message: String) {
         val intent = Intent(context, NotificationReceiver::class.java).apply {
             putExtra("title", title)
