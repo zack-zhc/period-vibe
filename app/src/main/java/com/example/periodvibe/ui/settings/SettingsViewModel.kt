@@ -146,7 +146,7 @@ class SettingsViewModel @Inject constructor(
         _showPrivacyDialog.value = true
     }
 
-    fun hidePrivacyDialog() {
+    fun hidePrivacy_showPrivacyDialog() {
         _showPrivacyDialog.value = false
     }
 
@@ -235,6 +235,9 @@ class SettingsViewModel @Inject constructor(
             currentSettings?.let {
                 val updatedSettings = it.copy(privacyModeEnabled = enabled)
                 settingsRepository.updateSettings(updatedSettings)
+                if (updatedSettings.notificationEnabled) {
+                    scheduleNotification(updatedSettings)
+                }
             }
         }
     }
@@ -291,10 +294,15 @@ class SettingsViewModel @Inject constructor(
                 nextPeriodDate.minusDays(settings.notificationDaysBefore.toLong()),
                 settings.notificationTime
             )
+            val message = if (settings.privacyModeEnabled) {
+                "You have a new notification."
+            } else {
+                "Your period is expected to start in ${settings.notificationDaysBefore} days!"
+            }
             alarmScheduler.schedule(
                 notificationDateTime,
                 "Period Reminder",
-                "Your period is expected to start in ${settings.notificationDaysBefore} days!"
+                message
             )
         }
     }
