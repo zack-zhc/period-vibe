@@ -71,7 +71,6 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.periodvibe.domain.model.FlowLevel
-import com.example.periodvibe.ui.home.PeriodBottomNavigation
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -103,19 +102,6 @@ fun HistoryScreen(
                     containerColor = MaterialTheme.colorScheme.surface,
                     titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
-            )
-        },
-        bottomBar = {
-            PeriodBottomNavigation(
-                currentRoute = "history",
-                onNavigate = { route ->
-                    when (route) {
-                        "home" -> onNavigateToHome()
-                        "calendar" -> onNavigateToCalendar()
-                        "history" -> {}
-                        "settings" -> onNavigateToSettings()
-                    }
-                }
             )
         }
     ) { paddingValues ->

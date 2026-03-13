@@ -80,7 +80,22 @@ class SettingsViewModel @Inject constructor(
                         language = settings.language
                     )
                 } else {
-                    _uiState.value = SettingsUiState.Loading
+                    // 创建默认设置
+                    val defaultSettings = com.example.periodvibe.domain.model.Settings(
+                        autoCalculateCycle = true,
+                        cycleLengthDefault = 28,
+                        periodLengthDefault = 5,
+                        cycleLengthRange = 21..35,
+                        periodLengthRange = 3..7,
+                        notificationEnabled = true,
+                        notificationDaysBefore = 1,
+                        notificationTime = java.time.LocalTime.of(9, 0),
+                        themeMode = com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM,
+                        appLockEnabled = false,
+                        privacyModeEnabled = false,
+                        language = "zh"
+                    )
+                    settingsRepository.insertSettings(defaultSettings)
                 }
             }
         }

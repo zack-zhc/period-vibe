@@ -45,7 +45,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.periodvibe.ui.home.PeriodBottomNavigation
 import com.example.periodvibe.ui.home.RecordBottomSheet
 import com.example.periodvibe.ui.home.RecordMode
 
@@ -91,19 +90,6 @@ fun CalendarScreen(
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface
                 )
-            )
-        },
-        bottomBar = {
-            PeriodBottomNavigation(
-                currentRoute = "calendar",
-                onNavigate = { route ->
-                    when (route) {
-                        "home" -> onNavigateToHome()
-                        "calendar" -> {}
-                        "history" -> onNavigateToHistory()
-                        "settings" -> onNavigateToSettings()
-                    }
-                }
             )
         }
     ) { paddingValues ->

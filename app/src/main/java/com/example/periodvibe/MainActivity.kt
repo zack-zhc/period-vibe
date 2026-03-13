@@ -125,9 +125,9 @@ class MainActivity : FragmentActivity() {
                     }
                 }
 
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    when (val screen = currentScreen) {
-                        is AppScreen.Loading -> {
+                when (val screen = currentScreen) {
+                    is AppScreen.Loading -> {
+                        Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                             Box(
                                 modifier = Modifier
                                     .fillMaxSize()
@@ -137,43 +137,51 @@ class MainActivity : FragmentActivity() {
                                 CircularProgressIndicator()
                             }
                         }
+                    }
 
-                        is AppScreen.AppLock -> {
-                            AppLockScreen(onUnlock = {
-                                currentScreen = if (showOnboarding == true) {
-                                    AppScreen.Onboarding
-                                } else {
-                                    AppScreen.Main("home")
-                                }
-                            })
-                        }
+                    is AppScreen.AppLock -> {
+                        AppLockScreen(onUnlock = {
+                            currentScreen = if (showOnboarding == true) {
+                                AppScreen.Onboarding
+                            } else {
+                                AppScreen.Main("home")
+                            }
+                        })
+                    }
 
-                        is AppScreen.Onboarding -> {
-                            OnboardingScreen(
-                                onGetStarted = {
-                                    mainViewModel.markOnboardingCompleted()
-                                },
-                                onComplete = {
-                                    currentScreen = AppScreen.InitialSetup
-                                },
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(innerPadding)
-                            )
-                        }
+                    is AppScreen.Onboarding -> {
+                        OnboardingScreen(
+                            onGetStarted = {
+                                mainViewModel.markOnboardingCompleted()
+                            },
+                            onComplete = {
+                                currentScreen = AppScreen.InitialSetup
+                            },
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
 
-                        is AppScreen.InitialSetup -> {
-                            InitialSetupScreen(
-                                onComplete = {
-                                    currentScreen = AppScreen.Main("home")
-                                },
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(innerPadding)
-                            )
-                        }
+                    is AppScreen.InitialSetup -> {
+                        InitialSetupScreen(
+                            onComplete = {
+                                currentScreen = AppScreen.Main("home")
+                            },
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
 
-                        is AppScreen.Main -> {
+                    is AppScreen.Main -> {
+                        Scaffold(
+                            modifier = Modifier.fillMaxSize(),
+                            bottomBar = {
+                                PeriodBottomNavigation(
+                                    currentRoute = screen.route,
+                                    onNavigate = { route ->
+                                        currentScreen = AppScreen.Main(route)
+                                    }
+                                )
+                            }
+                        ) { innerPadding ->
                             when (screen.route) {
                                 "home" -> {
                                     HomeScreen(
@@ -181,7 +189,9 @@ class MainActivity : FragmentActivity() {
                                         onCalendarClick = { currentScreen = AppScreen.Main("calendar") },
                                         onHistoryClick = { currentScreen = AppScreen.Main("history") },
                                         onSettingsClick = { currentScreen = AppScreen.Main("settings") },
-                                        modifier = Modifier.fillMaxSize()
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(innerPadding)
                                     )
                                 }
 
@@ -191,7 +201,9 @@ class MainActivity : FragmentActivity() {
                                         onNavigateToHistory = { currentScreen = AppScreen.Main("history") },
                                         onNavigateToSettings = { currentScreen = AppScreen.Main("settings") },
                                         onDateClick = {},
-                                        modifier = Modifier.fillMaxSize()
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(innerPadding)
                                     )
                                 }
 
@@ -200,67 +212,57 @@ class MainActivity : FragmentActivity() {
                                         onNavigateToHome = { currentScreen = AppScreen.Main("home") },
                                         onNavigateToCalendar = { currentScreen = AppScreen.Main("calendar") },
                                         onNavigateToSettings = { currentScreen = AppScreen.Main("settings") },
-                                        modifier = Modifier.fillMaxSize()
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(innerPadding)
                                     )
                                 }
 
                                 "settings" -> {
-                                    androidx.compose.material3.Scaffold(
-                                        modifier = Modifier.fillMaxSize(),
-                                        bottomBar = {
-                                            PeriodBottomNavigation(
-                                                currentRoute = "settings",
-                                                onNavigate = { route ->
-                                                    currentScreen = AppScreen.Main(route)
-                                                }
-                                            )
-                                        }
-                                    ) { paddingValues ->
-                                        SettingsScreen(
-                                            onNavigateToHome = { currentScreen = AppScreen.Main("home") },
-                                            onNavigateToCalendar = { currentScreen = AppScreen.Main("calendar") },
-                                            onNavigateToHistory = { currentScreen = AppScreen.Main("history") },
-                                            onNavigateToDeveloperOptions = { currentScreen = AppScreen.DeveloperOptions },
-                                            onNavigateToPinSetup = { showPinSetupSheet = true },
-                                            modifier = Modifier
-                                                .fillMaxSize()
-                                                .padding(paddingValues)
-                                        )
-                                    }
+                                    SettingsScreen(
+                                        onNavigateToHome = { currentScreen = AppScreen.Main("home") },
+                                        onNavigateToCalendar = { currentScreen = AppScreen.Main("calendar") },
+                                        onNavigateToHistory = { currentScreen = AppScreen.Main("history") },
+                                        onNavigateToDeveloperOptions = { currentScreen = AppScreen.DeveloperOptions },
+                                        onNavigateToPinSetup = { showPinSetupSheet = true },
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(innerPadding)
+                                    )
                                 }
                             }
                         }
+                    }
 
-                        is AppScreen.DeveloperOptions -> {
-                            Scaffold(
-                                modifier = Modifier.fillMaxSize(),
-                                topBar = {
-                                    CenterAlignedTopAppBar(
-                                        title = { Text("开发者选项") },
-                                        navigationIcon = {
-                                            IconButton(
-                                                onClick = { currentScreen = AppScreen.Main("settings") }
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                                    contentDescription = "返回"
-                                                )
-                                            }
-                                        }
-                                    )
-                                }
-                            ) { paddingValues ->
-                                DeveloperOptionsScreen(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(paddingValues),
-                                    onResetOnboarding = {
-                                        mainViewModel.resetOnboarding {
-                                            currentScreen = AppScreen.Onboarding
+                    is AppScreen.DeveloperOptions -> {
+                        Scaffold(
+                            modifier = Modifier.fillMaxSize(),
+                            topBar = {
+                                CenterAlignedTopAppBar(
+                                    title = { Text("开发者选项") },
+                                    navigationIcon = {
+                                        IconButton(
+                                            onClick = { currentScreen = AppScreen.Main("settings") }
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                                contentDescription = "返回"
+                                            )
                                         }
                                     }
                                 )
                             }
+                        ) { paddingValues ->
+                            DeveloperOptionsScreen(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(paddingValues),
+                                onResetOnboarding = {
+                                    mainViewModel.resetOnboarding {
+                                        currentScreen = AppScreen.Onboarding
+                                    }
+                                }
+                            )
                         }
                     }
                 }

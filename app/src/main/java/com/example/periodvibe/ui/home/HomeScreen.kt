@@ -51,7 +51,6 @@ import androidx.compose.material3.FloatingActionButtonMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -108,9 +107,33 @@ fun HomeScreen(
         else -> false
     }
 
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        floatingActionButton = {
+    androidx.compose.foundation.layout.Box(
+        modifier = modifier.fillMaxSize()
+    ) {
+        when (val state = homeData) {
+            is HomeUiState.Loading -> {
+                LoadingState()
+            }
+            is HomeUiState.NoData -> {
+                NoDataState()
+            }
+            is HomeUiState.Success -> {
+                HomeContent(
+                    cycleDay = state.cycleDay,
+                    daysUntilPeriod = state.daysUntilPeriod,
+                    phase = state.phase,
+                    totalCycles = state.totalCycles,
+                    hasData = state.hasData
+                )
+            }
+        }
+
+        androidx.compose.foundation.layout.Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            contentAlignment = androidx.compose.ui.Alignment.BottomEnd
+        ) {
             if (hasCurrentCycle) {
                 RecordFAB(
                     onClick = { viewModel.showEndCycleMenu() },
@@ -120,43 +143,6 @@ fun HomeScreen(
                 RecordFAB(
                     onClick = { viewModel.showNewCycleSheet() }
                 )
-            }
-        },
-        bottomBar = {
-            PeriodBottomNavigation(
-                currentRoute = "home",
-                onNavigate = { route ->
-                    when (route) {
-                        "home" -> {}
-                        "calendar" -> onCalendarClick()
-                        "history" -> onHistoryClick()
-                        "settings" -> onSettingsClick()
-                    }
-                }
-            )
-        }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            when (val state = homeData) {
-                is HomeUiState.Loading -> {
-                    LoadingState()
-                }
-                is HomeUiState.NoData -> {
-                    NoDataState()
-                }
-                is HomeUiState.Success -> {
-                    HomeContent(
-                        cycleDay = state.cycleDay,
-                        daysUntilPeriod = state.daysUntilPeriod,
-                        phase = state.phase,
-                        totalCycles = state.totalCycles,
-                        hasData = state.hasData
-                    )
-                }
             }
         }
     }

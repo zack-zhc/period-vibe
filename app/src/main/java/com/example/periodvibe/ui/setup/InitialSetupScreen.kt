@@ -6,10 +6,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -117,15 +120,20 @@ fun InitialSetupScreen(
         }
     }
 
+    val systemBarPadding = WindowInsets.systemBars.asPaddingValues()
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(Color(0xFFFCE4EC))
             .verticalScroll(rememberScrollState())
-            .padding(24.dp),
+            .padding(
+                top = systemBarPadding.calculateTopPadding() + 24.dp,
+                bottom = systemBarPadding.calculateBottomPadding() + 24.dp,
+                start = 24.dp,
+                end = 24.dp
+            ),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(32.dp))
 
         Text(
             text = "初始设置",
