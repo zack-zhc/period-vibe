@@ -76,3 +76,16 @@ val FertileColor = Color(0xFFEC407A)
 val SafeColor = Color(0xFF4CAF50)
 val FollicularColor = Color(0xFF66BB6A)
 val LutealColor = Color(0xFFAB47BC)
+
+// 日历专用颜色
+// 经期：鲜明的红色，容易识别
+val CalendarPeriodLight = Color(0xFFC2185B)
+val CalendarPeriodDark = Color(0xFFFF79A0)
+// 排卵期：紫色
+val CalendarOvulationLight = Color(0xFF7B1FA2)
+val CalendarOvulationDark = Color(0xFFCE93D8)
+// 易孕期：青绿色/蓝绿色，与红色明显区分
+val CalendarFertileLight = Color(0xFF0288D1)
+val CalendarFertileDark = Color(0xFF4FC3F7)
+val CalendarTodayLight = Color(0xFFFF6F00)
+val CalendarTodayDark = Color(0xFFFFB74D)

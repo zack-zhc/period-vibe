@@ -1,15 +1,18 @@
 package com.example.periodvibe.ui.calendar
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -18,28 +21,127 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowForward
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material.icons.rounded.CalendarToday
+import androidx.compose.material.icons.rounded.ChevronLeft
+import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.BlurredEdgeTreatment
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.periodvibe.domain.usecase.CalendarDay
 import com.example.periodvibe.domain.usecase.CalendarDayType
+import com.example.periodvibe.ui.theme.CalendarFertileDark
+import com.example.periodvibe.ui.theme.CalendarFertileLight
+import com.example.periodvibe.ui.theme.CalendarOvulationDark
+import com.example.periodvibe.ui.theme.CalendarOvulationLight
+import com.example.periodvibe.ui.theme.CalendarPeriodDark
+import com.example.periodvibe.ui.theme.CalendarPeriodLight
 import java.time.YearMonth
 import java.time.format.TextStyle
 import java.util.Locale
+
+// ==================== 月份头部 ====================
+
+@Composable
+fun CalendarMonthHeader(
+    yearMonth: YearMonth,
+    onPreviousMonth: () -> Unit,
+    onNextMonth: () -> Unit,
+    onTodayClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IconButton(
+            onClick = onPreviousMonth,
+            modifier = Modifier.size(48.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.ChevronLeft,
+                contentDescription = "上个月",
+                tint = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.size(28.dp)
+            )
+        }
+
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            Text(
+                text = yearMonth.month.getDisplayName(TextStyle.FULL, Locale.CHINA),
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = "${yearMonth.year}年",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            IconButton(
+                onClick = onTodayClick,
+                modifier = Modifier.size(48.dp)
+            ) {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    tonalElevation = 0.dp
+                ) {
+                    Box(
+                        modifier = Modifier.size(40.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.CalendarToday,
+                            contentDescription = "今天",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                }
+            }
+            IconButton(
+                onClick = onNextMonth,
+                modifier = Modifier.size(48.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.ChevronRight,
+                    contentDescription = "下个月",
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+        }
+    }
+}
+
+// ==================== 日历网格 ====================
 
 @Composable
 fun CalendarGrid(
@@ -49,19 +151,38 @@ fun CalendarGrid(
     onDateClick: (java.time.LocalDate) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(
+    Surface(
         modifier = modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
+        shape = RoundedCornerShape(32.dp),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 0.dp
     ) {
-        WeekdayHeader()
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        CalendarDaysGrid(
-            days = days,
-            selectedDate = selectedDate,
-            onDateClick = onDateClick
-        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
+                            MaterialTheme.colorScheme.surface
+                        )
+                    )
+                )
+                .padding(20.dp)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                WeekdayHeader()
+                Spacer(modifier = Modifier.height(16.dp))
+                CalendarDaysGrid(
+                    days = days,
+                    selectedDate = selectedDate,
+                    onDateClick = onDateClick
+                )
+            }
+        }
     }
 }
 
@@ -75,7 +196,8 @@ private fun WeekdayHeader() {
         weekdays.forEach { weekday ->
             Text(
                 text = weekday,
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.weight(1f),
                 textAlign = TextAlign.Center
@@ -92,7 +214,7 @@ private fun CalendarDaysGrid(
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         val rows = days.chunked(7)
 
@@ -112,6 +234,8 @@ private fun CalendarDaysGrid(
         }
     }
 }
+
+// ==================== 日期单元格 ====================
 
 @Composable
 private fun CalendarDayCell(
@@ -142,40 +266,49 @@ private fun DayContent(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val backgroundColor = when {
-        isSelected -> MaterialTheme.colorScheme.primaryContainer
-        day.isPredictedPeriod -> Color(0xFFFFCDD2)
-        day.isPredictedOvulation -> Color(0xFFB2DFDB)
-        day.isPredictedFertile -> Color(0xFFFFCDD2)
-        else -> Color.Transparent
-    }
+    val isDark = MaterialTheme.colorScheme.background == androidx.compose.ui.graphics.Color(0xFF1F1A1B)
 
-    val borderColor = when {
-        isSelected -> MaterialTheme.colorScheme.primary
-        day.isToday -> MaterialTheme.colorScheme.primary
-        else -> Color.Transparent
-    }
-
-    val textColor = when {
-        isSelected -> MaterialTheme.colorScheme.onPrimaryContainer
-        day.isToday -> MaterialTheme.colorScheme.primary
-        else -> MaterialTheme.colorScheme.onSurface
-    }
+    val cellColors = getCellColors(day, isSelected, isDark)
+    val cellStyle = getCellStyle(day)
+    val scale by animateFloatAsState(
+        targetValue = if (isSelected) 1.05f else 1f,
+        animationSpec = tween(durationMillis = 200),
+        label = "cell_scale"
+    )
+    val backgroundColor by animateColorAsState(
+        targetValue = cellColors.container,
+        animationSpec = tween(durationMillis = 200),
+        label = "bg_color"
+    )
+    val textColor by animateColorAsState(
+        targetValue = cellColors.text,
+        animationSpec = tween(durationMillis = 200),
+        label = "text_color"
+    )
 
     Box(
         modifier = modifier
             .aspectRatio(1f)
             .padding(2.dp)
-            .clip(RoundedCornerShape(8.dp))
+            .scale(scale)
+            .clip(cellStyle.shape)
             .background(backgroundColor)
             .then(
-                if (borderColor != Color.Transparent) {
-                    Modifier.border(2.dp, borderColor, RoundedCornerShape(8.dp))
+                if (cellColors.border != Color.Transparent) {
+                    Modifier.border(
+                        width = if (day.isToday) 2.dp else 0.dp,
+                        color = cellColors.border,
+                        shape = cellStyle.shape
+                    )
                 } else {
                     Modifier
                 }
             )
-            .clickable(onClick = onClick),
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick
+            ),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -184,181 +317,298 @@ private fun DayContent(
         ) {
             Text(
                 text = day.dayOfMonth.toString(),
-                style = MaterialTheme.typography.bodyMedium,
-                color = textColor,
-                fontWeight = if (day.isToday) FontWeight.Bold else FontWeight.Normal
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = if (day.isToday || isSelected) FontWeight.Bold else FontWeight.Medium,
+                color = textColor
             )
 
-            if (day.dayType == CalendarDayType.PERIOD) {
+            if (cellColors.showDot) {
+                Spacer(modifier = Modifier.height(4.dp))
                 Box(
                     modifier = Modifier
-                        .size(6.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFFFF6B6B))
-                )
-            } else if (day.dayType == CalendarDayType.OVULATION) {
-                Box(
-                    modifier = Modifier
-                        .size(6.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFF4ECDC4))
-                )
-            } else if (day.dayType == CalendarDayType.FERTILE) {
-                Box(
-                    modifier = Modifier
-                        .size(6.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFFFFB6C1))
+                        .size(cellStyle.dotSize)
+                        .clip(cellStyle.dotShape)
+                        .background(cellColors.dotColor)
                 )
             }
         }
     }
 }
 
-@Composable
-fun CalendarMonthHeader(
-    yearMonth: YearMonth,
-    onPreviousMonth: () -> Unit,
-    onNextMonth: () -> Unit,
-    onTodayClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        IconButton(onClick = onPreviousMonth) {
-            Icon(
-                imageVector = Icons.Default.ArrowBack,
-                contentDescription = "上个月",
-                tint = MaterialTheme.colorScheme.onSurface
+private data class CellStyle(
+    val shape: androidx.compose.ui.graphics.Shape,
+    val dotSize: androidx.compose.ui.unit.Dp,
+    val dotShape: androidx.compose.ui.graphics.Shape
+)
+
+private fun getCellStyle(day: CalendarDay.Data): CellStyle {
+    return when {
+        day.dayType == CalendarDayType.PERIOD || day.isPredictedPeriod -> {
+            // 经期：使用更大的圆点标记
+            CellStyle(
+                shape = RoundedCornerShape(16.dp),
+                dotSize = 8.dp,
+                dotShape = CircleShape
             )
         }
-
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "${yearMonth.year}年${yearMonth.monthValue}月",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
+        day.dayType == CalendarDayType.OVULATION || day.isPredictedOvulation -> {
+            // 排卵期：使用菱形/方形标记
+            CellStyle(
+                shape = RoundedCornerShape(16.dp),
+                dotSize = 7.dp,
+                dotShape = RoundedCornerShape(2.dp)
             )
         }
-
-        IconButton(onClick = onNextMonth) {
-            Icon(
-                imageVector = Icons.Default.ArrowForward,
-                contentDescription = "下个月",
-                tint = MaterialTheme.colorScheme.onSurface
+        day.dayType == CalendarDayType.FERTILE || day.isPredictedFertile -> {
+            // 易孕期：使用小的圆点
+            CellStyle(
+                shape = RoundedCornerShape(16.dp),
+                dotSize = 5.dp,
+                dotShape = CircleShape
+            )
+        }
+        else -> {
+            CellStyle(
+                shape = RoundedCornerShape(16.dp),
+                dotSize = 5.dp,
+                dotShape = CircleShape
             )
         }
     }
 }
 
+private data class CellColors(
+    val container: Color,
+    val text: Color,
+    val border: Color,
+    val showDot: Boolean,
+    val dotColor: Color
+)
+
 @Composable
-fun SelectedDateCard(
+private fun getCellColors(
     day: CalendarDay.Data,
-    modifier: Modifier = Modifier
-) {
-    Card(
+    isSelected: Boolean,
+    isDark: Boolean
+): CellColors {
+    val primary = MaterialTheme.colorScheme.primary
+    val onPrimary = MaterialTheme.colorScheme.onPrimary
+    val primaryContainer = MaterialTheme.colorScheme.primaryContainer
+    val onPrimaryContainer = MaterialTheme.colorScheme.onPrimaryContainer
+    val surface = MaterialTheme.colorScheme.surface
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
+
+    val periodColor = if (isDark) CalendarPeriodDark else CalendarPeriodLight
+    val ovulationColor = if (isDark) CalendarOvulationDark else CalendarOvulationLight
+    val fertileColor = if (isDark) CalendarFertileDark else CalendarFertileLight
+
+    return when {
+        isSelected -> {
+            val hasRecord = day.record != null
+            val dotColor = when {
+                day.dayType == CalendarDayType.PERIOD -> periodColor
+                day.dayType == CalendarDayType.OVULATION -> ovulationColor
+                day.dayType == CalendarDayType.FERTILE -> fertileColor
+                else -> primary
+            }
+            CellColors(
+                container = primaryContainer,
+                text = onPrimaryContainer,
+                border = if (day.isToday) primary else Color.Transparent,
+                showDot = hasRecord || day.isPredictedPeriod || day.isPredictedOvulation || day.isPredictedFertile,
+                dotColor = dotColor
+            )
+        }
+        day.dayType == CalendarDayType.PERIOD -> {
+            CellColors(
+                container = periodColor.copy(alpha = 0.15f),
+                text = periodColor,
+                border = if (day.isToday) primary else Color.Transparent,
+                showDot = true,
+                dotColor = periodColor
+            )
+        }
+        day.dayType == CalendarDayType.OVULATION -> {
+            CellColors(
+                container = ovulationColor.copy(alpha = 0.15f),
+                text = ovulationColor,
+                border = if (day.isToday) primary else Color.Transparent,
+                showDot = true,
+                dotColor = ovulationColor
+            )
+        }
+        day.dayType == CalendarDayType.FERTILE -> {
+            CellColors(
+                container = fertileColor.copy(alpha = 0.12f),
+                text = fertileColor,
+                border = if (day.isToday) primary else Color.Transparent,
+                showDot = true,
+                dotColor = fertileColor
+            )
+        }
+        day.isPredictedPeriod -> {
+            CellColors(
+                container = periodColor.copy(alpha = 0.08f),
+                text = onSurface,
+                border = if (day.isToday) primary else Color.Transparent,
+                showDot = true,
+                dotColor = periodColor.copy(alpha = 0.5f)
+            )
+        }
+        day.isPredictedOvulation -> {
+            CellColors(
+                container = ovulationColor.copy(alpha = 0.08f),
+                text = onSurface,
+                border = if (day.isToday) primary else Color.Transparent,
+                showDot = true,
+                dotColor = ovulationColor.copy(alpha = 0.5f)
+            )
+        }
+        day.isPredictedFertile -> {
+            CellColors(
+                container = fertileColor.copy(alpha = 0.06f),
+                text = onSurface,
+                border = if (day.isToday) primary else Color.Transparent,
+                showDot = true,
+                dotColor = fertileColor.copy(alpha = 0.5f)
+            )
+        }
+        day.isToday -> {
+            CellColors(
+                container = surface,
+                text = primary,
+                border = primary,
+                showDot = day.record != null,
+                dotColor = primary
+            )
+        }
+        else -> {
+            CellColors(
+                container = Color.Transparent,
+                text = onSurface,
+                border = Color.Transparent,
+                showDot = day.record != null,
+                dotColor = onSurfaceVariant
+            )
+        }
+    }
+}
+
+// ==================== 图例 ====================
+
+@Composable
+fun CalendarLegend(modifier: Modifier = Modifier) {
+    val isDark = MaterialTheme.colorScheme.background == androidx.compose.ui.graphics.Color(0xFF1F1A1B)
+    val periodColor = if (isDark) CalendarPeriodDark else CalendarPeriodLight
+    val ovulationColor = if (isDark) CalendarOvulationDark else CalendarOvulationLight
+    val fertileColor = if (isDark) CalendarFertileDark else CalendarFertileLight
+
+    Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 2.dp
-        )
+        shape = RoundedCornerShape(24.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        tonalElevation = 0.dp
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "${day.date.year}年${day.date.monthValue}月${day.dayOfMonth}日",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-
-                Text(
-                    text = day.phase.displayName,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(MaterialTheme.colorScheme.primaryContainer)
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            if (day.record != null) {
-                RecordDetails(day.record)
-            } else {
-                Text(
-                    text = "暂无记录",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            LegendItem(color = periodColor, label = "经期")
+            LegendItem(color = fertileColor, label = "易孕")
+            LegendItem(color = ovulationColor, label = "排卵")
         }
     }
 }
 
 @Composable
-private fun RecordDetails(record: com.example.periodvibe.domain.model.DailyRecord) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+private fun LegendItem(color: Color, label: String) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        if (record.isPeriod) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFFFF6B6B))
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "经期 - ${record.flowLevel?.displayName ?: "未记录经量"}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-        }
+        Box(
+            modifier = Modifier
+                .size(10.dp)
+                .clip(CircleShape)
+                .background(color)
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.Medium
+        )
+    }
+}
 
-        if (record.symptoms.isNotEmpty()) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "症状: ${record.symptoms.joinToString(", ") { it.displayName }}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-        }
+// ==================== 空选择状态卡片 ====================
 
-        if (!record.notes.isNullOrBlank()) {
-            Text(
-                text = "备注: ${record.notes}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+@Composable
+fun EmptySelectionCard(modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(28.dp),
+        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
+        tonalElevation = 0.dp
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(120.dp)
+                    .align(Alignment.TopEnd)
+                    .blur(
+                        radius = 40.dp,
+                        edgeTreatment = BlurredEdgeTreatment.Unbounded
+                    )
+                    .background(
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                        shape = CircleShape
+                    )
             )
+
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    tonalElevation = 0.dp
+                ) {
+                    Box(
+                        modifier = Modifier.size(56.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "📅",
+                            style = MaterialTheme.typography.headlineMedium
+                        )
+                    }
+                }
+
+                Text(
+                    text = "选择日期",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+
+                Text(
+                    text = "点击日历中的任意日期，查看详情并记录",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
+                    textAlign = TextAlign.Center
+                )
+            }
         }
     }
 }
