@@ -11,10 +11,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Info
@@ -26,11 +30,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -68,74 +69,74 @@ fun CalendarScreen(
     var recordDate by remember { mutableStateOf(java.time.LocalDate.now()) }
     var recordMode by remember { mutableStateOf(RecordMode.AUTO) }
 
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = "日历",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                actions = {
-                    IconButton(onClick = { viewModel.showLegendDialog() }) {
-                        Icon(
-                            imageVector = Icons.Default.Info,
-                            contentDescription = "图例"
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
-            )
-        }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp)
+    ) {
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            when (val state = calendarData) {
-                is CalendarUiState.Loading -> {
-                    LoadingState()
+            Text(
+                text = "日历",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold
+            )
+            IconButton(onClick = { viewModel.showLegendDialog() }) {
+                Icon(
+                    imageVector = Icons.Default.Info,
+                    contentDescription = "图例"
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        when (val state = calendarData) {
+            is CalendarUiState.Loading -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
                 }
-                is CalendarUiState.Success -> {
-                    CalendarContent(
-                        yearMonth = state.yearMonth,
-                        days = state.days,
-                        selectedDate = selectedDate,
-                        activeCycle = activeCycle,
-                        onDateClick = { date ->
-                            viewModel.selectDate(date)
-                            onDateClick(date)
-                        },
-                        onPreviousMonth = { viewModel.navigateToPreviousMonth() },
-                        onNextMonth = { viewModel.navigateToNextMonth() },
-                        onTodayClick = { viewModel.navigateToToday() },
-                        onRecordClick = { date ->
-                            recordDate = date
-                            recordMode = RecordMode.AUTO
-                            showRecordSheet = true
-                        },
-                        onEndCycleClick = { viewModel.showEndCycleDialog() },
-                        onNewCycleClick = { date ->
-                            recordDate = date
-                            recordMode = RecordMode.NEW_CYCLE
-                            showRecordSheet = true
-                        },
-                        onEditClick = { date ->
-                            recordDate = date
-                            recordMode = RecordMode.AUTO
-                            showRecordSheet = true
-                        },
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .verticalScroll(rememberScrollState())
-                    )
-                }
+            }
+            is CalendarUiState.Success -> {
+                CalendarContent(
+                    yearMonth = state.yearMonth,
+                    days = state.days,
+                    selectedDate = selectedDate,
+                    activeCycle = activeCycle,
+                    onDateClick = { date ->
+                        viewModel.selectDate(date)
+                        onDateClick(date)
+                    },
+                    onPreviousMonth = { viewModel.navigateToPreviousMonth() },
+                    onNextMonth = { viewModel.navigateToNextMonth() },
+                    onTodayClick = { viewModel.navigateToToday() },
+                    onRecordClick = { date ->
+                        recordDate = date
+                        recordMode = RecordMode.AUTO
+                        showRecordSheet = true
+                    },
+                    onEndCycleClick = { viewModel.showEndCycleDialog() },
+                    onNewCycleClick = { date ->
+                        recordDate = date
+                        recordMode = RecordMode.NEW_CYCLE
+                        showRecordSheet = true
+                    },
+                    onEditClick = { date ->
+                        recordDate = date
+                        recordMode = RecordMode.AUTO
+                        showRecordSheet = true
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         }
     }

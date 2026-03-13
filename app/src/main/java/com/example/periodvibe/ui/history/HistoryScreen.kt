@@ -47,12 +47,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -88,52 +85,56 @@ fun HistoryScreen(
     val showDeleteDialog by viewModel.showDeleteDialog.collectAsState()
     val showEditDialog by viewModel.showEditDialog.collectAsState()
 
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = "历史记录",
-                        style = MaterialTheme.typography.headlineMedium
-                    )
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
-                )
-            )
-        }
-    ) { paddingValues ->
-        Box(
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+    ) {
+        Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
         ) {
-            when (val state = historyData) {
-                is HistoryUiState.Loading -> {
-                    LoadingState()
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "历史记录",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        when (val state = historyData) {
+            is HistoryUiState.Loading -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
                 }
-                is HistoryUiState.Success -> {
-                    if (state.hasData) {
-                        HistoryContent(
-                            cycles = state.cycles,
-                            selectedCycleId = selectedCycleId,
-                            onCycleClick = { cycleId ->
-                                if (selectedCycleId == cycleId) {
-                                    viewModel.deselectCycle()
-                                } else {
-                                    viewModel.selectCycle(cycleId)
-                                }
-                            },
-                            onCycleLongClick = { cycleId ->
-                                viewModel.showDeleteDialog(cycleId)
-                            },
-                            onRecordEditClick = { record ->
-                                viewModel.showEditDialog(record)
+            }
+            is HistoryUiState.Success -> {
+                if (state.hasData) {
+                    HistoryContent(
+                        cycles = state.cycles,
+                        selectedCycleId = selectedCycleId,
+                        onCycleClick = { cycleId ->
+                            if (selectedCycleId == cycleId) {
+                                viewModel.deselectCycle()
+                            } else {
+                                viewModel.selectCycle(cycleId)
                             }
-                        )
-                    } else {
+                        },
+                        onCycleLongClick = { cycleId ->
+                            viewModel.showDeleteDialog(cycleId)
+                        },
+                        onRecordEditClick = { record ->
+                            viewModel.showEditDialog(record)
+                        }
+                    )
+                } else {
+                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                         EmptyState()
                     }
                 }
@@ -174,8 +175,9 @@ private fun HistoryContent(
     onRecordEditClick: (com.example.periodvibe.domain.model.DailyRecord) -> Unit = {}
 ) {
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {

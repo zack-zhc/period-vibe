@@ -1,6 +1,5 @@
 package com.example.periodvibe.ui.setup
 
-import android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -40,7 +39,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
@@ -124,7 +122,7 @@ fun InitialSetupScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFFFCE4EC))
+            .background(MaterialTheme.colorScheme.surface)
             .verticalScroll(rememberScrollState())
             .padding(
                 top = systemBarPadding.calculateTopPadding() + 24.dp,
@@ -139,7 +137,7 @@ fun InitialSetupScreen(
             text = "初始设置",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFFE91E63)
+            color = MaterialTheme.colorScheme.onSurface
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -147,7 +145,7 @@ fun InitialSetupScreen(
         Text(
             text = "请填写以下信息，帮助我们更好地为您服务",
             style = MaterialTheme.typography.bodyLarge,
-            color = Color(0xFF616161),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
 
@@ -167,7 +165,7 @@ fun InitialSetupScreen(
                 Text(
                     text = "暂不选择日期，您可以稍后在首页随时记录",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF757575),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(start = 4.dp)
                 )
             }
@@ -187,7 +185,7 @@ fun InitialSetupScreen(
             Text(
                 text = "可选，不输入将根据历史记录自动计算",
                 style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFF757575),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 4.dp)
             )
 
@@ -206,7 +204,7 @@ fun InitialSetupScreen(
             Text(
                 text = "可选，不输入将根据历史记录自动计算",
                 style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFF757575),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 4.dp)
             )
         }
@@ -223,7 +221,7 @@ fun InitialSetupScreen(
                     .weight(1f)
                     .height(56.dp),
                 colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = Color(0xFFE91E63)
+                    contentColor = MaterialTheme.colorScheme.primary
                 ),
                 shape = RoundedCornerShape(28.dp)
             ) {
@@ -241,8 +239,8 @@ fun InitialSetupScreen(
                     .height(56.dp),
                 enabled = viewModel.isValid(),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (viewModel.isValid()) Color(0xFFE91E63) else Color(0xFFBDBDBD),
-                    contentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 shape = RoundedCornerShape(28.dp)
             ) {
@@ -266,7 +264,7 @@ private fun SetupCard(
         modifier = Modifier
             .fillMaxWidth()
             .background(
-                Color.White,
+                MaterialTheme.colorScheme.surface,
                 RoundedCornerShape(16.dp)
             )
             .padding(24.dp)
@@ -290,7 +288,7 @@ private fun DatePickerField(
             text = label,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Medium,
-            color = Color(0xFF2D3436)
+            color = MaterialTheme.colorScheme.onSurface
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -303,7 +301,7 @@ private fun DatePickerField(
             placeholder = {
                 Text(
                     text = "点击选择日期（可选）",
-                    color = Color(0xFFB2BEC3)
+                    color = MaterialTheme.colorScheme.outline
                 )
             },
             trailingIcon = {
@@ -313,7 +311,7 @@ private fun DatePickerField(
                             Icon(
                                 imageVector = Icons.Default.Close,
                                 contentDescription = "清除日期",
-                                tint = Color(0xFF757575)
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -321,7 +319,7 @@ private fun DatePickerField(
                         Icon(
                             imageVector = Icons.Default.DateRange,
                             contentDescription = "选择日期",
-                            tint = Color(0xFFE91E63)
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
@@ -348,7 +346,7 @@ private fun NumberInputField(
             text = label,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Medium,
-            color = Color(0xFF2D3436)
+            color = MaterialTheme.colorScheme.onSurface
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -375,7 +373,7 @@ private fun NumberInputField(
             placeholder = {
                 Text(
                     text = hint,
-                    color = Color(0xFFB2BEC3)
+                    color = MaterialTheme.colorScheme.outline
                 )
             },
             isError = isError,
@@ -383,7 +381,7 @@ private fun NumberInputField(
                 @Composable {
                     Text(
                         text = "请输入${range.first}-${range.last}之间的数字",
-                        color = Color(0xFFE91E63)
+                        color = MaterialTheme.colorScheme.error
                     )
                 }
             } else null,

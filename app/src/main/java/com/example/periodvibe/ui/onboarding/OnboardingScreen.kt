@@ -31,12 +31,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.periodvibe.ui.theme.PrimaryContainerLight
+import com.example.periodvibe.ui.theme.PrimaryLight
 import kotlinx.coroutines.launch
 
 @Composable
@@ -86,7 +87,7 @@ fun OnboardingScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFFFCE4EC))
+            .background(MaterialTheme.colorScheme.surface)
     ) {
         Column(
             modifier = Modifier
@@ -139,7 +140,7 @@ fun OnboardingScreen(
                     ) {
                         Text(
                             text = "上一步",
-                            color = Color(0xFFE91E63),
+                            color = MaterialTheme.colorScheme.primary,
                             fontSize = 16.sp
                         )
                     }
@@ -163,8 +164,8 @@ fun OnboardingScreen(
                         .height(56.dp)
                         .padding(start = if (currentPage > 0) 16.dp else 0.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFE91E63),
-                        contentColor = Color.White
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
                     ),
                     shape = RoundedCornerShape(28.dp)
                 ) {
@@ -195,13 +196,13 @@ private fun OnboardingPageContent(
             modifier = Modifier
                 .size(200.dp)
                 .clip(CircleShape)
-                .background(Color(0xFFF8BBD0)),
+                .background(MaterialTheme.colorScheme.primaryContainer),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = getIconForPage(page.iconRes),
                 fontSize = 80.sp,
-                color = Color(0xFFE91E63)
+                color = MaterialTheme.colorScheme.onPrimaryContainer
             )
         }
 
@@ -211,7 +212,7 @@ private fun OnboardingPageContent(
             text = page.title,
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFFE91E63),
+            color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center
         )
 
@@ -220,7 +221,7 @@ private fun OnboardingPageContent(
         Text(
             text = page.description,
             style = MaterialTheme.typography.bodyLarge,
-            color = Color(0xFF616161),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
             lineHeight = 24.sp
         )
