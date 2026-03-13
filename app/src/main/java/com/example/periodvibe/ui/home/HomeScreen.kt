@@ -230,19 +230,19 @@ private fun GreetingSection() {
         Column(horizontalAlignment = Alignment.Start) {
             Text(
                 text = greeting,
-                style = MaterialTheme.typography.headlineSmall,
+                style = MaterialTheme.typography.displaySmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
             Text(
                 text = "今天是你的专属时刻",
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         Box(
             modifier = Modifier
-                .size(48.dp)
+                .size(56.dp)
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.primaryContainer)
         ) {
@@ -251,7 +251,7 @@ private fun GreetingSection() {
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
-                    .size(24.dp)
+                    .size(28.dp)
                     .align(Alignment.Center)
             )
         }

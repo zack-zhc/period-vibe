@@ -79,7 +79,7 @@ fun SettingsScreen(
 
                 Text(
                     text = "设置",
-                    style = MaterialTheme.typography.headlineMedium,
+                    style = MaterialTheme.typography.displaySmall,
                     fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
                 )
 
