@@ -5,16 +5,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -30,13 +28,11 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SelectableDates
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -50,31 +46,24 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.periodvibe.domain.model.FlowLevel
-import com.example.periodvibe.domain.model.Symptom
-import com.example.periodvibe.ui.home.RecordMode
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RecordBottomSheet(
     initialDate: LocalDate = LocalDate.now(),
     initialFlowLevel: FlowLevel? = null,
-    initialSymptoms: List<Symptom> = emptyList(),
-    initialNotes: String? = null,
     recordMode: RecordMode = RecordMode.AUTO,
     hasCurrentCycle: Boolean = false,
     existingRecord: com.example.periodvibe.domain.model.DailyRecord? = null,
     onDismiss: () -> Unit,
-    onSave: (date: LocalDate, flowLevel: FlowLevel?, symptoms: List<Symptom>, notes: String?) -> Unit
+    onSave: (date: LocalDate, flowLevel: FlowLevel?) -> Unit
 ) {
     var selectedDate by remember { mutableStateOf(existingRecord?.date ?: initialDate) }
     var flowLevel by remember { mutableStateOf(existingRecord?.flowLevel ?: initialFlowLevel) }
-    val selectedSymptoms = remember { mutableStateListOf<Symptom>().apply { addAll(existingRecord?.symptoms ?: initialSymptoms) } }
-    var notes by remember { mutableStateOf(existingRecord?.notes ?: initialNotes ?: "") }
     var showDatePicker by remember { mutableStateOf(false) }
-    var selectedMode by remember { mutableStateOf(recordMode) }
 
     val dateFormatter = remember { DateTimeFormatter.ofPattern("yyyy年MM月dd日") }
 
@@ -108,11 +97,10 @@ fun RecordBottomSheet(
                     Text(
                         text = if (existingRecord != null) {
                             "编辑记录"
-                        } else when {
-                            hasCurrentCycle -> "记录今日状态"
-                            selectedMode == RecordMode.NEW_CYCLE -> "开始新周期"
-                            selectedMode == RecordMode.SYMPTOM_ONLY -> "记录症状"
-                            else -> "选择记录类型"
+                        } else if (!hasCurrentCycle) {
+                            "开始新周期"
+                        } else {
+                            "记录今日状态"
                         },
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
@@ -127,108 +115,22 @@ fun RecordBottomSheet(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
-                if (!hasCurrentCycle && selectedMode == RecordMode.AUTO) {
-                    RecordModeSelector(
-                        selectedMode = selectedMode,
-                        onModeSelected = { selectedMode = it }
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
+                DateSelector(
+                    selectedDate = selectedDate,
+                    dateFormatter = dateFormatter,
+                    onClick = { showDatePicker = true }
+                )
 
-                if (!hasCurrentCycle && selectedMode == RecordMode.NEW_CYCLE) {
-                    DateSelector(
-                        selectedDate = selectedDate,
-                        dateFormatter = dateFormatter,
-                        onClick = { showDatePicker = true }
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    FlowLevelSelector(
-                        selectedFlowLevel = flowLevel,
-                        onFlowLevelSelected = { flowLevel = it }
-                    )
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    SymptomSelector(
-                        selectedSymptoms = selectedSymptoms,
-                        onSymptomToggle = { symptom ->
-                            if (symptom in selectedSymptoms) {
-                                selectedSymptoms.remove(symptom)
-                            } else {
-                                selectedSymptoms.add(symptom)
-                            }
-                        }
-                    )
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    NotesInput(
-                        notes = notes,
-                        onNotesChange = { notes = it }
-                    )
-                } else if (!hasCurrentCycle && selectedMode == RecordMode.SYMPTOM_ONLY) {
-                    DateSelector(
-                        selectedDate = selectedDate,
-                        dateFormatter = dateFormatter,
-                        onClick = { showDatePicker = true }
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    SymptomSelector(
-                        selectedSymptoms = selectedSymptoms,
-                        onSymptomToggle = { symptom ->
-                            if (symptom in selectedSymptoms) {
-                                selectedSymptoms.remove(symptom)
-                            } else {
-                                selectedSymptoms.add(symptom)
-                            }
-                        }
-                    )
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    NotesInput(
-                        notes = notes,
-                        onNotesChange = { notes = it }
-                    )
-                } else {
-                    DateSelector(
-                        selectedDate = selectedDate,
-                        dateFormatter = dateFormatter,
-                        onClick = { showDatePicker = true }
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    FlowLevelSelector(
-                        selectedFlowLevel = flowLevel,
-                        onFlowLevelSelected = { flowLevel = it }
-                    )
+                Spacer(modifier = Modifier.height(20.dp))
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                FlowLevelSelector(
+                    selectedFlowLevel = flowLevel,
+                    onFlowLevelSelected = { flowLevel = it }
+                )
 
-                    SymptomSelector(
-                        selectedSymptoms = selectedSymptoms,
-                        onSymptomToggle = { symptom ->
-                            if (symptom in selectedSymptoms) {
-                                selectedSymptoms.remove(symptom)
-                            } else {
-                                selectedSymptoms.add(symptom)
-                            }
-                        }
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    NotesInput(
-                        notes = notes,
-                        onNotesChange = { notes = it }
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(32.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -245,17 +147,7 @@ fun RecordBottomSheet(
                     }
                     Button(
                         onClick = {
-                            val finalIsPeriod = when (selectedMode) {
-                                RecordMode.NEW_CYCLE -> true
-                                RecordMode.SYMPTOM_ONLY -> false
-                                RecordMode.AUTO -> true
-                            }
-                            onSave(
-                                selectedDate,
-                                if (finalIsPeriod) flowLevel else null,
-                                selectedSymptoms.toList(),
-                                notes.takeIf { it.isNotBlank() }
-                            )
+                            onSave(selectedDate, flowLevel)
                         },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(
@@ -314,97 +206,6 @@ fun RecordBottomSheet(
 }
 
 @Composable
-private fun RecordModeSelector(
-    selectedMode: RecordMode,
-    onModeSelected: (RecordMode) -> Unit
-) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = "请选择记录类型",
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(bottom = 12.dp)
-        )
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            RecordModeOption(
-                mode = RecordMode.NEW_CYCLE,
-                title = "开始新周期",
-                description = "记录经期开始",
-                isSelected = selectedMode == RecordMode.NEW_CYCLE,
-                onClick = { onModeSelected(RecordMode.NEW_CYCLE) },
-                modifier = Modifier.weight(1f)
-            )
-
-            RecordModeOption(
-                mode = RecordMode.SYMPTOM_ONLY,
-                title = "记录症状",
-                description = "仅记录身体症状",
-                isSelected = selectedMode == RecordMode.SYMPTOM_ONLY,
-                onClick = { onModeSelected(RecordMode.SYMPTOM_ONLY) },
-                modifier = Modifier.weight(1f)
-            )
-        }
-    }
-}
-
-@Composable
-private fun RecordModeOption(
-    mode: RecordMode,
-    title: String,
-    description: String,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val backgroundColor = if (isSelected) {
-        MaterialTheme.colorScheme.primaryContainer
-    } else {
-        MaterialTheme.colorScheme.surfaceVariant
-    }
-
-    val borderColor = if (isSelected) {
-        MaterialTheme.colorScheme.primary
-    } else {
-        Color.Transparent
-    }
-
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(backgroundColor)
-            .clickable(onClick = onClick)
-            .padding(16.dp)
-    ) {
-        Column {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Bold,
-                color = if (isSelected) {
-                    MaterialTheme.colorScheme.onPrimaryContainer
-                } else {
-                    MaterialTheme.colorScheme.onSurface
-                }
-            )
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodySmall,
-                color = if (isSelected) {
-                    MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                }
-            )
-        }
-    }
-}
-
-@Composable
 private fun DateSelector(
     selectedDate: LocalDate,
     dateFormatter: DateTimeFormatter,
@@ -413,10 +214,10 @@ private fun DateSelector(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(16.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .clickable(onClick = onClick)
-            .padding(16.dp),
+            .padding(20.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -426,18 +227,29 @@ private fun DateSelector(
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = selectedDate.format(dateFormatter),
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
         }
-        Icon(
-            imageVector = Icons.Default.CalendarMonth,
-            contentDescription = "选择日期",
-            tint = MaterialTheme.colorScheme.primary
-        )
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primaryContainer)
+        ) {
+            Icon(
+                imageVector = Icons.Default.CalendarMonth,
+                contentDescription = "选择日期",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .size(24.dp)
+                    .align(Alignment.Center)
+            )
+        }
     }
 }
 
@@ -449,15 +261,15 @@ private fun FlowLevelSelector(
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = "经量",
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Medium,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(bottom = 12.dp)
         )
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             FlowLevel.values().forEach { level ->
                 FlowLevelChip(
@@ -492,128 +304,17 @@ private fun FlowLevelChip(
 
     Box(
         modifier = modifier
-            .height(48.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .height(56.dp)
+            .clip(RoundedCornerShape(16.dp))
             .background(backgroundColor)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = level.displayName,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-            color = textColor
-        )
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun SymptomSelector(
-    selectedSymptoms: List<Symptom>,
-    onSymptomToggle: (Symptom) -> Unit
-) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = "症状（可选）",
             style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(bottom = 12.dp)
-        )
-
-        FlowRow(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            val commonSymptoms = listOf(
-                Symptom.ABDOMINAL_PAIN,
-                Symptom.LOWER_BACK_PAIN,
-                Symptom.BREAST_TENDERNESS,
-                Symptom.HEADACHE,
-                Symptom.FATIGUE,
-                Symptom.MOOD_SWINGS,
-                Symptom.BLOATING,
-                Symptom.ACNE
-            )
-
-            commonSymptoms.forEach { symptom ->
-                SymptomChip(
-                    symptom = symptom,
-                    isSelected = symptom in selectedSymptoms,
-                    onClick = { onSymptomToggle(symptom) }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun SymptomChip(
-    symptom: Symptom,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    val backgroundColor = if (isSelected) {
-        MaterialTheme.colorScheme.primaryContainer
-    } else {
-        MaterialTheme.colorScheme.surfaceVariant
-    }
-
-    val textColor = if (isSelected) {
-        MaterialTheme.colorScheme.onPrimaryContainer
-    } else {
-        MaterialTheme.colorScheme.onSurfaceVariant
-    }
-
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(20.dp))
-            .background(backgroundColor)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 10.dp)
-    ) {
-        Text(
-            text = symptom.displayName,
-            style = MaterialTheme.typography.bodySmall,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
             color = textColor
-        )
-    }
-}
-
-@Composable
-private fun NotesInput(
-    notes: String,
-    onNotesChange: (String) -> Unit
-) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = "备注（可选）",
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-
-        androidx.compose.material3.OutlinedTextField(
-            value = notes,
-            onValueChange = onNotesChange,
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = {
-                Text(
-                    text = "添加备注...",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            },
-            minLines = 3,
-            maxLines = 5,
-            shape = RoundedCornerShape(12.dp),
-            colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outline
-            )
         )
     }
 }

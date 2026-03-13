@@ -15,8 +15,7 @@ import javax.inject.Inject
 
 enum class RecordMode {
     AUTO,
-    NEW_CYCLE,
-    SYMPTOM_ONLY
+    NEW_CYCLE
 }
 
 @HiltViewModel
@@ -36,17 +35,11 @@ class HomeViewModel @Inject constructor(
     private val _showNewCycleSheet = MutableStateFlow(false)
     val showNewCycleSheet: StateFlow<Boolean> = _showNewCycleSheet.asStateFlow()
 
-    private val _showNewSymptomSheet = MutableStateFlow(false)
-    val showNewSymptomSheet: StateFlow<Boolean> = _showNewSymptomSheet.asStateFlow()
-
     private val _selectedDate = MutableStateFlow(LocalDate.now())
     val selectedDate: StateFlow<LocalDate> = _selectedDate.asStateFlow()
 
     private val _recordMode = MutableStateFlow<RecordMode>(RecordMode.AUTO)
     val recordMode: StateFlow<RecordMode> = _recordMode.asStateFlow()
-
-    private val _suggestedIsPeriod = MutableStateFlow(false)
-    val suggestedIsPeriod: StateFlow<Boolean> = _suggestedIsPeriod.asStateFlow()
 
     private val _existingRecord = MutableStateFlow<com.example.periodvibe.domain.model.DailyRecord?>(null)
     val existingRecord: StateFlow<com.example.periodvibe.domain.model.DailyRecord?> = _existingRecord.asStateFlow()
@@ -84,35 +77,9 @@ class HomeViewModel @Inject constructor(
         _selectedDate.value = date
         _recordMode.value = RecordMode.AUTO
         viewModelScope.launch {
-            _suggestedIsPeriod.value = inferSuggestedIsPeriod(date, RecordMode.AUTO)
             _existingRecord.value = cycleRepository.getDailyRecordByDate(date)
         }
         _showRecordSheet.value = true
-    }
-
-    fun showRecordSheetWithMode(date: LocalDate, mode: RecordMode) {
-        _selectedDate.value = date
-        _recordMode.value = mode
-        viewModelScope.launch {
-            _suggestedIsPeriod.value = inferSuggestedIsPeriod(date, mode)
-            _existingRecord.value = cycleRepository.getDailyRecordByDate(date)
-        }
-        _showRecordSheet.value = true
-    }
-
-    private suspend fun inferSuggestedIsPeriod(date: LocalDate, mode: RecordMode): Boolean {
-        return when (mode) {
-            RecordMode.NEW_CYCLE -> true
-            RecordMode.SYMPTOM_ONLY -> false
-            RecordMode.AUTO -> {
-                val activeCycle = cycleRepository.getActiveCycle()
-                if (activeCycle != null) {
-                    true
-                } else {
-                    false
-                }
-            }
-        }
     }
 
     fun hideRecordSheet() {
@@ -133,27 +100,12 @@ class HomeViewModel @Inject constructor(
         _existingRecord.value = null
     }
 
-    fun showNewSymptomSheet(date: LocalDate = LocalDate.now()) {
-        _selectedDate.value = date
-        viewModelScope.launch {
-            _existingRecord.value = cycleRepository.getDailyRecordByDate(date)
-        }
-        _showNewSymptomSheet.value = true
-    }
-
-    fun hideNewSymptomSheet() {
-        _showNewSymptomSheet.value = false
-        _existingRecord.value = null
-    }
-
     fun saveDailyRecord(
         date: LocalDate,
-        flowLevel: com.example.periodvibe.domain.model.FlowLevel?,
-        symptoms: List<com.example.periodvibe.domain.model.Symptom>,
-        notes: String?
+        flowLevel: com.example.periodvibe.domain.model.FlowLevel?
     ) {
         viewModelScope.launch {
-            saveRecordUseCase(date, _recordMode.value, flowLevel, symptoms, notes)
+            saveRecordUseCase(date, _recordMode.value, flowLevel)
                 .onSuccess {
                     hideRecordSheet()
                     refresh()
@@ -166,31 +118,12 @@ class HomeViewModel @Inject constructor(
 
     fun saveNewCycle(
         date: LocalDate,
-        flowLevel: com.example.periodvibe.domain.model.FlowLevel?,
-        symptoms: List<com.example.periodvibe.domain.model.Symptom>,
-        notes: String?
+        flowLevel: com.example.periodvibe.domain.model.FlowLevel?
     ) {
         viewModelScope.launch {
-            saveRecordUseCase(date, RecordMode.NEW_CYCLE, flowLevel, symptoms, notes)
+            saveRecordUseCase(date, RecordMode.NEW_CYCLE, flowLevel)
                 .onSuccess {
                     hideNewCycleSheet()
-                    refresh()
-                }
-                .onFailure { e ->
-                    e.printStackTrace()
-                }
-        }
-    }
-
-    fun saveNewSymptom(
-        date: LocalDate,
-        symptoms: List<com.example.periodvibe.domain.model.Symptom>,
-        notes: String?
-    ) {
-        viewModelScope.launch {
-            saveRecordUseCase(date, RecordMode.SYMPTOM_ONLY, null, symptoms, notes)
-                .onSuccess {
-                    hideNewSymptomSheet()
                     refresh()
                 }
                 .onFailure { e ->

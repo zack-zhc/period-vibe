@@ -104,8 +104,8 @@ class CycleRepository @Inject constructor(
     }
 
     suspend fun endCurrentCycle(endDate: LocalDate) {
-        val activeCycle = getActiveCycle() ?: return
-        
+        val activeCycle = getActiveCycleBeforeDate(endDate) ?: return
+
         val records = getDailyRecordsByCycleId(activeCycle.id).first()
         val periodRecords = records.filter { it.isPeriod }
         val periodLength = if (periodRecords.isNotEmpty()) {
@@ -113,9 +113,14 @@ class CycleRepository @Inject constructor(
         } else {
             null
         }
-        
+
         val completedCycle = activeCycle.complete(endDate).updatePeriodLength(periodLength ?: 0)
         updateCycle(completedCycle)
+    }
+
+    suspend fun getActiveCycleBeforeDate(endDate: LocalDate): Cycle? {
+        val entity = cycleDao.getActiveCycleBeforeDate(endDate.toString())
+        return entity?.let { cycleMapper.toDomain(it) }
     }
 
     fun getAllDailyRecords(): Flow<List<com.example.periodvibe.domain.model.DailyRecord>> {

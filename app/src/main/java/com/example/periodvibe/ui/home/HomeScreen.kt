@@ -16,10 +16,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -30,6 +30,13 @@ import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.WaterDrop
+import androidx.compose.material.icons.filled.EnergySavingsLeaf
+import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.Nightlight
+import androidx.compose.material.icons.filled.Spa
+import androidx.compose.material.icons.rounded.AccessTime
+import androidx.compose.material.icons.rounded.Insights
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -63,6 +70,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -75,6 +83,7 @@ import com.example.periodvibe.ui.theme.LutealColor
 import com.example.periodvibe.ui.theme.MenstruationColor
 import com.example.periodvibe.ui.theme.OvulationColor
 import com.example.periodvibe.ui.theme.SafeColor
+import java.time.LocalTime
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -89,11 +98,9 @@ fun HomeScreen(
     val homeData by viewModel.homeData.collectAsState()
     val showRecordSheet by viewModel.showRecordSheet.collectAsState()
     val showNewCycleSheet by viewModel.showNewCycleSheet.collectAsState()
-    val showNewSymptomSheet by viewModel.showNewSymptomSheet.collectAsState()
     val showEndCycleMenu by viewModel.showEndCycleMenu.collectAsState()
     val selectedDate by viewModel.selectedDate.collectAsState()
     val recordMode by viewModel.recordMode.collectAsState()
-    val suggestedIsPeriod by viewModel.suggestedIsPeriod.collectAsState()
     val existingRecord by viewModel.existingRecord.collectAsState()
 
     val hasCurrentCycle = when (val state = homeData) {
@@ -110,9 +117,8 @@ fun HomeScreen(
                     onEditClick = { viewModel.showRecordSheet() }
                 )
             } else {
-                RecordFABGroup(
-                    onNewCycleClick = { viewModel.showNewCycleSheet() },
-                    onNewSymptomClick = { viewModel.showNewSymptomSheet() }
+                RecordFAB(
+                    onClick = { viewModel.showNewCycleSheet() }
                 )
             }
         },
@@ -162,8 +168,8 @@ fun HomeScreen(
             hasCurrentCycle = hasCurrentCycle,
             existingRecord = existingRecord,
             onDismiss = { viewModel.hideRecordSheet() },
-            onSave = { date, flowLevel, symptoms, notes ->
-                viewModel.saveDailyRecord(date, flowLevel, symptoms, notes)
+            onSave = { date, flowLevel ->
+                viewModel.saveDailyRecord(date, flowLevel)
             }
         )
     }
@@ -175,21 +181,8 @@ fun HomeScreen(
             hasCurrentCycle = false,
             existingRecord = existingRecord,
             onDismiss = { viewModel.hideNewCycleSheet() },
-            onSave = { date, flowLevel, symptoms, notes ->
-                viewModel.saveNewCycle(date, flowLevel, symptoms, notes)
-            }
-        )
-    }
-
-    if (showNewSymptomSheet) {
-        RecordBottomSheet(
-            initialDate = selectedDate,
-            recordMode = RecordMode.SYMPTOM_ONLY,
-            hasCurrentCycle = false,
-            existingRecord = existingRecord,
-            onDismiss = { viewModel.hideNewSymptomSheet() },
-            onSave = { date, flowLevel, symptoms, notes ->
-                viewModel.saveNewSymptom(date, symptoms, notes)
+            onSave = { date, flowLevel ->
+                viewModel.saveNewCycle(date, flowLevel)
             }
         )
     }
@@ -210,210 +203,236 @@ private fun HomeContent(
     totalCycles: Int,
     hasData: Boolean
 ) {
+    val phaseData = getPhaseData(phase)
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(20.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // 问候区域
         GreetingSection()
 
-        // 主要周期状态卡片 (Expressive Large Card)
-        CycleStatusCard(
+        MainStatusCard(
             cycleDay = cycleDay,
             daysUntilPeriod = daysUntilPeriod,
-            phase = phase
+            phase = phase,
+            phaseData = phaseData
         )
 
-        // 阶段信息卡片 (Expressive Medium Card)
-        PhaseInfoCard(phase = phase)
-
-        // 今日摘要卡片
-        TodaySummaryCard(
-            totalCycles = totalCycles,
-            hasData = hasData
+        PhaseDetailCard(
+            phase = phase,
+            phaseData = phaseData
         )
 
-        // 额外的间距
+        StatsCard(totalCycles = totalCycles, hasData = hasData)
+
         Spacer(modifier = Modifier.height(80.dp))
     }
 }
 
 @Composable
 private fun GreetingSection() {
-    Column(
+    val greeting = getGreeting()
+    Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.Start
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = "你好",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = "关注你的身体变化",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
-        )
+        Column(horizontalAlignment = Alignment.Start) {
+            Text(
+                text = greeting,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = "今天是你的专属时刻",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primaryContainer)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Favorite,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .size(24.dp)
+                    .align(Alignment.Center)
+            )
+        }
     }
 }
 
 @Composable
-private fun CycleStatusCard(
+private fun MainStatusCard(
     cycleDay: Int,
     daysUntilPeriod: Int,
-    phase: CyclePhase
+    phase: CyclePhase,
+    phaseData: PhaseData
 ) {
-    val phaseData = getPhaseData(phase)
     val scale by animateFloatAsState(
         targetValue = 1f,
-        animationSpec = tween(durationMillis = 500),
+        animationSpec = tween(durationMillis = 600, delayMillis = 100),
         label = "card_scale"
     )
 
-    // Expressive Card - 更大的圆角、更丰富的色彩渐变
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(280.dp)
             .scale(scale),
-        shape = RoundedCornerShape(32.dp),
+        shape = RoundedCornerShape(36.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
+            containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 0.dp
-        )
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Box(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
                 .background(
-                    brush = Brush.linearGradient(
+                    brush = Brush.verticalGradient(
                         colors = listOf(
-                            phaseData.primary.copy(alpha = 0.3f),
-                            phaseData.primary.copy(alpha = 0.15f),
-                            MaterialTheme.colorScheme.primaryContainer
+                            phaseData.primary.copy(alpha = 0.08f),
+                            phaseData.primary.copy(alpha = 0.02f),
+                            MaterialTheme.colorScheme.surface
                         )
                     )
                 )
-                .padding(28.dp)
+                .padding(32.dp)
         ) {
-            // 装饰性模糊圆形
             Box(
                 modifier = Modifier
-                    .size(160.dp)
+                    .size(200.dp)
                     .align(Alignment.TopEnd)
+                    .offset(x = 40.dp, y = (-60).dp)
                     .blur(
-                        radius = 40.dp,
+                        radius = 50.dp,
                         edgeTreatment = BlurredEdgeTreatment.Unbounded
                     )
                     .background(
-                        color = phaseData.primary.copy(alpha = 0.4f),
+                        color = phaseData.primary.copy(alpha = 0.35f),
                         shape = CircleShape
                     )
             )
 
             Column(
-                modifier = Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // 周期天数 - Display 级别文字
-                Text(
-                    text = "第 $cycleDay 天",
-                    style = MaterialTheme.typography.displayLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = phaseData.primary
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // 周期天数标签
-                Text(
-                    text = "本周期",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                )
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                // 距离下次经期 - Expressive 样式
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(
-                            MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
-                        )
-                        .padding(horizontal = 20.dp, vertical = 12.dp)
+                Surface(
+                    color = phaseData.container,
+                    contentColor = phaseData.onContainer,
+                    shape = RoundedCornerShape(50),
+                    tonalElevation = 0.dp
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text(
-                            text = if (daysUntilPeriod == 0) "今天" else "$daysUntilPeriod 天",
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = phaseData.primary
+                        Icon(
+                            imageVector = phaseData.icon,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
                         )
                         Text(
-                            text = "距离下次经期",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = phase.displayName,
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.SemiBold
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
-                // 阶段标签
-                PhaseTag(phase = phase, phaseData = phaseData)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    StatItem(
+                        value = "$cycleDay",
+                        label = "周期天数",
+                        highlightColor = phaseData.primary
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .width(1.dp)
+                            .height(60.dp)
+                            .background(
+                                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                            )
+                    )
+
+                    StatItem(
+                        value = if (daysUntilPeriod == 0) "今天" else "$daysUntilPeriod",
+                        label = "距离下次",
+                        highlightColor = phaseData.primary,
+                        valueUnit = if (daysUntilPeriod != 0) "天" else ""
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun PhaseTag(phase: CyclePhase, phaseData: PhaseData) {
-    Surface(
-        color = phaseData.container,
-        contentColor = phaseData.onContainer,
-        shape = RoundedCornerShape(50),
-        tonalElevation = 0.dp
+private fun StatItem(
+    value: String,
+    label: String,
+    highlightColor: Color,
+    valueUnit: String = ""
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            verticalAlignment = Alignment.Bottom,
+            horizontalArrangement = Arrangement.spacedBy(2.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(8.dp)
-                    .background(
-                        color = phaseData.primary,
-                        shape = CircleShape
-                    )
-            )
             Text(
-                text = phase.displayName,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold
+                text = value,
+                style = MaterialTheme.typography.displayMedium,
+                fontWeight = FontWeight.Bold,
+                color = highlightColor
             )
+            if (valueUnit.isNotEmpty()) {
+                Text(
+                    text = valueUnit,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = highlightColor.copy(alpha = 0.8f),
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
         }
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
 @Composable
-private fun PhaseInfoCard(phase: CyclePhase) {
-    val phaseData = getPhaseData(phase)
-
+private fun PhaseDetailCard(
+    phase: CyclePhase,
+    phaseData: PhaseData
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.secondaryContainer
         ),
@@ -428,37 +447,83 @@ private fun PhaseInfoCard(phase: CyclePhase) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.Favorite,
-                    contentDescription = null,
-                    tint = phaseData.primary,
-                    modifier = Modifier.size(28.dp)
-                )
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(phaseData.primary.copy(alpha = 0.15f))
+                ) {
+                    Icon(
+                        imageVector = phaseData.icon,
+                        contentDescription = null,
+                        tint = phaseData.primary,
+                        modifier = Modifier
+                            .size(24.dp)
+                            .align(Alignment.Center)
+                    )
+                }
                 Text(
-                    text = "当前状态",
+                    text = "了解你的身体",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSecondaryContainer
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             Text(
                 text = phase.description,
                 style = MaterialTheme.typography.bodyLarge,
-                lineHeight = 24.sp,
-                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
+                lineHeight = 26.sp,
+                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.85f)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+            PhaseTip(phase = phase)
+        }
+    }
+}
+
+@Composable
+private fun PhaseTip(phase: CyclePhase) {
+    val tip = when (phase) {
+        CyclePhase.MENSTRATION -> "记得多休息，补充铁质，保持温暖"
+        CyclePhase.FOLLICULAR -> "这是能量回升的好时机，适合开始新计划"
+        CyclePhase.OVULATION -> "精力最旺盛的时期，把握好状态"
+        CyclePhase.FERTILE -> "注意身体变化，保持轻松心情"
+        CyclePhase.LUTEAL -> "可能会有情绪波动，尝试放松活动"
+        CyclePhase.SAFE -> "享受这段平稳的时光"
+    }
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Insights,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.tertiary,
+                modifier = Modifier.size(20.dp)
+            )
+            Text(
+                text = tip,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                lineHeight = 20.sp
             )
         }
     }
 }
 
 @Composable
-private fun TodaySummaryCard(
-    totalCycles: Int,
-    hasData: Boolean
-) {
+private fun StatsCard(totalCycles: Int, hasData: Boolean) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
@@ -470,22 +535,42 @@ private fun TodaySummaryCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(24.dp),
+                .padding(20.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
-                Text(
-                    text = if (hasData) "已记录 $totalCycles 个周期" else "开始你的第一个周期",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = if (hasData) "继续记录，让预测更准确" else "点击右下角按钮开始记录",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.AccessTime,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .size(24.dp)
+                            .align(Alignment.Center)
+                    )
+                }
+                Column {
+                    Text(
+                        text = if (hasData) "已记录 $totalCycles 个周期" else "开始你的记录",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = if (hasData) "坚持记录，让预测更精准" else "点击右下角开始",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }
@@ -495,81 +580,51 @@ private fun TodaySummaryCard(
 @Composable
 private fun RecordFAB(
     onClick: () -> Unit,
-    onEditClick: () -> Unit
+    onEditClick: (() -> Unit)? = null
 ) {
     var expanded by remember { mutableStateOf(false) }
 
-    FloatingActionButtonMenu(
-        expanded = expanded,
-        button = {
-            ToggleFloatingActionButton(
-                checked = expanded,
-                onCheckedChange = { expanded = it }
-            ) {
-                Icon(
-                    imageVector = if (expanded) Icons.Default.Close else Icons.Default.Add,
-                    contentDescription = null
-                )
+    if (onEditClick != null) {
+        FloatingActionButtonMenu(
+            expanded = expanded,
+            button = {
+                ToggleFloatingActionButton(
+                    checked = expanded,
+                    onCheckedChange = { expanded = it }
+                ) {
+                    Icon(
+                        imageVector = if (expanded) Icons.Default.Close else Icons.Default.Add,
+                        contentDescription = null
+                    )
+                }
             }
+        ) {
+            FloatingActionButtonMenuItem(
+                text = { Text("结束周期") },
+                icon = { Icon(Icons.Default.CalendarToday, contentDescription = "结束周期") },
+                onClick = {
+                    expanded = false
+                    onClick()
+                }
+            )
+            FloatingActionButtonMenuItem(
+                text = { Text("修改记录") },
+                icon = { Icon(Icons.Default.EditNote, contentDescription = "修改记录") },
+                onClick = {
+                    expanded = false
+                    onEditClick()
+                }
+            )
         }
-    ) {
-        FloatingActionButtonMenuItem(
-            text = { Text("结束周期") },
-            icon = { Icon(Icons.Default.CalendarToday, contentDescription = "结束周期") },
-            onClick = {
-                expanded = false
-                onClick()
-            }
-        )
-        FloatingActionButtonMenuItem(
-            text = { Text("修改记录") },
-            icon = { Icon(Icons.Default.EditNote, contentDescription = "修改记录") },
-            onClick = {
-                expanded = false
-                onEditClick()
-            }
-        )
-    }
-}
-
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-private fun RecordFABGroup(
-    onNewCycleClick: () -> Unit,
-    onNewSymptomClick: () -> Unit
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    FloatingActionButtonMenu(
-        expanded = expanded,
-        button = {
-            ToggleFloatingActionButton(
-                checked = expanded,
-                onCheckedChange = { expanded = it }
-            ) {
-                Icon(
-                    imageVector = if (expanded) Icons.Default.Close else Icons.Default.Add,
-                    contentDescription = null
-                )
-            }
+    } else {
+        FloatingActionButton(
+            onClick = onClick
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = "开始新周期"
+            )
         }
-    ) {
-        FloatingActionButtonMenuItem(
-            text = { Text("新建周期") },
-            icon = { Icon(Icons.Default.CalendarToday, contentDescription = "新建周期") },
-            onClick = {
-                expanded = false
-                onNewCycleClick()
-            }
-        )
-        FloatingActionButtonMenuItem(
-            text = { Text("记录症状") },
-            icon = { Icon(Icons.Default.EditNote, contentDescription = "记录症状") },
-            onClick = {
-                expanded = false
-                onNewSymptomClick()
-            }
-        )
     }
 }
 
@@ -605,18 +660,36 @@ private fun NoDataState() {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+        Box(
+            modifier = Modifier
+                .size(120.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primaryContainer)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Favorite,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .size(60.dp)
+                    .align(Alignment.Center)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
         Text(
-            text = "还没有记录",
+            text = "开始你的记录",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            text = "点击右下角按钮开始记录你的第一个周期",
+            text = "点击右下角按钮，开始记录你的第一个周期",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -666,45 +739,59 @@ private fun EndCycleConfirmationDialog(
     )
 }
 
-// 阶段数据类
+private fun getGreeting(): String {
+    val hour = LocalTime.now().hour
+    return when (hour) {
+        in 5..11 -> "早上好"
+        in 12..17 -> "下午好"
+        else -> "晚上好"
+    }
+}
+
 private data class PhaseData(
     val primary: Color,
     val container: Color,
-    val onContainer: Color
+    val onContainer: Color,
+    val icon: ImageVector
 )
 
-// 获取阶段数据
 private fun getPhaseData(phase: CyclePhase): PhaseData {
     return when (phase) {
         CyclePhase.MENSTRATION -> PhaseData(
             primary = MenstruationColor,
             container = MenstruationColor.copy(alpha = 0.15f),
-            onContainer = MenstruationColor
+            onContainer = MenstruationColor,
+            icon = Icons.Default.WaterDrop
         )
         CyclePhase.OVULATION -> PhaseData(
             primary = OvulationColor,
             container = OvulationColor.copy(alpha = 0.15f),
-            onContainer = OvulationColor
+            onContainer = OvulationColor,
+            icon = Icons.Default.LocalFireDepartment
         )
         CyclePhase.FERTILE -> PhaseData(
             primary = FertileColor,
             container = FertileColor.copy(alpha = 0.15f),
-            onContainer = FertileColor
+            onContainer = FertileColor,
+            icon = Icons.Default.Spa
         )
         CyclePhase.SAFE -> PhaseData(
             primary = SafeColor,
             container = SafeColor.copy(alpha = 0.15f),
-            onContainer = SafeColor
+            onContainer = SafeColor,
+            icon = Icons.Default.Nightlight
         )
         CyclePhase.FOLLICULAR -> PhaseData(
             primary = FollicularColor,
             container = FollicularColor.copy(alpha = 0.15f),
-            onContainer = FollicularColor
+            onContainer = FollicularColor,
+            icon = Icons.Default.EnergySavingsLeaf
         )
         CyclePhase.LUTEAL -> PhaseData(
             primary = LutealColor,
             container = LutealColor.copy(alpha = 0.15f),
-            onContainer = LutealColor
+            onContainer = LutealColor,
+            icon = Icons.Default.Nightlight
         )
     }
 }

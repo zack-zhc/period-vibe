@@ -3,7 +3,6 @@ package com.example.periodvibe.domain.usecase
 import com.example.periodvibe.data.repository.CycleRepository
 import com.example.periodvibe.domain.model.DailyRecord
 import com.example.periodvibe.domain.model.FlowLevel
-import com.example.periodvibe.domain.model.Symptom
 import com.example.periodvibe.ui.home.RecordMode
 import javax.inject.Inject
 
@@ -13,9 +12,7 @@ class SaveRecordUseCase @Inject constructor(
     suspend operator fun invoke(
         date: java.time.LocalDate,
         mode: RecordMode,
-        flowLevel: FlowLevel?,
-        symptoms: List<Symptom>,
-        notes: String?
+        flowLevel: FlowLevel?
     ): Result<Unit> {
         return try {
             val existingRecord = cycleRepository.getDailyRecordByDate(date)
@@ -23,7 +20,6 @@ class SaveRecordUseCase @Inject constructor(
 
             val isPeriod = when (mode) {
                 RecordMode.NEW_CYCLE -> true
-                RecordMode.SYMPTOM_ONLY -> false
                 RecordMode.AUTO -> true
             }
 
@@ -32,9 +28,6 @@ class SaveRecordUseCase @Inject constructor(
             when (mode) {
                 RecordMode.NEW_CYCLE -> {
                     targetCycle = cycleRepository.startNewCycle(date)
-                }
-                RecordMode.SYMPTOM_ONLY -> {
-                    targetCycle = null
                 }
                 RecordMode.AUTO -> {
                     if (activeCycle != null) {
@@ -49,8 +42,8 @@ class SaveRecordUseCase @Inject constructor(
                 existingRecord.copy(
                     isPeriod = isPeriod,
                     flowLevel = flowLevel,
-                    symptoms = symptoms,
-                    notes = notes,
+                    symptoms = emptyList(),
+                    notes = null,
                     cycleId = targetCycle?.id ?: existingRecord.cycleId
                 )
             } else {
@@ -59,8 +52,8 @@ class SaveRecordUseCase @Inject constructor(
                     cycleId = targetCycle?.id,
                     isPeriod = isPeriod,
                     flowLevel = flowLevel,
-                    symptoms = symptoms,
-                    notes = notes
+                    symptoms = emptyList(),
+                    notes = null
                 )
             }
 

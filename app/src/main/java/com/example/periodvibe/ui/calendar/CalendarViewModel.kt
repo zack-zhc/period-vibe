@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.periodvibe.data.repository.CycleRepository
 import com.example.periodvibe.domain.usecase.GetCalendarDataUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -39,13 +40,16 @@ class CalendarViewModel @Inject constructor(
     private val _activeCycle = MutableStateFlow<com.example.periodvibe.domain.model.Cycle?>(null)
     val activeCycle: StateFlow<com.example.periodvibe.domain.model.Cycle?> = _activeCycle.asStateFlow()
 
+    private var calendarDataJob: Job? = null
+
     init {
         loadCalendarData()
         loadActiveCycle()
     }
 
     private fun loadCalendarData() {
-        viewModelScope.launch {
+        calendarDataJob?.cancel()
+        calendarDataJob = viewModelScope.launch {
             getCalendarDataUseCase(_currentYearMonth.value).collect { data ->
                 _calendarData.value = CalendarUiState.Success(
                     yearMonth = data.yearMonth,
@@ -64,6 +68,13 @@ class CalendarViewModel @Inject constructor(
         }
     }
 
+    private fun loadActiveCycleForDate(date: LocalDate) {
+        viewModelScope.launch {
+            val cycle = cycleRepository.getActiveCycleBeforeDate(date)
+            _activeCycle.value = cycle
+        }
+    }
+
     fun navigateToPreviousMonth() {
         _currentYearMonth.value = _currentYearMonth.value.minusMonths(1)
         _selectedDate.value = null
@@ -78,6 +89,7 @@ class CalendarViewModel @Inject constructor(
 
     fun selectDate(date: LocalDate) {
         _selectedDate.value = date
+        loadActiveCycleForDate(date)
     }
 
     fun clearSelectedDate() {
@@ -123,15 +135,12 @@ class CalendarViewModel @Inject constructor(
     fun saveRecord(
         date: LocalDate,
         mode: com.example.periodvibe.ui.home.RecordMode,
-        flowLevel: com.example.periodvibe.domain.model.FlowLevel?,
-        symptoms: List<com.example.periodvibe.domain.model.Symptom>,
-        notes: String?
+        flowLevel: com.example.periodvibe.domain.model.FlowLevel?
     ) {
         viewModelScope.launch {
-            saveRecordUseCase(date, mode, flowLevel, symptoms, notes)
+            saveRecordUseCase(date, mode, flowLevel)
                 .onSuccess {
                     loadActiveCycle()
-                    loadCalendarData()
                 }
                 .onFailure { e ->
                     e.printStackTrace()

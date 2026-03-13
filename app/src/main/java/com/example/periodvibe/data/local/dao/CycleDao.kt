@@ -20,6 +20,9 @@ interface CycleDao {
     @Query("SELECT * FROM cycles WHERE is_completed = 0 ORDER BY start_date DESC LIMIT 1")
     suspend fun getActiveCycle(): CycleEntity?
 
+    @Query("SELECT * FROM cycles WHERE is_completed = 0 AND start_date <= :endDate ORDER BY start_date DESC LIMIT 1")
+    suspend fun getActiveCycleBeforeDate(endDate: String): CycleEntity?
+
     @Query("SELECT * FROM cycles ORDER BY start_date DESC LIMIT 1")
     suspend fun getLatestCycle(): CycleEntity?
 

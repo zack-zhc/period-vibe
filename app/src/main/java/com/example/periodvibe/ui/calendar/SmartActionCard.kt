@@ -41,7 +41,6 @@ fun SmartActionCard(
     onEndCycleClick: () -> Unit,
     onNewCycleClick: () -> Unit,
     onEditClick: () -> Unit,
-    onRecordSymptomClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = determineActionContext(day, activeCycle)
@@ -75,8 +74,7 @@ fun SmartActionCard(
                 onRecordClick = onRecordClick,
                 onEndCycleClick = onEndCycleClick,
                 onNewCycleClick = onNewCycleClick,
-                onEditClick = onEditClick,
-                onRecordSymptomClick = onRecordSymptomClick
+                onEditClick = onEditClick
             )
         }
     }
@@ -85,7 +83,7 @@ fun SmartActionCard(
 @Composable
 private fun DateHeader(day: CalendarDay.Data) {
     val dateFormatter = remember { DateTimeFormatter.ofPattern("yyyy年MM月dd日 EEEE") }
-    
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -140,10 +138,10 @@ private fun StatusInfo(
 
 @Composable
 private fun CycleStatusInfo(day: CalendarDay.Data, activeCycle: Cycle?) {
-    val cycleDay = if (activeCycle != null) {
+    val cycleDay = if (activeCycle != null && day.date >= activeCycle.startDate) {
         Period.between(activeCycle.startDate, day.date).days + 1
     } else {
-        0
+        null
     }
 
     Row(
@@ -157,11 +155,19 @@ private fun CycleStatusInfo(day: CalendarDay.Data, activeCycle: Cycle?) {
                 .clip(RoundedCornerShape(4.dp))
                 .background(Color(0xFFFF6B6B))
         )
-        Text(
-            text = "当前状态：第 $cycleDay 天 ${day.phase.displayName}",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface
-        )
+        if (cycleDay != null) {
+            Text(
+                text = "当前状态：第 $cycleDay 天 ${day.phase.displayName}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        } else {
+            Text(
+                text = "存在未结束的周期，请先结束",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
     }
 }
 
@@ -188,27 +194,6 @@ private fun RecordInfo(day: CalendarDay.Data) {
                     color = MaterialTheme.colorScheme.onSurface
                 )
             }
-        }
-
-        if (day.record?.hasSymptoms == true) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = "症状：${day.record?.symptoms?.joinToString("、") { it.displayName }}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-        }
-
-        if (!day.record?.notes.isNullOrBlank()) {
-            Text(
-                text = "备注：${day.record?.notes}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
         }
     }
 }
@@ -240,8 +225,7 @@ private fun ActionButtons(
     onRecordClick: () -> Unit,
     onEndCycleClick: () -> Unit,
     onNewCycleClick: () -> Unit,
-    onEditClick: () -> Unit,
-    onRecordSymptomClick: () -> Unit
+    onEditClick: () -> Unit
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -262,7 +246,6 @@ private fun ActionButtons(
             }
             ActionContext.OUT_CYCLE_NO_RECORD -> {
                 NewCycleButton(onClick = onNewCycleClick)
-                RecordSymptomButton(onClick = onRecordSymptomClick)
             }
         }
     }
@@ -336,19 +319,6 @@ private fun NewCycleButton(onClick: () -> Unit) {
 }
 
 @Composable
-private fun RecordSymptomButton(onClick: () -> Unit) {
-    OutlinedButton(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        colors = ButtonDefaults.outlinedButtonColors(
-            contentColor = MaterialTheme.colorScheme.onSurface
-        )
-    ) {
-        Text("记录症状", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-    }
-}
-
-@Composable
 fun EndCycleConfirmationDialog(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit
@@ -401,6 +371,13 @@ private fun determineActionContext(
     val hasActiveCycle = activeCycle != null && activeCycle.isCurrentCycle
     val isInCycle = hasActiveCycle && day.date >= activeCycle!!.startDate
     val hasRecord = day.record != null
+
+    // 关键优化：如果存在未结束的周期，无论选择哪天，都优先显示结束周期选项
+    if (hasActiveCycle && !isInCycle) {
+        // 有未结束的周期，但选择的日期不在该周期内
+        // 这种情况应该让用户先结束上一个周期
+        return ActionContext.IN_CYCLE_NO_RECORD
+    }
 
     return when {
         isInCycle && hasRecord -> ActionContext.IN_CYCLE_WITH_RECORD

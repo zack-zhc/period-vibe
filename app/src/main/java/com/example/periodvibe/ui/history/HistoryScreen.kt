@@ -7,7 +7,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -72,11 +71,9 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.periodvibe.domain.model.FlowLevel
-import com.example.periodvibe.domain.model.Symptom
 import com.example.periodvibe.ui.home.PeriodBottomNavigation
 import java.time.format.DateTimeFormatter
 import java.util.Locale
-import kotlin.collections.chunked
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -272,186 +269,6 @@ private fun SummaryCard(totalCycles: Int) {
 }
 
 @Composable
-private fun CycleCard(
-    cycleWithRecords: com.example.periodvibe.domain.usecase.CycleWithRecords,
-    isExpanded: Boolean,
-    onClick: () -> Unit,
-    onLongClick: () -> Unit,
-    onRecordEditClick: (com.example.periodvibe.domain.model.DailyRecord) -> Unit = {}
-) {
-    val cycle = cycleWithRecords.cycle
-    val rotation by animateFloatAsState(
-        targetValue = if (isExpanded) 180f else 0f,
-        label = "rotation"
-    )
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isExpanded) 4.dp else 2.dp
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFFFF6B6B).copy(alpha = 0.1f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.CalendarToday,
-                            contentDescription = null,
-                            tint = Color(0xFFFF6B6B),
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(12.dp))
-
-                    Column {
-                        Text(
-                            text = cycleWithRecords.startDateFormatted,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = buildString {
-                                append("周期长度 ")
-                                append(cycle.cycleLength?.toString() ?: "未记录")
-                                append(" 天 · 经期 ")
-                                append(cycle.periodLength?.toString() ?: "未记录")
-                                append(" 天")
-                            },
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-
-                Icon(
-                    imageVector = if (isExpanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
-                    contentDescription = if (isExpanded) "收起" else "展开",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier
-                        .size(24.dp)
-                        .rotate(rotation)
-                )
-            }
-
-            AnimatedVisibility(
-                visible = isExpanded,
-                enter = expandVertically() + fadeIn(),
-                exit = shrinkVertically() + fadeOut()
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 12.dp)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceAround
-                    ) {
-                        StatItem(
-                            icon = Icons.Outlined.DateRange,
-                            label = "持续天数",
-                            value = "${cycleWithRecords.durationDays}天"
-                        )
-                        StatItem(
-                            icon = Icons.Outlined.DateRange,
-                            label = "经期天数",
-                            value = "${cycleWithRecords.periodDaysCount}天"
-                        )
-                        if (cycleWithRecords.averageFlowLevel != null) {
-                            StatItem(
-                                icon = Icons.Outlined.DateRange,
-                                label = "平均经量",
-                                value = cycleWithRecords.averageFlowLevel?.displayName ?: ""
-                            )
-                        }
-                    }
-
-                    if (cycleWithRecords.records.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        
-                        Text(
-                            text = "每日记录",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(vertical = 4.dp)
-                        )
-
-                        cycleWithRecords.records.take(5).forEach { record ->
-                            DailyRecordItem(
-                                record = record,
-                                onEditClick = { onRecordEditClick(record) }
-                            )
-                        }
-
-                        if (cycleWithRecords.records.size > 5) {
-                            Text(
-                                text = "还有 ${cycleWithRecords.records.size - 5} 条记录...",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 4.dp),
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Button(
-                        onClick = onLongClick,
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer,
-                            contentColor = MaterialTheme.colorScheme.onErrorContainer
-                        ),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "删除此周期",
-                            style = MaterialTheme.typography.labelMedium
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
 private fun TimelineCycleCard(
     cycleWithRecords: com.example.periodvibe.domain.usecase.CycleWithRecords,
     isExpanded: Boolean,
@@ -587,7 +404,7 @@ private fun TimelineCycleCard(
 
                     if (cycleWithRecords.records.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(12.dp))
-                        
+
                         Text(
                             text = "每日记录",
                             style = MaterialTheme.typography.labelMedium,
@@ -645,10 +462,7 @@ private fun TimelineCycleCard(
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "删除此周期",
-                            style = MaterialTheme.typography.labelMedium
-                        )
+                        Text("删除此周期", style = MaterialTheme.typography.labelMedium)
                     }
                 }
             }
@@ -692,7 +506,7 @@ private fun DailyRecordItem(
     onEditClick: () -> Unit = {}
 ) {
     val formatter = remember { DateTimeFormatter.ofPattern("MM月dd日", Locale.CHINA) }
-    
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -705,7 +519,7 @@ private fun DailyRecordItem(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface
         )
-        
+
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -723,18 +537,10 @@ private fun DailyRecordItem(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            
+
             record.flowLevel?.let { flowLevel ->
                 Text(
                     text = flowLevel.displayName,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            
-            if (record.symptoms.isNotEmpty()) {
-                Text(
-                    text = "${record.symptoms.size}个症状",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -846,8 +652,6 @@ private fun RecordEditDialog(
 ) {
     var isPeriod by remember { mutableStateOf(record.isPeriod) }
     var flowLevel by remember { mutableStateOf(record.flowLevel) }
-    var selectedSymptoms by remember { mutableStateOf(record.symptoms.toSet()) }
-    var notes by remember { mutableStateOf(record.notes ?: "") }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -923,14 +727,14 @@ private fun RecordEditDialog(
 
                 if (isPeriod) {
                     Spacer(modifier = Modifier.height(16.dp))
-                    
+
                     Text(
                         text = "经量",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -946,46 +750,15 @@ private fun RecordEditDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Text(
-                    text = "症状",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-
-                SymptomGrid(
-                    selectedSymptoms = selectedSymptoms,
-                    onSymptomToggle = { symptom ->
-                        selectedSymptoms = if (symptom in selectedSymptoms) {
-                            selectedSymptoms - symptom
-                        } else {
-                            selectedSymptoms + symptom
-                        }
-                    }
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                OutlinedTextField(
-                    value = notes,
-                    onValueChange = { notes = it },
-                    label = { Text("备注") },
-                    modifier = Modifier.fillMaxWidth(),
-                    minLines = 3,
-                    maxLines = 5
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
                 Button(
                     onClick = {
                         val updatedRecord = record.copy(
                             isPeriod = isPeriod,
                             flowLevel = if (isPeriod) flowLevel else null,
-                            symptoms = selectedSymptoms.toList(),
-                            notes = notes.takeIf { it.isNotBlank() }
+                            symptoms = emptyList(),
+                            notes = null
                         )
                         onSave(updatedRecord)
                     },
@@ -1028,51 +801,3 @@ private fun FlowLevelChip(
         )
     )
 }
-
-@Composable
-private fun SymptomGrid(
-    selectedSymptoms: Set<Symptom>,
-    onSymptomToggle: (Symptom) -> Unit
-) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Symptom.values().toList().chunked(3).forEach { row ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                row.forEach { symptom ->
-                    SymptomChip(
-                        symptom = symptom,
-                        selected = symptom in selectedSymptoms,
-                        onClick = { onSymptomToggle(symptom) },
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun SymptomChip(
-    symptom: Symptom,
-    selected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    FilterChip(
-        selected = selected,
-        onClick = onClick,
-        label = {
-            Text(
-                text = symptom.displayName,
-                style = MaterialTheme.typography.bodySmall
-            )
-        },
-        modifier = modifier
-    )
-}
-
-

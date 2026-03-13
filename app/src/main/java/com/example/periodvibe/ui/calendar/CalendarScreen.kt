@@ -31,7 +31,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -146,11 +145,6 @@ fun CalendarScreen(
                             recordMode = RecordMode.AUTO
                             showRecordSheet = true
                         },
-                        onRecordSymptomClick = { date ->
-                            recordDate = date
-                            recordMode = RecordMode.SYMPTOM_ONLY
-                            showRecordSheet = true
-                        },
                         modifier = Modifier
                             .fillMaxSize()
                             .verticalScroll(rememberScrollState())
@@ -185,8 +179,8 @@ fun CalendarScreen(
             hasCurrentCycle = currentActiveCycle != null && currentActiveCycle.isCurrentCycle,
             existingRecord = null,
             onDismiss = { showRecordSheet = false },
-            onSave = { date, flowLevel, symptoms, notes ->
-                viewModel.saveRecord(date, recordMode, flowLevel, symptoms, notes)
+            onSave = { date, flowLevel ->
+                viewModel.saveRecord(date, recordMode, flowLevel)
                 showRecordSheet = false
             }
         )
@@ -207,7 +201,6 @@ private fun CalendarContent(
     onEndCycleClick: () -> Unit,
     onNewCycleClick: (java.time.LocalDate) -> Unit,
     onEditClick: (java.time.LocalDate) -> Unit,
-    onRecordSymptomClick: (java.time.LocalDate) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -237,8 +230,8 @@ private fun CalendarContent(
 
         if (selectedDate != null) {
             val date = selectedDate
-            val selectedDay = days.find { 
-                it is com.example.periodvibe.domain.usecase.CalendarDay.Data && it.date == date 
+            val selectedDay = days.find {
+                it is com.example.periodvibe.domain.usecase.CalendarDay.Data && it.date == date
             }
             if (selectedDay is com.example.periodvibe.domain.usecase.CalendarDay.Data) {
                 SmartActionCard(
@@ -247,8 +240,7 @@ private fun CalendarContent(
                     onRecordClick = { onRecordClick(date) },
                     onEndCycleClick = onEndCycleClick,
                     onNewCycleClick = { onNewCycleClick(date) },
-                    onEditClick = { onEditClick(date) },
-                    onRecordSymptomClick = { onRecordSymptomClick(date) }
+                    onEditClick = { onEditClick(date) }
                 )
             }
         } else {
