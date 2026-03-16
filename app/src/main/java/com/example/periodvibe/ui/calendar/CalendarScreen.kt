@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -28,10 +30,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,6 +53,8 @@ import com.example.periodvibe.ui.theme.CalendarOvulationDark
 import com.example.periodvibe.ui.theme.CalendarOvulationLight
 import com.example.periodvibe.ui.theme.CalendarPeriodDark
 import com.example.periodvibe.ui.theme.CalendarPeriodLight
+import kotlinx.coroutines.launch
+import java.time.YearMonth
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,7 +66,7 @@ fun CalendarScreen(
     modifier: Modifier = Modifier,
     viewModel: CalendarViewModel = hiltViewModel()
 ) {
-    val calendarData by viewModel.calendarData.collectAsState()
+    val calendarPages by viewModel.calendarPages.collectAsState()
     val currentYearMonth by viewModel.currentYearMonth.collectAsState()
     val selectedDate by viewModel.selectedDate.collectAsState()
     val activeCycle by viewModel.activeCycle.collectAsState()
@@ -71,6 +78,48 @@ fun CalendarScreen(
 
     val hasCurrentCycle = activeCycle != null && activeCycle?.isCurrentCycle == true
 
+    // 生成一个足够大的月份范围作为 Pager 的页面
+    val startMonth = remember { YearMonth.now().minusMonths(120) } // 10年前
+    val endMonth = remember { YearMonth.now().plusMonths(120) }  // 10年后
+    val totalMonths = remember {
+        val years = endMonth.year - startMonth.year
+        years * 12 + (endMonth.monthValue - startMonth.monthValue + 1)
+    }
+    val initialPage = remember {
+        val now = YearMonth.now()
+        val years = now.year - startMonth.year
+        years * 12 + (now.monthValue - startMonth.monthValue)
+    }
+
+    val pagerState = rememberPagerState(
+        initialPage = initialPage,
+        initialPageOffsetFraction = 0f,
+        pageCount = { totalMonths }
+    )
+
+    val coroutineScope = rememberCoroutineScope()
+
+    // 当前页面显示的 YearMonth
+    val currentPageYearMonth by remember {
+        derivedStateOf {
+            startMonth.plusMonths(pagerState.currentPage.toLong())
+        }
+    }
+
+    // 当 Pager 页面变化时通知 ViewModel
+    LaunchedEffect(currentPageYearMonth) {
+        viewModel.onPageChanged(currentPageYearMonth)
+    }
+
+    // 当 ViewModel 的 currentYearMonth 变化时（比如点击"今天"按钮），同步 Pager
+    LaunchedEffect(currentYearMonth) {
+        val targetPage = (currentYearMonth.year - startMonth.year) * 12 +
+            (currentYearMonth.monthValue - startMonth.monthValue)
+        if (targetPage != pagerState.currentPage) {
+            pagerState.animateScrollToPage(targetPage)
+        }
+    }
+
     Box(modifier = modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
@@ -81,42 +130,48 @@ fun CalendarScreen(
         ) {
             HeaderSection(onLegendClick = { viewModel.showLegendDialog() })
 
-            when (val state = calendarData) {
-                is CalendarUiState.Loading -> {
-                    LoadingState()
-                }
-                is CalendarUiState.Success -> {
-                    CalendarContent(
-                        yearMonth = state.yearMonth,
-                        days = state.days,
-                        selectedDate = selectedDate,
-                        activeCycle = activeCycle,
-                        onDateClick = { date ->
-                            viewModel.selectDate(date)
-                            onDateClick(date)
-                        },
-                        onPreviousMonth = { viewModel.navigateToPreviousMonth() },
-                        onNextMonth = { viewModel.navigateToNextMonth() },
-                        onTodayClick = { viewModel.navigateToToday() },
-                        onRecordClick = { date ->
-                            recordDate = date
-                            recordMode = RecordMode.AUTO
-                            showRecordSheet = true
-                        },
-                        onEndCycleClick = { viewModel.showEndCycleDialog() },
-                        onNewCycleClick = { date ->
-                            recordDate = date
-                            recordMode = RecordMode.NEW_CYCLE
-                            showRecordSheet = true
-                        },
-                        onEditClick = { date ->
-                            recordDate = date
-                            recordMode = RecordMode.AUTO
-                            showRecordSheet = true
+            CalendarContent(
+                pagerState = pagerState,
+                startMonth = startMonth,
+                calendarPages = calendarPages,
+                selectedDate = selectedDate,
+                activeCycle = activeCycle,
+                onDateClick = { date ->
+                    viewModel.selectDate(date)
+                    onDateClick(date)
+                },
+                onPreviousMonth = {
+                    coroutineScope.launch {
+                        if (pagerState.currentPage > 0) {
+                            pagerState.animateScrollToPage(pagerState.currentPage - 1)
                         }
-                    )
+                    }
+                },
+                onNextMonth = {
+                    coroutineScope.launch {
+                        if (pagerState.currentPage < totalMonths - 1) {
+                            pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                        }
+                    }
+                },
+                onTodayClick = { viewModel.navigateToToday() },
+                onRecordClick = { date ->
+                    recordDate = date
+                    recordMode = RecordMode.AUTO
+                    showRecordSheet = true
+                },
+                onEndCycleClick = { viewModel.showEndCycleDialog() },
+                onNewCycleClick = { date ->
+                    recordDate = date
+                    recordMode = RecordMode.NEW_CYCLE
+                    showRecordSheet = true
+                },
+                onEditClick = { date ->
+                    recordDate = date
+                    recordMode = RecordMode.AUTO
+                    showRecordSheet = true
                 }
-            }
+            )
 
             Spacer(modifier = Modifier.height(80.dp))
         }
@@ -194,8 +249,9 @@ private fun HeaderSection(onLegendClick: () -> Unit) {
 
 @Composable
 private fun CalendarContent(
-    yearMonth: java.time.YearMonth,
-    days: List<com.example.periodvibe.domain.usecase.CalendarDay>,
+    pagerState: androidx.compose.foundation.pager.PagerState,
+    startMonth: YearMonth,
+    calendarPages: Map<YearMonth, CalendarUiState>,
     selectedDate: java.time.LocalDate?,
     activeCycle: com.example.periodvibe.domain.model.Cycle?,
     onDateClick: (java.time.LocalDate) -> Unit,
@@ -207,31 +263,55 @@ private fun CalendarContent(
     onNewCycleClick: (java.time.LocalDate) -> Unit,
     onEditClick: (java.time.LocalDate) -> Unit
 ) {
+    val currentPageYearMonth = remember(pagerState.currentPage) {
+        startMonth.plusMonths(pagerState.currentPage.toLong())
+    }
+    val currentUiState = calendarPages[currentPageYearMonth]
+
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // 月份头部 - 固定显示当前页面的月份
         CalendarMonthHeader(
-            yearMonth = yearMonth,
+            yearMonth = currentPageYearMonth,
             onPreviousMonth = onPreviousMonth,
             onNextMonth = onNextMonth,
             onTodayClick = onTodayClick
         )
 
-        CalendarGrid(
-            yearMonth = yearMonth,
-            days = days,
-            selectedDate = selectedDate,
-            onDateClick = onDateClick,
-            onPreviousMonth = onPreviousMonth,
-            onNextMonth = onNextMonth
-        )
+        // HorizontalPager - 日历内容滑动区域
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxWidth(),
+            key = { page -> startMonth.plusMonths(page.toLong()) }
+        ) { page ->
+            val yearMonth = startMonth.plusMonths(page.toLong())
+            val uiState = calendarPages[yearMonth]
+
+            when (uiState) {
+                is CalendarUiState.Loading -> {
+                    LoadingState()
+                }
+                is CalendarUiState.Success -> {
+                    CalendarGrid(
+                        yearMonth = yearMonth,
+                        days = uiState.days,
+                        selectedDate = if (yearMonth == currentPageYearMonth) selectedDate else null,
+                        onDateClick = onDateClick
+                    )
+                }
+                null -> {
+                    LoadingState()
+                }
+            }
+        }
 
         CalendarLegend()
 
-        if (selectedDate != null) {
+        if (currentUiState is CalendarUiState.Success && selectedDate != null) {
             val date = selectedDate
-            val selectedDay = days.find {
+            val selectedDay = currentUiState.days.find {
                 it is com.example.periodvibe.domain.usecase.CalendarDay.Data && it.date == date
             }
             if (selectedDay is com.example.periodvibe.domain.usecase.CalendarDay.Data) {

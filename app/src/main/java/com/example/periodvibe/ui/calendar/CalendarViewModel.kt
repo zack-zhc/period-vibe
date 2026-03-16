@@ -9,6 +9,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.YearMonth
@@ -22,9 +23,11 @@ class CalendarViewModel @Inject constructor(
     private val endCycleUseCase: com.example.periodvibe.domain.usecase.EndCycleUseCase
 ) : ViewModel() {
 
-    private val _calendarData = MutableStateFlow<CalendarUiState>(CalendarUiState.Loading)
-    val calendarData: StateFlow<CalendarUiState> = _calendarData.asStateFlow()
+    // 保存多个月份的日历数据
+    private val _calendarPages = MutableStateFlow<Map<YearMonth, CalendarUiState>>(emptyMap())
+    val calendarPages: StateFlow<Map<YearMonth, CalendarUiState>> = _calendarPages.asStateFlow()
 
+    // 当前显示的月份（用于 Pager 的 key）
     private val _currentYearMonth = MutableStateFlow(YearMonth.now())
     val currentYearMonth: StateFlow<YearMonth> = _currentYearMonth.asStateFlow()
 
@@ -40,24 +43,52 @@ class CalendarViewModel @Inject constructor(
     private val _activeCycle = MutableStateFlow<com.example.periodvibe.domain.model.Cycle?>(null)
     val activeCycle: StateFlow<com.example.periodvibe.domain.model.Cycle?> = _activeCycle.asStateFlow()
 
-    private var calendarDataJob: Job? = null
+    // 预加载的月份数量
+    private val preloadCount = 2
 
     init {
-        loadCalendarData()
         loadActiveCycle()
+        // 初始加载当前月及前后各2个月的数据
+        loadMonthsAround(YearMonth.now())
     }
 
-    private fun loadCalendarData() {
-        calendarDataJob?.cancel()
-        calendarDataJob = viewModelScope.launch {
-            getCalendarDataUseCase(_currentYearMonth.value).collect { data ->
-                _calendarData.value = CalendarUiState.Success(
-                    yearMonth = data.yearMonth,
-                    days = data.days,
-                    prediction = data.prediction,
-                    hasData = data.hasData
-                )
+    private fun loadMonthsAround(centerMonth: YearMonth) {
+        val monthsToLoad = mutableListOf<YearMonth>()
+        for (i in -preloadCount..preloadCount) {
+            monthsToLoad.add(centerMonth.plusMonths(i.toLong()))
+        }
+        monthsToLoad.forEach { yearMonth ->
+            loadMonthData(yearMonth)
+        }
+    }
+
+    private fun loadMonthData(yearMonth: YearMonth) {
+        if (_calendarPages.value.containsKey(yearMonth)) {
+            return
+        }
+        _calendarPages.value = _calendarPages.value.toMutableMap().also {
+            it[yearMonth] = CalendarUiState.Loading
+        }
+        viewModelScope.launch {
+            getCalendarDataUseCase(yearMonth).collect { data ->
+                _calendarPages.value = _calendarPages.value.toMutableMap().also {
+                    it[yearMonth] = CalendarUiState.Success(
+                        yearMonth = data.yearMonth,
+                        days = data.days,
+                        prediction = data.prediction,
+                        hasData = data.hasData
+                    )
+                }
             }
+        }
+    }
+
+    fun onPageChanged(yearMonth: YearMonth) {
+        if (_currentYearMonth.value != yearMonth) {
+            _currentYearMonth.value = yearMonth
+            _selectedDate.value = null
+            // 预加载更多月份
+            loadMonthsAround(yearMonth)
         }
     }
 
@@ -75,18 +106,6 @@ class CalendarViewModel @Inject constructor(
         }
     }
 
-    fun navigateToPreviousMonth() {
-        _currentYearMonth.value = _currentYearMonth.value.minusMonths(1)
-        _selectedDate.value = null
-        loadCalendarData()
-    }
-
-    fun navigateToNextMonth() {
-        _currentYearMonth.value = _currentYearMonth.value.plusMonths(1)
-        _selectedDate.value = null
-        loadCalendarData()
-    }
-
     fun selectDate(date: LocalDate) {
         _selectedDate.value = date
         loadActiveCycleForDate(date)
@@ -99,7 +118,7 @@ class CalendarViewModel @Inject constructor(
     fun navigateToToday() {
         _currentYearMonth.value = YearMonth.now()
         _selectedDate.value = LocalDate.now()
-        loadCalendarData()
+        loadMonthsAround(YearMonth.now())
     }
 
     fun showEndCycleDialog() {
@@ -125,6 +144,9 @@ class CalendarViewModel @Inject constructor(
                     hideEndCycleDialog()
                     clearSelectedDate()
                     loadActiveCycle()
+                    // 刷新所有月份数据
+                    _calendarPages.value = emptyMap()
+                    loadMonthsAround(_currentYearMonth.value)
                 }
                 .onFailure { e ->
                     e.printStackTrace()
@@ -141,6 +163,9 @@ class CalendarViewModel @Inject constructor(
             saveRecordUseCase(date, mode, flowLevel)
                 .onSuccess {
                     loadActiveCycle()
+                    // 刷新所有月份数据
+                    _calendarPages.value = emptyMap()
+                    loadMonthsAround(_currentYearMonth.value)
                 }
                 .onFailure { e ->
                     e.printStackTrace()
