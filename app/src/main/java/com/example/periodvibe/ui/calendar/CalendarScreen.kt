@@ -222,7 +222,9 @@ private fun CalendarContent(
             yearMonth = yearMonth,
             days = days,
             selectedDate = selectedDate,
-            onDateClick = onDateClick
+            onDateClick = onDateClick,
+            onPreviousMonth = onPreviousMonth,
+            onNextMonth = onNextMonth
         )
 
         CalendarLegend()
