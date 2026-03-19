@@ -51,12 +51,12 @@ fun PinSetupScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text("Set up PIN", style = MaterialTheme.typography.headlineMedium)
+            Text("设置 PIN 码", style = MaterialTheme.typography.headlineMedium)
             Spacer(modifier = Modifier.height(16.dp))
             OutlinedTextField(
                 value = viewModel.pin.value,
                 onValueChange = viewModel::onPinChange,
-                label = { Text("Enter PIN") },
+                label = { Text("输入 PIN 码") },
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                 modifier = Modifier.fillMaxWidth()
@@ -65,7 +65,7 @@ fun PinSetupScreen(
             OutlinedTextField(
                 value = viewModel.confirmPin.value,
                 onValueChange = viewModel::onConfirmPinChange,
-                label = { Text("Confirm PIN") },
+                label = { Text("确认 PIN 码") },
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                 modifier = Modifier.fillMaxWidth()
@@ -76,7 +76,7 @@ fun PinSetupScreen(
                 enabled = uiState !is PinSetupUiState.Loading,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Set PIN")
+                Text("设置 PIN 码")
             }
         }
         SnackbarHost(

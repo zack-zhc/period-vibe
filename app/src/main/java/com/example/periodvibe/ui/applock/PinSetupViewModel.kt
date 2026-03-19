@@ -38,12 +38,12 @@ class PinSetupViewModel @Inject constructor(
 
     fun onSetPin() {
         if (pin.value.length < 4) {
-            _uiState.value = PinSetupUiState.Error("PIN must be 4 digits")
+            _uiState.value = PinSetupUiState.Error("PIN 码必须为 4 位数字")
             return
         }
 
         if (pin.value != confirmPin.value) {
-            _uiState.value = PinSetupUiState.Error("PINs do not match")
+            _uiState.value = PinSetupUiState.Error("两次输入的 PIN 码不一致")
             return
         }
 

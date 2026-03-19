@@ -35,7 +35,7 @@ class AppLockViewModel @Inject constructor(
             if (pin.value == storedPin) {
                 _uiState.value = AppLockUiState.Unlocked
             } else {
-                _uiState.value = AppLockUiState.Error("Invalid PIN")
+                _uiState.value = AppLockUiState.Error("PIN 码错误")
             }
         }
     }
@@ -55,9 +55,9 @@ class AppLockViewModel @Inject constructor(
         when (biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL)) {
             BiometricManager.BIOMETRIC_SUCCESS -> {
                 val promptInfo = BiometricPrompt.PromptInfo.Builder()
-                    .setTitle("Biometric login for Period Vibe")
-                    .setSubtitle("Log in using your biometric credential")
-                    .setNegativeButtonText("Use account password")
+                    .setTitle("Period Vibe 生物识别登录")
+                    .setSubtitle("使用您的生物识别凭证登录")
+                    .setNegativeButtonText("使用 PIN 码")
                     .build()
 
                 val biometricPrompt = BiometricPrompt(activity,
@@ -75,7 +75,7 @@ class AppLockViewModel @Inject constructor(
 
                         override fun onAuthenticationFailed() {
                             super.onAuthenticationFailed()
-                            _uiState.value = AppLockUiState.Error("Authentication failed")
+                            _uiState.value = AppLockUiState.Error("认证失败")
                         }
                     })
 

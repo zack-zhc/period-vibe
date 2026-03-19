@@ -53,18 +53,18 @@ fun AppLockScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                Text("Enter PIN", style = MaterialTheme.typography.headlineMedium)
+                Text("输入 PIN 码", style = MaterialTheme.typography.headlineMedium)
                 Spacer(modifier = Modifier.height(16.dp))
                 OutlinedTextField(
                     value = viewModel.pin.value,
                     onValueChange = viewModel::onPinChange,
-                    label = { Text("PIN") },
+                    label = { Text("PIN 码") },
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword)
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(onClick = viewModel::onPinEntered) {
-                    Text("Unlock")
+                    Text("解锁")
                 }
 
                 if (uiState is AppLockUiState.Error) {
