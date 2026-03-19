@@ -60,6 +60,15 @@ class CycleRepository @Inject constructor(
         cycleDao.deleteAllCycles()
     }
 
+    suspend fun getAllCyclesOnce(): List<Cycle> {
+        return cycleDao.getAllCycles().first().map { cycleMapper.toDomain(it) }
+    }
+
+    suspend fun insertAllCycles(cycles: List<Cycle>): List<Long> {
+        val entities = cycleMapper.toEntityList(cycles)
+        return cycleDao.insertAllCycles(entities)
+    }
+
     suspend fun createInitialCycle(
         startDate: LocalDate,
         cycleLength: Int? = null,
@@ -162,6 +171,15 @@ class CycleRepository @Inject constructor(
 
     suspend fun deleteAllDailyRecords() {
         dailyRecordDao.deleteAllDailyRecords()
+    }
+
+    suspend fun getAllDailyRecordsOnce(): List<com.example.periodvibe.domain.model.DailyRecord> {
+        return dailyRecordDao.getAllDailyRecords().first().map { dailyRecordMapper.toDomain(it) }
+    }
+
+    suspend fun insertAllDailyRecords(records: List<com.example.periodvibe.domain.model.DailyRecord>): List<Long> {
+        val entities = dailyRecordMapper.toEntityList(records)
+        return dailyRecordDao.insertAllDailyRecords(entities)
     }
 
     suspend fun getPreviousDayRecord(date: java.time.LocalDate): com.example.periodvibe.domain.model.DailyRecord? {

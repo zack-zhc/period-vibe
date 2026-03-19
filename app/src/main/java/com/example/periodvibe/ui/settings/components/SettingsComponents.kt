@@ -435,7 +435,7 @@ fun DataManagementSection(
     ) {
         SettingItem(
             label = "导出数据",
-            value = "CSV格式",
+            value = "选择格式",
             showChevron = true,
             onClick = onExportDataClick
         )
@@ -453,6 +453,121 @@ fun DataManagementSection(
             onClick = onClearDataClick
         )
     }
+}
+
+@Composable
+fun ExportFormatDialog(
+    onDismiss: () -> Unit,
+    onFormatSelected: (com.example.periodvibe.data.exportimport.ExportFormat) -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("选择导出格式") },
+        text = {
+            Column {
+                TextButton(
+                    onClick = { onFormatSelected(com.example.periodvibe.data.exportimport.ExportFormat.JSON) },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(Modifier.fillMaxWidth()) {
+                        Text("JSON 格式", style = MaterialTheme.typography.bodyLarge)
+                        Text(
+                            "推荐格式，完整保留所有数据",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                TextButton(
+                    onClick = { onFormatSelected(com.example.periodvibe.data.exportimport.ExportFormat.CSV) },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(Modifier.fillMaxWidth()) {
+                        Text("CSV 格式", style = MaterialTheme.typography.bodyLarge)
+                        Text(
+                            "可在 Excel 中打开，便于查看",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        }
+    )
+}
+
+@Composable
+fun ImportConfirmationDialog(
+    cycleCount: Int,
+    recordCount: Int,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("确认导入数据") },
+        text = {
+            Text(
+                "即将导入：\n" +
+                        "• $cycleCount 个周期记录\n" +
+                        "• $recordCount 条日常记录\n\n" +
+                        "注意：导入将覆盖现有数据，请确保已备份当前数据。"
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onConfirm
+            ) {
+                Text("确认导入")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        }
+    )
+}
+
+@Composable
+fun ImportResultDialog(
+    success: Boolean,
+    message: String,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(if (success) "导入成功" else "导入失败") },
+        text = { Text(message) },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("确定")
+            }
+        }
+    )
+}
+
+@Composable
+fun ExportResultDialog(
+    success: Boolean,
+    message: String,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(if (success) "导出成功" else "导出失败") },
+        text = { Text(message) },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("确定")
+            }
+        }
+    )
 }
 
 @Composable

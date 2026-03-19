@@ -1,11 +1,19 @@
 package com.example.periodvibe.ui.settings
 
 import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.periodvibe.data.exportimport.CsvExportImportService
+import com.example.periodvibe.data.exportimport.CsvImportResult
+import com.example.periodvibe.data.exportimport.DataExportImportService
+import com.example.periodvibe.data.exportimport.ExportFormat
+import com.example.periodvibe.data.exportimport.ImportResult
 import com.example.periodvibe.data.repository.CycleRepository
 import com.example.periodvibe.data.repository.SecurityRepository
 import com.example.periodvibe.data.repository.SettingsRepository
+import com.example.periodvibe.domain.model.Cycle
+import com.example.periodvibe.domain.model.DailyRecord
 import com.example.periodvibe.utils.AlarmScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -22,7 +30,9 @@ class SettingsViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val settingsRepository: SettingsRepository,
     private val cycleRepository: CycleRepository,
-    private val securityRepository: SecurityRepository
+    private val securityRepository: SecurityRepository,
+    private val dataExportImportService: DataExportImportService,
+    private val csvExportImportService: CsvExportImportService
 ) : ViewModel() {
 
     private val alarmScheduler = AlarmScheduler(context)
@@ -56,6 +66,30 @@ class SettingsViewModel @Inject constructor(
 
     private val _showClearDataConfirmationDialog = MutableStateFlow(false)
     val showClearDataConfirmationDialog: StateFlow<Boolean> = _showClearDataConfirmationDialog.asStateFlow()
+
+    private val _showImportConfirmationDialog = MutableStateFlow(false)
+    val showImportConfirmationDialog: StateFlow<Boolean> = _showImportConfirmationDialog.asStateFlow()
+
+    private val _showImportResultDialog = MutableStateFlow(false)
+    val showImportResultDialog: StateFlow<Boolean> = _showImportResultDialog.asStateFlow()
+
+    private val _showExportResultDialog = MutableStateFlow(false)
+    val showExportResultDialog: StateFlow<Boolean> = _showExportResultDialog.asStateFlow()
+
+    private val _importResult = MutableStateFlow<ImportResult?>(null)
+    val importResult: StateFlow<ImportResult?> = _importResult.asStateFlow()
+
+    private val _exportResult = MutableStateFlow<Pair<Boolean, String>?>(null)
+    val exportResult: StateFlow<Pair<Boolean, String>?> = _exportResult.asStateFlow()
+
+    private val _showExportFormatDialog = MutableStateFlow(false)
+    val showExportFormatDialog: StateFlow<Boolean> = _showExportFormatDialog.asStateFlow()
+
+    // 当前选择的导出格式
+    private var selectedExportFormat: ExportFormat = ExportFormat.JSON
+
+    // 临时存储待导入的数据
+    private var pendingImportData: Pair<List<Cycle>, List<DailyRecord>>? = null
 
     init {
         loadSettings()
@@ -171,6 +205,258 @@ class SettingsViewModel @Inject constructor(
 
     fun hideClearDataConfirmationDialog() {
         _showClearDataConfirmationDialog.value = false
+    }
+
+    fun showImportConfirmationDialog() {
+        _showImportConfirmationDialog.value = true
+    }
+
+    fun hideImportConfirmationDialog() {
+        _showImportConfirmationDialog.value = false
+        pendingImportData = null
+    }
+
+    fun showImportResultDialog() {
+        _showImportResultDialog.value = true
+    }
+
+    fun hideImportResultDialog() {
+        _showImportResultDialog.value = false
+        _importResult.value = null
+    }
+
+    fun showExportResultDialog() {
+        _showExportResultDialog.value = true
+    }
+
+    fun hideExportResultDialog() {
+        _showExportResultDialog.value = false
+        _exportResult.value = null
+    }
+
+    fun showExportFormatDialog() {
+        _showExportFormatDialog.value = true
+    }
+
+    fun hideExportFormatDialog() {
+        _showExportFormatDialog.value = false
+    }
+
+    fun setSelectedExportFormat(format: ExportFormat) {
+        selectedExportFormat = format
+        hideExportFormatDialog()
+    }
+
+    fun getSelectedExportFormat(): ExportFormat = selectedExportFormat
+
+    /**
+     * 导出数据到 Uri
+     */
+    fun exportData(uri: Uri) {
+        viewModelScope.launch {
+            try {
+                val cycles = cycleRepository.getAllCyclesOnce()
+                val dailyRecords = cycleRepository.getAllDailyRecordsOnce()
+                val success = when (selectedExportFormat) {
+                    ExportFormat.JSON -> {
+                        val jsonString = dataExportImportService.exportToJson(cycles, dailyRecords)
+                        dataExportImportService.writeToFile(context, uri, jsonString)
+                    }
+                    ExportFormat.CSV -> {
+                        val cyclesCsv = csvExportImportService.exportCyclesToCsv(cycles)
+                        val recordsCsv = csvExportImportService.exportDailyRecordsToCsv(dailyRecords, cycles)
+                        csvExportImportService.writeCsvToFile(context, uri, cyclesCsv, recordsCsv)
+                    }
+                }
+
+                if (success) {
+                    _exportResult.value = Pair(true, "成功导出 ${cycles.size} 个周期记录和 ${dailyRecords.size} 条日常记录 (${selectedExportFormat.displayName} 格式)")
+                } else {
+                    _exportResult.value = Pair(false, "写入文件失败")
+                }
+            } catch (e: Exception) {
+                _exportResult.value = Pair(false, "导出失败: ${e.message}")
+            }
+            showExportResultDialog()
+        }
+    }
+
+    /**
+     * 从 Uri 预览导入数据（不实际导入）
+     */
+    fun previewImportData(uri: Uri) {
+        viewModelScope.launch {
+            try {
+                // 获取文件扩展名
+                val fileExtension = uri.lastPathSegment?.substringAfterLast('.', "")?.lowercase()
+
+                // 读取文件全部内容
+                val fileContent = csvExportImportService.readFileContent(context, uri)
+                    ?: run {
+                        _importResult.value = ImportResult.Failure("无法读取文件")
+                        showImportResultDialog()
+                        return@launch
+                    }
+
+                // 检测文件类型 - 先通过扩展名猜测
+                val isJsonByExtension = fileExtension == "json"
+                val isCsvByExtension = fileExtension == "csv"
+
+                // 通过内容检测
+                val fileType = csvExportImportService.detectFileType(fileContent)
+
+                // 根据检测结果尝试解析
+                when {
+                    // 先尝试 JSON（通过内容或扩展名判断）
+                    fileType == CsvExportImportService.FileType.JSON || isJsonByExtension -> {
+                        try {
+                            val result = dataExportImportService.importFromJson(fileContent)
+                            when (result) {
+                                is ImportResult.Success -> {
+                                    pendingImportData = Pair(result.cycles, result.dailyRecords)
+                                    showImportConfirmationDialog()
+                                    return@launch
+                                }
+                                is ImportResult.Failure -> {
+                                    // JSON 失败，如果是 CSV 扩展名则尝试 CSV
+                                    if (isCsvByExtension || fileType != CsvExportImportService.FileType.UNKNOWN) {
+                                        // 继续尝试 CSV
+                                    } else {
+                                        _importResult.value = ImportResult.Failure("JSON 格式解析失败: ${result.errorMessage}")
+                                        showImportResultDialog()
+                                        return@launch
+                                    }
+                                }
+                            }
+                        } catch (e: Exception) {
+                            // JSON 解析异常，继续尝试 CSV
+                        }
+                    }
+                }
+
+                // 尝试 CSV（通过内容或扩展名判断）
+                when {
+                    fileType == CsvExportImportService.FileType.COMBINED_CSV ||
+                            fileType == CsvExportImportService.FileType.CYCLES_CSV ||
+                            isCsvByExtension -> {
+                        try {
+                            val (cyclesCsv, recordsCsv) = csvExportImportService.readCsvFromFile(context, uri)
+
+                            if (cyclesCsv != null) {
+                                val cyclesResult = csvExportImportService.importCyclesFromCsv(cyclesCsv)
+                                when (cyclesResult) {
+                                    is CsvImportResult.Success -> {
+                                        val cycles = cyclesResult.data
+                                        val records = if (recordsCsv != null) {
+                                            when (val recordsResult = csvExportImportService.importDailyRecordsFromCsv(recordsCsv, cycles)) {
+                                                is CsvImportResult.Success -> recordsResult.data
+                                                is CsvImportResult.Failure -> emptyList()
+                                            }
+                                        } else {
+                                            emptyList()
+                                        }
+                                        pendingImportData = Pair(cycles, records)
+                                        showImportConfirmationDialog()
+                                        return@launch
+                                    }
+                                    is CsvImportResult.Failure -> {
+                                        _importResult.value = ImportResult.Failure("CSV 格式解析失败: ${cyclesResult.errorMessage}")
+                                        showImportResultDialog()
+                                        return@launch
+                                    }
+                                }
+                            }
+                        } catch (e: Exception) {
+                            // CSV 解析异常，继续
+                        }
+                    }
+                }
+
+                // 所有方法都失败了
+                _importResult.value = ImportResult.Failure(
+                    "无法识别文件格式\n" +
+                            "请确保使用 JSON 或 CSV 格式的备份文件\n" +
+                            "检测到的扩展名: ${fileExtension ?: "未知"}\n" +
+                            "文件大小: ${fileContent.length} 字符"
+                )
+                showImportResultDialog()
+            } catch (e: Exception) {
+                _importResult.value = ImportResult.Failure("导入失败: ${e.javaClass.simpleName} - ${e.message}")
+                showImportResultDialog()
+            }
+        }
+    }
+
+    /**
+     * 获取待导入数据的数量信息
+     */
+    fun getPendingImportDataCount(): Pair<Int, Int> {
+        return pendingImportData?.let { (cycles, records) ->
+            Pair(cycles.size, records.size)
+        } ?: Pair(0, 0)
+    }
+
+    /**
+     * 确认导入数据
+     */
+    fun confirmImportData() {
+        viewModelScope.launch {
+            try {
+                val (cycles, dailyRecords) = pendingImportData ?: run {
+                    _importResult.value = ImportResult.Failure("没有待导入的数据")
+                    showImportResultDialog()
+                    return@launch
+                }
+
+                // 先清除现有数据
+                cycleRepository.deleteAllDailyRecords()
+                cycleRepository.deleteAllCycles()
+
+                // 导入新数据 - 先插入周期，获取新生成的 ID
+                val insertedCycleIds = cycleRepository.insertAllCycles(cycles)
+                val cyclesWithIds = cycles.zip(insertedCycleIds) { cycle, newId ->
+                    cycle.copy(id = newId)
+                }
+
+                // 更新日常记录的 cycleId 为新生成的 ID
+                val originalStartDateToNewId = cyclesWithIds.associate { it.startDate to it.id }
+                val recordsWithUpdatedCycleIds = dailyRecords.map { record ->
+                    // 重新通过周期的 startDate 查找新的 cycleId
+                    val originalCycle = cycles.find { cycle ->
+                        record.cycleId?.let { cycle.id == it } == true
+                    }
+                    val newCycleId = originalCycle?.startDate?.let { originalStartDateToNewId[it] }
+                    record.copy(cycleId = newCycleId)
+                }
+
+                // 插入日常记录
+                cycleRepository.insertAllDailyRecords(recordsWithUpdatedCycleIds)
+
+                // 重新安排通知（失败不影响导入结果）
+                try {
+                    val settings = settingsRepository.getSettingsSync()
+                    if (settings != null && settings.notificationEnabled) {
+                        val latestCycle = cycleRepository.getLatestCycle()
+                        if (latestCycle != null) {
+                            scheduleNotification(settings)
+                        } else {
+                            alarmScheduler.cancel()
+                        }
+                    }
+                } catch (e: Exception) {
+                    // 忽略通知安排错误，不影响导入成功
+                    e.printStackTrace()
+                }
+
+                _importResult.value = ImportResult.Success(cyclesWithIds, recordsWithUpdatedCycleIds)
+                hideImportConfirmationDialog()
+                showImportResultDialog()
+            } catch (e: Exception) {
+                _importResult.value = ImportResult.Failure("导入失败: ${e.message}")
+                hideImportConfirmationDialog()
+                showImportResultDialog()
+            }
+        }
     }
 
     fun updateCycleParameters(
@@ -301,24 +587,29 @@ class SettingsViewModel @Inject constructor(
     }
 
     private suspend fun scheduleNotification(settings: com.example.periodvibe.domain.model.Settings) {
-        val latestCycle = cycleRepository.getLatestCycle()
-        if (latestCycle != null) {
-            val cycleLength = latestCycle.cycleLength ?: settings.cycleLengthDefault
-            val nextPeriodDate = latestCycle.startDate.plusDays(cycleLength.toLong())
-            val notificationDateTime = LocalDateTime.of(
-                nextPeriodDate.minusDays(settings.notificationDaysBefore.toLong()),
-                settings.notificationTime
-            )
-            val message = if (settings.privacyModeEnabled) {
-                "You have a new notification."
-            } else {
-                "Your period is expected to start in ${settings.notificationDaysBefore} days!"
+        try {
+            val latestCycle = cycleRepository.getLatestCycle()
+            if (latestCycle != null) {
+                val cycleLength = latestCycle.cycleLength ?: settings.cycleLengthDefault
+                val nextPeriodDate = latestCycle.startDate.plusDays(cycleLength.toLong())
+                val notificationDateTime = LocalDateTime.of(
+                    nextPeriodDate.minusDays(settings.notificationDaysBefore.toLong()),
+                    settings.notificationTime
+                )
+                val message = if (settings.privacyModeEnabled) {
+                    "You have a new notification."
+                } else {
+                    "Your period is expected to start in ${settings.notificationDaysBefore} days!"
+                }
+                alarmScheduler.schedule(
+                    notificationDateTime,
+                    "Period Reminder",
+                    message
+                )
             }
-            alarmScheduler.schedule(
-                notificationDateTime,
-                "Period Reminder",
-                message
-            )
+        } catch (e: Exception) {
+            // 忽略闹钟设置错误，不影响其他功能
+            e.printStackTrace()
         }
     }
 

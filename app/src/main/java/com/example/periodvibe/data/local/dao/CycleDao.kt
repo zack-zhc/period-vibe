@@ -37,4 +37,7 @@ interface CycleDao {
 
     @Query("DELETE FROM cycles")
     suspend fun deleteAllCycles()
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAllCycles(cycles: List<CycleEntity>): List<Long>
 }

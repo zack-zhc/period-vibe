@@ -37,4 +37,7 @@ interface DailyRecordDao {
 
     @Query("DELETE FROM daily_records")
     suspend fun deleteAllDailyRecords()
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAllDailyRecords(records: List<DailyRecordEntity>): List<Long>
 }
