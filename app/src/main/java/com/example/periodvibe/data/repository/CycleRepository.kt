@@ -160,6 +160,10 @@ class CycleRepository @Inject constructor(
         dailyRecordDao.deleteDailyRecord(entity)
     }
 
+    suspend fun deleteAllDailyRecords() {
+        dailyRecordDao.deleteAllDailyRecords()
+    }
+
     suspend fun getPreviousDayRecord(date: java.time.LocalDate): com.example.periodvibe.domain.model.DailyRecord? {
         val previousDate = date.minusDays(1)
         return getDailyRecordByDate(previousDate)

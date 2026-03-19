@@ -426,67 +426,59 @@ fun PrivacySettingsSection(
 
 @Composable
 fun DataManagementSection(
-    onClick: () -> Unit
+    onExportDataClick: () -> Unit,
+    onImportDataClick: () -> Unit,
+    onClearDataClick: () -> Unit
 ) {
     SettingsSection(
-        title = "数据管理",
-        onClick = onClick
+        title = "数据管理"
     ) {
         SettingItem(
             label = "导出数据",
             value = "CSV格式",
-            showChevron = true
+            showChevron = true,
+            onClick = onExportDataClick
         )
         SettingItem(
             label = "导入数据",
             value = "从备份恢复",
-            showChevron = true
+            showChevron = true,
+            onClick = onImportDataClick
         )
         SettingItem(
             label = "清除数据",
             value = "删除所有记录",
             showChevron = true,
-            valueColor = MaterialTheme.colorScheme.error
+            valueColor = MaterialTheme.colorScheme.error,
+            onClick = onClearDataClick
         )
     }
 }
 
 @Composable
-fun DataManagementDialog(
+fun ClearDataConfirmationDialog(
     onDismiss: () -> Unit,
-    onClearData: () -> Unit
+    onConfirm: () -> Unit
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("数据管理") },
+        title = { Text("确认清除数据") },
         text = {
-            Column {
-                TextButton(
-                    onClick = { },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("导出数据")
-                }
-                TextButton(
-                    onClick = { },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("导入数据")
-                }
-                TextButton(
-                    onClick = onClearData,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        "清除数据",
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-            }
+            Text("此操作将永久删除所有周期记录和日常数据，且无法恢复。确定要继续吗？")
         },
         confirmButton = {
+            TextButton(
+                onClick = onConfirm
+            ) {
+                Text(
+                    "确定清除",
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+        },
+        dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("关闭")
+                Text("取消")
             }
         }
     )

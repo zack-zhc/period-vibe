@@ -29,8 +29,8 @@ import com.example.periodvibe.ui.settings.components.PrivacySettingsSection
 import com.example.periodvibe.ui.settings.components.ThemeSettingsSection
 import com.example.periodvibe.ui.settings.components.AboutSection
 import com.example.periodvibe.ui.settings.components.AboutDialog
+import com.example.periodvibe.ui.settings.components.ClearDataConfirmationDialog
 import com.example.periodvibe.ui.settings.components.CycleParametersDialog
-import com.example.periodvibe.ui.settings.components.DataManagementDialog
 import com.example.periodvibe.ui.settings.components.DisableAppLockConfirmationDialog
 import com.example.periodvibe.ui.settings.components.ThemeSettingsDialog
 import com.example.periodvibe.ui.settings.components.DaysBeforeDialog
@@ -53,10 +53,10 @@ fun SettingsScreen(
     val showDisableAppLockDialog by viewModel.showDisableAppLockDialog.collectAsState()
     val showDaysBeforeDialog by viewModel.showDaysBeforeDialog.collectAsState()
     val showTimeDialog by viewModel.showTimeDialog.collectAsState()
-    val showDataManagementDialog by viewModel.showDataManagementDialog.collectAsState()
     val showThemeDialog by viewModel.showThemeDialog.collectAsState()
     val showPrivacyDialog by viewModel.showPrivacyDialog.collectAsState()
     val showAboutDialog by viewModel.showAboutDialog.collectAsState()
+    val showClearDataConfirmationDialog by viewModel.showClearDataConfirmationDialog.collectAsState()
 
     when (uiState) {
         is SettingsUiState.Loading -> {
@@ -131,7 +131,9 @@ fun SettingsScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 DataManagementSection(
-                    onClick = { viewModel.showDataManagementDialog() }
+                    onExportDataClick = { /* 导出数据功能待实现 */ },
+                    onImportDataClick = { /* 导入数据功能待实现 */ },
+                    onClearDataClick = { viewModel.showClearDataConfirmationDialog() }
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -167,10 +169,10 @@ fun SettingsScreen(
         )
     }
 
-    if (showDataManagementDialog) {
-        DataManagementDialog(
-            onDismiss = { viewModel.hideDataManagementDialog() },
-            onClearData = { viewModel.clearAllData() }
+    if (showClearDataConfirmationDialog) {
+        ClearDataConfirmationDialog(
+            onDismiss = { viewModel.hideClearDataConfirmationDialog() },
+            onConfirm = { viewModel.clearAllData() }
         )
     }
 

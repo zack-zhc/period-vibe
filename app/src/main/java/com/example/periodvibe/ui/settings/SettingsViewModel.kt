@@ -45,9 +45,6 @@ class SettingsViewModel @Inject constructor(
     private val _showTimeDialog = MutableStateFlow(false)
     val showTimeDialog: StateFlow<Boolean> = _showTimeDialog.asStateFlow()
 
-    private val _showDataManagementDialog = MutableStateFlow(false)
-    val showDataManagementDialog: StateFlow<Boolean> = _showDataManagementDialog.asStateFlow()
-
     private val _showThemeDialog = MutableStateFlow(false)
     val showThemeDialog: StateFlow<Boolean> = _showThemeDialog.asStateFlow()
 
@@ -56,6 +53,9 @@ class SettingsViewModel @Inject constructor(
 
     private val _showAboutDialog = MutableStateFlow(false)
     val showAboutDialog: StateFlow<Boolean> = _showAboutDialog.asStateFlow()
+
+    private val _showClearDataConfirmationDialog = MutableStateFlow(false)
+    val showClearDataConfirmationDialog: StateFlow<Boolean> = _showClearDataConfirmationDialog.asStateFlow()
 
     init {
         loadSettings()
@@ -141,14 +141,6 @@ class SettingsViewModel @Inject constructor(
         _showTimeDialog.value = false
     }
 
-    fun showDataManagementDialog() {
-        _showDataManagementDialog.value = true
-    }
-
-    fun hideDataManagementDialog() {
-        _showDataManagementDialog.value = false
-    }
-
     fun showThemeDialog() {
         _showThemeDialog.value = true
     }
@@ -171,6 +163,14 @@ class SettingsViewModel @Inject constructor(
 
     fun hideAboutDialog() {
         _showAboutDialog.value = false
+    }
+
+    fun showClearDataConfirmationDialog() {
+        _showClearDataConfirmationDialog.value = true
+    }
+
+    fun hideClearDataConfirmationDialog() {
+        _showClearDataConfirmationDialog.value = false
     }
 
     fun updateCycleParameters(
@@ -324,7 +324,12 @@ class SettingsViewModel @Inject constructor(
 
     fun clearAllData() {
         viewModelScope.launch {
-            hideDataManagementDialog()
+            hideClearDataConfirmationDialog()
+            // 删除所有周期和日常记录数据
+            cycleRepository.deleteAllDailyRecords()
+            cycleRepository.deleteAllCycles()
+            // 取消所有通知
+            alarmScheduler.cancel()
         }
     }
 }
