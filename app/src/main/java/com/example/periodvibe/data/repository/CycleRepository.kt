@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.time.LocalDate
+import java.time.Period
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -87,7 +88,7 @@ class CycleRepository @Inject constructor(
 
     suspend fun startNewCycle(startDate: LocalDate): Cycle {
         val activeCycle = getActiveCycle()
-        
+
         if (activeCycle != null) {
             val records = getDailyRecordsByCycleId(activeCycle.id).first()
             val periodRecords = records.filter { it.isPeriod }
@@ -96,11 +97,33 @@ class CycleRepository @Inject constructor(
             } else {
                 null
             }
-            
-            val updatedCycle = activeCycle.updatePeriodLength(periodLength ?: 0)
+
+            // 如果当前活跃周期还没有结束日期，则以新周期开始日期的前一天作为结束日期
+            val cycleToComplete = if (activeCycle.endDate == null) {
+                activeCycle.complete(startDate.minusDays(1))
+            } else {
+                activeCycle
+            }
+
+            // 计算并设置 cycleLength：找到上一个已完成的周期，计算两个周期开始日期的间隔
+            val allCycles = getAllCyclesOnce()
+            val previousCompletedCycle = allCycles
+                .filter { it.isCompleted && it.id != activeCycle.id }
+                .maxByOrNull { it.startDate }
+
+            val cycleLength = if (previousCompletedCycle != null) {
+                Period.between(previousCompletedCycle.startDate, cycleToComplete.startDate).days
+            } else {
+                null
+            }
+
+            val updatedCycle = cycleToComplete
+                .updatePeriodLength(periodLength ?: 0)
+                .copy(cycleLength = cycleLength)
+
             updateCycle(updatedCycle)
         }
-        
+
         val newCycle = Cycle(
             startDate = startDate,
             endDate = null,
@@ -117,13 +140,45 @@ class CycleRepository @Inject constructor(
 
         val records = getDailyRecordsByCycleId(activeCycle.id).first()
         val periodRecords = records.filter { it.isPeriod }
-        val periodLength = if (periodRecords.isNotEmpty()) {
-            periodRecords.size
+
+        // 找到最早的经期日期（如果没有则使用周期开始日期）
+        val firstPeriodDate = periodRecords.minByOrNull { it.date }?.date ?: activeCycle.startDate
+
+        // 确保结束日期不早于最早的经期日期
+        val actualEndDate = if (endDate.isBefore(firstPeriodDate)) firstPeriodDate else endDate
+
+        // 生成从 firstPeriodDate 到 actualEndDate 的所有日期
+        val datesToFill = mutableListOf<LocalDate>()
+        var currentDate = firstPeriodDate
+        while (!currentDate.isAfter(actualEndDate)) {
+            datesToFill.add(currentDate)
+            currentDate = currentDate.plusDays(1)
+        }
+
+        // 为缺失的日期创建经期记录
+        val existingDates = periodRecords.map { it.date }.toSet()
+        datesToFill.forEach { date ->
+            if (!existingDates.contains(date)) {
+                val newRecord = com.example.periodvibe.domain.model.DailyRecord(
+                    date = date,
+                    cycleId = activeCycle.id,
+                    isPeriod = true,
+                    flowLevel = null
+                )
+                saveDailyRecord(newRecord)
+            }
+        }
+
+        // 重新获取更新后的记录并计算 periodLength
+        val updatedRecords = getDailyRecordsByCycleId(activeCycle.id).first()
+        val updatedPeriodRecords = updatedRecords.filter { it.isPeriod }
+        val periodLength = if (updatedPeriodRecords.isNotEmpty()) {
+            updatedPeriodRecords.size
         } else {
             null
         }
 
-        val completedCycle = activeCycle.complete(endDate).updatePeriodLength(periodLength ?: 0)
+        val completedCycle = activeCycle.complete(actualEndDate).updatePeriodLength(periodLength ?: 0)
         updateCycle(completedCycle)
     }
 

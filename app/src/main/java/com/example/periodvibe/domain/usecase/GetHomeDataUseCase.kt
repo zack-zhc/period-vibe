@@ -64,20 +64,22 @@ class GetHomeDataUseCase @Inject constructor(
 
     private fun createPredictionBasedInfo(latestCycle: Cycle, settings: com.example.periodvibe.domain.model.Settings?): CycleInfo {
         val today = LocalDate.now()
-        
+
         val cycleLength = if (settings?.autoCalculateCycle == true) {
             latestCycle.cycleLength ?: settings?.cycleLengthDefault ?: 28
         } else {
             settings?.cycleLengthDefault ?: 28
         }
-        
+
         val periodLength = if (settings?.autoCalculateCycle == true) {
             latestCycle.periodLength ?: settings?.periodLengthDefault ?: 5
         } else {
             settings?.periodLengthDefault ?: 5
         }
-        
-        val predictedNextPeriodStart = latestCycle.startDate!!.plusDays(cycleLength.toLong())
+
+        // 使用最新周期的结束日期作为基准来预测下一个周期（如果没有结束日期则用开始日期）
+        val referenceDate = latestCycle.endDate ?: latestCycle.startDate
+        val predictedNextPeriodStart = referenceDate.plusDays(cycleLength.toLong())
         val daysUntilNextPeriod = Period.between(today, predictedNextPeriodStart).days
 
         val prediction = Prediction(

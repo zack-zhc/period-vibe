@@ -123,7 +123,8 @@ fun HomeScreen(
                     daysUntilPeriod = state.daysUntilPeriod,
                     phase = state.phase,
                     totalCycles = state.totalCycles,
-                    hasData = state.hasData
+                    hasData = state.hasData,
+                    hasCurrentCycle = state.hasCurrentCycle
                 )
             }
         }
@@ -187,7 +188,8 @@ private fun HomeContent(
     daysUntilPeriod: Int,
     phase: CyclePhase,
     totalCycles: Int,
-    hasData: Boolean
+    hasData: Boolean,
+    hasCurrentCycle: Boolean
 ) {
     val phaseData = getPhaseData(phase)
 
@@ -205,7 +207,8 @@ private fun HomeContent(
             cycleDay = cycleDay,
             daysUntilPeriod = daysUntilPeriod,
             phase = phase,
-            phaseData = phaseData
+            phaseData = phaseData,
+            hasCurrentCycle = hasCurrentCycle
         )
 
         PhaseDetailCard(
@@ -263,7 +266,8 @@ private fun MainStatusCard(
     cycleDay: Int,
     daysUntilPeriod: Int,
     phase: CyclePhase,
-    phaseData: PhaseData
+    phaseData: PhaseData,
+    hasCurrentCycle: Boolean
 ) {
     val scale by animateFloatAsState(
         targetValue = 1f,
@@ -345,20 +349,22 @@ private fun MainStatusCard(
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    StatItem(
-                        value = "$cycleDay",
-                        label = "周期天数",
-                        highlightColor = phaseData.primary
-                    )
+                    if (hasCurrentCycle) {
+                        StatItem(
+                            value = "$cycleDay",
+                            label = "周期天数",
+                            highlightColor = phaseData.primary
+                        )
 
-                    Box(
-                        modifier = Modifier
-                            .width(1.dp)
-                            .height(60.dp)
-                            .background(
-                                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                            )
-                    )
+                        Box(
+                            modifier = Modifier
+                                .width(1.dp)
+                                .height(60.dp)
+                                .background(
+                                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                                )
+                        )
+                    }
 
                     StatItem(
                         value = if (daysUntilPeriod == 0) "今天" else "$daysUntilPeriod",
