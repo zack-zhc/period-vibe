@@ -1,8 +1,7 @@
 package com.example.periodvibe.ui.home
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.*
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -56,11 +55,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleFloatingActionButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.animation.core.Animatable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
@@ -69,12 +70,21 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
+import android.content.Context
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.Path
+import android.graphics.PathMeasure
+import android.view.View
 import com.example.periodvibe.domain.model.CyclePhase
 import com.example.periodvibe.ui.theme.FertileColor
 import com.example.periodvibe.ui.theme.FollicularColor
@@ -645,6 +655,38 @@ private fun LoadingState() {
 
 @Composable
 private fun NoDataState() {
+    val strokeProgress = remember { Animatable(0f) }
+    val fillProgress = remember { Animatable(0f) }
+    val breatheScale = remember { Animatable(1f) }
+    val backgroundAlpha = remember { Animatable(0f) }
+    val heartColor = MaterialTheme.colorScheme.primary
+
+    LaunchedEffect(Unit) {
+        // 第一阶段：描边动画（从底部点开始顺时针画出）
+        strokeProgress.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(durationMillis = 2000, easing = FastOutSlowInEasing)
+        )
+        // 背景渐显
+        backgroundAlpha.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(durationMillis = 600, easing = FastOutSlowInEasing)
+        )
+        // 第二阶段：填充动画
+        fillProgress.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(durationMillis = 1200, easing = FastOutSlowInEasing)
+        )
+        // 第三阶段：呼吸动画开始
+        breatheScale.animateTo(
+            targetValue = 0.95f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 1500, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse
+            )
+        )
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -654,39 +696,160 @@ private fun NoDataState() {
     ) {
         Box(
             modifier = Modifier
-                .size(120.dp)
+                .size(140.dp)
                 .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primaryContainer)
+                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f * backgroundAlpha.value))
         ) {
-            Icon(
-                imageVector = Icons.Default.Favorite,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
+            Box(
                 modifier = Modifier
-                    .size(60.dp)
+                    .size(100.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f * backgroundAlpha.value))
                     .align(Alignment.Center)
-            )
+            ) {
+                AndroidView(
+                    factory = { ctx ->
+                        HeartView(ctx).apply {
+                            setColor(
+                                android.graphics.Color.argb(
+                                    (heartColor.alpha * 255).toInt(),
+                                    (heartColor.red * 255).toInt(),
+                                    (heartColor.green * 255).toInt(),
+                                    (heartColor.blue * 255).toInt()
+                                )
+                            )
+                        }
+                    },
+                    update = { view ->
+                        view.setStrokeProgress(strokeProgress.value)
+                        view.setFillProgress(fillProgress.value)
+                        view.setScale(breatheScale.value)
+                        view.invalidate()
+                    },
+                    modifier = Modifier
+                        .size(60.dp)
+                        .align(Alignment.Center)
+                )
+            }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(32.dp))
 
         Text(
-            text = "开始你的记录",
+            text = "开启你的健康记录",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "点击右下角按钮，开始记录你的第一个周期",
+            text = "点击右下角按钮，记录你的第一个周期，\n让我们一起好好照顾自己",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
-            lineHeight = 24.sp
+            lineHeight = 28.sp
         )
+    }
+}
+
+private class HeartView(context: Context) : View(context) {
+    private val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeWidth = 4f * context.resources.displayMetrics.density
+        strokeCap = Paint.Cap.ROUND
+    }
+    private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.FILL
+    }
+    private val path = Path()
+    private val dstPath = Path()
+    private val pathMeasure = PathMeasure()
+    private var strokeProgress = 0f
+    private var fillProgress = 0f
+    private var scale = 1f
+
+    fun setColor(color: Int) {
+        strokePaint.color = color
+        fillPaint.color = color
+    }
+
+    fun setStrokeProgress(progress: Float) {
+        strokeProgress = progress
+    }
+
+    fun setFillProgress(progress: Float) {
+        fillProgress = progress
+    }
+
+    fun setScale(s: Float) {
+        scale = s
+    }
+
+    override fun onDraw(canvas: Canvas) {
+        super.onDraw(canvas)
+        val centerX = width / 2f
+        val centerY = height / 2f
+        val scaleFactor = width / 100f
+
+        canvas.save()
+        canvas.translate(centerX, centerY)
+        canvas.scale(scale, scale)
+        canvas.translate(-centerX, -centerY)
+
+        // 从底部最低点开始（顺时针绘制）- 更圆润的心形
+        path.reset()
+        path.moveTo(centerX, centerY + 32f * scaleFactor)
+
+        // 右下曲线 -> 右侧点
+        path.cubicTo(
+            centerX + 42f * scaleFactor, centerY + 8f * scaleFactor,
+            centerX + 48f * scaleFactor, centerY - 12f * scaleFactor,
+            centerX + 30f * scaleFactor, centerY - 26f * scaleFactor
+        )
+
+        // 右上曲线 -> 顶部右点
+        path.cubicTo(
+            centerX + 15f * scaleFactor, centerY - 36f * scaleFactor,
+            centerX + 8f * scaleFactor, centerY - 32f * scaleFactor,
+            centerX, centerY - 18f * scaleFactor
+        )
+
+        // 左上曲线 -> 顶部左点
+        path.cubicTo(
+            centerX - 8f * scaleFactor, centerY - 32f * scaleFactor,
+            centerX - 15f * scaleFactor, centerY - 36f * scaleFactor,
+            centerX - 30f * scaleFactor, centerY - 26f * scaleFactor
+        )
+
+        // 左下曲线 -> 回到底部起点
+        path.cubicTo(
+            centerX - 48f * scaleFactor, centerY - 12f * scaleFactor,
+            centerX - 42f * scaleFactor, centerY + 8f * scaleFactor,
+            centerX, centerY + 32f * scaleFactor
+        )
+
+        path.close()
+
+        // 绘制描边（从底部开始顺时针）
+        if (strokeProgress > 0f) {
+            pathMeasure.setPath(path, false)
+            val length = pathMeasure.length
+            dstPath.reset()
+            pathMeasure.getSegment(0f, length * strokeProgress, dstPath, true)
+            dstPath.rLineTo(0f, 0f) // 修复某些设备上不显示的问题
+            canvas.drawPath(dstPath, strokePaint)
+        }
+
+        // 绘制填充
+        if (fillProgress > 0f) {
+            fillPaint.alpha = (fillProgress * 255).toInt()
+            canvas.drawPath(path, fillPaint)
+        }
+
+        canvas.restore()
     }
 }
 
