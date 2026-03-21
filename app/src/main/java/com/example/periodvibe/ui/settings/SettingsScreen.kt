@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.TopAppBarScrollBehavior
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.CircularProgressIndicator
@@ -55,6 +57,7 @@ fun SettingsScreen(
     onNavigateToHistory: () -> Unit,
     onNavigateToDeveloperOptions: () -> Unit,
     onNavigateToPinSetup: () -> Unit,
+    scrollBehavior: TopAppBarScrollBehavior? = null,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
@@ -118,18 +121,10 @@ fun SettingsScreen(
             Column(
                 modifier = modifier
                     .fillMaxSize()
+                    .let { if (scrollBehavior != null) it.nestedScroll(scrollBehavior.nestedScrollConnection) else it }
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = 16.dp, vertical = 16.dp)
             ) {
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Text(
-                    text = "设置",
-                    style = MaterialTheme.typography.displaySmall,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
 
                 CycleParametersSection(
                     autoCalculateCycle = state.autoCalculateCycle,
@@ -194,7 +189,7 @@ fun SettingsScreen(
                     onDeveloperOptionsClick = onNavigateToDeveloperOptions
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(80.dp))
             }
         }
     }

@@ -9,7 +9,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -36,6 +39,7 @@ import com.example.periodvibe.ui.applock.AppLockScreen
 import com.example.periodvibe.ui.applock.PinSetupScreen
 import com.example.periodvibe.ui.applock.PinSetupViewModel
 import com.example.periodvibe.ui.calendar.CalendarScreen
+import com.example.periodvibe.ui.calendar.LegendDialog
 import com.example.periodvibe.ui.home.HomeScreen
 import com.example.periodvibe.ui.home.PeriodBottomNavigation
 import com.example.periodvibe.ui.history.HistoryScreen
@@ -72,6 +76,7 @@ class MainActivity : FragmentActivity() {
             var appLockEnabled by remember { mutableStateOf(false) }
 
             var showPinSetupSheet by remember { mutableStateOf(false) }
+            var showLegendDialog by remember { mutableStateOf(false) }
             val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
             val scope = rememberCoroutineScope()
 
@@ -171,19 +176,19 @@ class MainActivity : FragmentActivity() {
                     }
 
                     is AppScreen.Main -> {
-                        Scaffold(
-                            modifier = Modifier.fillMaxSize(),
-                            bottomBar = {
-                                PeriodBottomNavigation(
-                                    currentRoute = screen.route,
-                                    onNavigate = { route ->
-                                        currentScreen = AppScreen.Main(route)
+                        when (screen.route) {
+                            "home" -> {
+                                Scaffold(
+                                    modifier = Modifier.fillMaxSize(),
+                                    bottomBar = {
+                                        PeriodBottomNavigation(
+                                            currentRoute = screen.route,
+                                            onNavigate = { route ->
+                                                currentScreen = AppScreen.Main(route)
+                                            }
+                                        )
                                     }
-                                )
-                            }
-                        ) { innerPadding ->
-                            when (screen.route) {
-                                "home" -> {
+                                ) { innerPadding ->
                                     HomeScreen(
                                         onRecordClick = { },
                                         onCalendarClick = { currentScreen = AppScreen.Main("calendar") },
@@ -194,43 +199,119 @@ class MainActivity : FragmentActivity() {
                                             .padding(innerPadding)
                                     )
                                 }
+                            }
 
-                                "calendar" -> {
+                            "calendar" -> {
+                                val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
+                                    rememberTopAppBarState()
+                                )
+                                androidx.compose.material3.Scaffold(
+                                    modifier = Modifier.fillMaxSize(),
+                                    topBar = {
+                                        androidx.compose.material3.MediumTopAppBar(
+                                            title = { Text("日历") },
+                                            actions = {
+                                                IconButton(onClick = { showLegendDialog = true }) {
+                                                    Icon(
+                                                        imageVector = Icons.Rounded.Info,
+                                                        contentDescription = "图例"
+                                                    )
+                                                }
+                                            },
+                                            scrollBehavior = scrollBehavior
+                                        )
+                                    },
+                                    bottomBar = {
+                                        PeriodBottomNavigation(
+                                            currentRoute = screen.route,
+                                            onNavigate = { route ->
+                                                currentScreen = AppScreen.Main(route)
+                                            }
+                                        )
+                                    }
+                                ) { paddingValues ->
                                     CalendarScreen(
                                         onNavigateToHome = { currentScreen = AppScreen.Main("home") },
                                         onNavigateToHistory = { currentScreen = AppScreen.Main("history") },
                                         onNavigateToSettings = { currentScreen = AppScreen.Main("settings") },
                                         onDateClick = {},
+                                        scrollBehavior = scrollBehavior,
+                                        onLegendClick = { showLegendDialog = true },
                                         modifier = Modifier
                                             .fillMaxSize()
-                                            .padding(innerPadding)
+                                            .padding(paddingValues)
                                     )
                                 }
+                            }
 
-                                "history" -> {
+                            "history" -> {
+                                val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
+                                    rememberTopAppBarState()
+                                )
+                                androidx.compose.material3.Scaffold(
+                                    modifier = Modifier.fillMaxSize(),
+                                    topBar = {
+                                        androidx.compose.material3.MediumTopAppBar(
+                                            title = { Text("历史记录") },
+                                            scrollBehavior = scrollBehavior
+                                        )
+                                    },
+                                    bottomBar = {
+                                        PeriodBottomNavigation(
+                                            currentRoute = screen.route,
+                                            onNavigate = { route ->
+                                                currentScreen = AppScreen.Main(route)
+                                            }
+                                        )
+                                    }
+                                ) { paddingValues ->
                                     HistoryScreen(
                                         onNavigateToHome = { currentScreen = AppScreen.Main("home") },
                                         onNavigateToCalendar = { currentScreen = AppScreen.Main("calendar") },
                                         onNavigateToSettings = { currentScreen = AppScreen.Main("settings") },
+                                        scrollBehavior = scrollBehavior,
                                         modifier = Modifier
                                             .fillMaxSize()
-                                            .padding(innerPadding)
+                                            .padding(paddingValues)
                                     )
                                 }
+                            }
 
-                                "settings" -> {
+                            "settings" -> {
+                                val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
+                                    rememberTopAppBarState()
+                                )
+                                androidx.compose.material3.Scaffold(
+                                    modifier = Modifier.fillMaxSize(),
+                                    topBar = {
+                                        androidx.compose.material3.MediumTopAppBar(
+                                            title = { Text("设置") },
+                                            scrollBehavior = scrollBehavior
+                                        )
+                                    },
+                                    bottomBar = {
+                                        PeriodBottomNavigation(
+                                            currentRoute = screen.route,
+                                            onNavigate = { route ->
+                                                currentScreen = AppScreen.Main(route)
+                                            }
+                                        )
+                                    }
+                                ) { paddingValues ->
                                     SettingsScreen(
                                         onNavigateToHome = { currentScreen = AppScreen.Main("home") },
                                         onNavigateToCalendar = { currentScreen = AppScreen.Main("calendar") },
                                         onNavigateToHistory = { currentScreen = AppScreen.Main("history") },
                                         onNavigateToDeveloperOptions = { currentScreen = AppScreen.DeveloperOptions },
                                         onNavigateToPinSetup = { showPinSetupSheet = true },
+                                        scrollBehavior = scrollBehavior,
                                         modifier = Modifier
                                             .fillMaxSize()
-                                            .padding(innerPadding)
+                                            .padding(paddingValues)
                                     )
                                 }
                             }
+                            else -> {}
                         }
                     }
 
@@ -265,6 +346,12 @@ class MainActivity : FragmentActivity() {
                             )
                         }
                     }
+                }
+
+                if (showLegendDialog) {
+                    LegendDialog(
+                        onDismiss = { showLegendDialog = false }
+                    )
                 }
             }
         }

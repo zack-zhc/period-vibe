@@ -13,13 +13,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.TopAppBarScrollBehavior
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -63,6 +63,8 @@ fun CalendarScreen(
     onNavigateToHistory: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onDateClick: (java.time.LocalDate) -> Unit,
+    scrollBehavior: TopAppBarScrollBehavior? = null,
+    onLegendClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     viewModel: CalendarViewModel = hiltViewModel()
 ) {
@@ -71,7 +73,6 @@ fun CalendarScreen(
     val selectedDate by viewModel.selectedDate.collectAsState()
     val activeCycle by viewModel.activeCycle.collectAsState()
     val showEndCycleDialog by viewModel.showEndCycleDialog.collectAsState()
-    val showLegendDialog by viewModel.showLegendDialog.collectAsState()
     var showRecordSheet by remember { mutableStateOf(false) }
     var recordDate by remember { mutableStateOf(java.time.LocalDate.now()) }
     var recordMode by remember { mutableStateOf(RecordMode.AUTO) }
@@ -124,12 +125,11 @@ fun CalendarScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .let { if (scrollBehavior != null) it.nestedScroll(scrollBehavior.nestedScrollConnection) else it }
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            HeaderSection(onLegendClick = { viewModel.showLegendDialog() })
-
             CalendarContent(
                 pagerState = pagerState,
                 startMonth = startMonth,
@@ -188,12 +188,6 @@ fun CalendarScreen(
         )
     }
 
-    if (showLegendDialog) {
-        LegendDialog(
-            onDismiss = { viewModel.hideLegendDialog() }
-        )
-    }
-
     if (showRecordSheet) {
         RecordBottomSheet(
             initialDate = recordDate,
@@ -206,44 +200,6 @@ fun CalendarScreen(
                 showRecordSheet = false
             }
         )
-    }
-}
-
-@Composable
-private fun HeaderSection(onLegendClick: () -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = "日历",
-            style = MaterialTheme.typography.displaySmall,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        IconButton(
-            onClick = onLegendClick,
-            modifier = Modifier.size(48.dp)
-        ) {
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.surfaceVariant,
-                tonalElevation = 0.dp
-            ) {
-                Box(
-                    modifier = Modifier.size(40.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Info,
-                        contentDescription = "图例",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
-            }
-        }
     }
 }
 
@@ -348,7 +304,7 @@ private fun LoadingState() {
 }
 
 @Composable
-private fun LegendDialog(onDismiss: () -> Unit) {
+fun LegendDialog(onDismiss: () -> Unit) {
     val isDark = MaterialTheme.colorScheme.background == androidx.compose.ui.graphics.Color(0xFF1F1A1B)
     val periodColor = if (isDark) CalendarPeriodDark else CalendarPeriodLight
     val ovulationColor = if (isDark) CalendarOvulationDark else CalendarOvulationLight

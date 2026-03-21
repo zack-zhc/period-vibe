@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.TopAppBarScrollBehavior
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -76,6 +78,7 @@ fun HistoryScreen(
     onNavigateToHome: () -> Unit,
     onNavigateToCalendar: () -> Unit,
     onNavigateToSettings: () -> Unit,
+    scrollBehavior: TopAppBarScrollBehavior? = null,
     modifier: Modifier = Modifier,
     viewModel: HistoryViewModel = hiltViewModel()
 ) {
@@ -89,11 +92,10 @@ fun HistoryScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .let { if (scrollBehavior != null) it.nestedScroll(scrollBehavior.nestedScrollConnection) else it }
                 .padding(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            HeaderSection()
-
             when (val state = historyData) {
                 is HistoryUiState.Loading -> {
                     LoadingState()
@@ -147,22 +149,6 @@ fun HistoryScreen(
                 viewModel.updateDailyRecord(updatedRecord)
             },
             isDark = isDark
-        )
-    }
-}
-
-@Composable
-private fun HeaderSection() {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Start,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = "历史记录",
-            style = MaterialTheme.typography.displaySmall,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }
