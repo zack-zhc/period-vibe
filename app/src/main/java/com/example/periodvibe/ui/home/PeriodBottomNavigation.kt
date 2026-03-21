@@ -39,7 +39,6 @@ fun PeriodBottomNavigation(
         val items = listOf(
             BottomNavItem.Home,
             BottomNavItem.Calendar,
-            BottomNavItem.History,
             BottomNavItem.Settings
         )
 

@@ -126,8 +126,6 @@ fun HomeScreen(
                     cycleDay = state.cycleDay,
                     daysUntilPeriod = state.daysUntilPeriod,
                     phase = state.phase,
-                    totalCycles = state.totalCycles,
-                    hasData = state.hasData,
                     hasCurrentCycle = state.hasCurrentCycle
                 )
             }
@@ -191,8 +189,6 @@ private fun HomeContent(
     cycleDay: Int,
     daysUntilPeriod: Int,
     phase: CyclePhase,
-    totalCycles: Int,
-    hasData: Boolean,
     hasCurrentCycle: Boolean
 ) {
     val phaseData = getPhaseData(phase)
@@ -219,8 +215,6 @@ private fun HomeContent(
             phase = phase,
             phaseData = phaseData
         )
-
-        StatsCard(totalCycles = totalCycles, hasData = hasData)
 
         Spacer(modifier = Modifier.height(80.dp))
     }

@@ -1,6 +1,7 @@
 package com.example.periodvibe
 
 import android.os.Bundle
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -64,14 +66,25 @@ sealed class AppScreen {
 @AndroidEntryPoint
 @OptIn(ExperimentalMaterial3Api::class)
 class MainActivity : FragmentActivity() {
+
+    // 将 currentScreen 提升到类级别，这样可以在 onBackPressed 中访问
+    private var currentScreen: AppScreen by mutableStateOf(AppScreen.Loading)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        // 添加 OnBackPressedCallback 来处理返回键
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                handleBackPress()
+            }
+        })
+
         setContent {
             val mainViewModel: MainViewModel = hiltViewModel()
             val pinSetupViewModel: PinSetupViewModel = hiltViewModel()
             val showOnboarding by mainViewModel.showOnboarding.collectAsStateWithLifecycle()
-            var currentScreen by remember { mutableStateOf<AppScreen>(AppScreen.Loading) }
             var themeMode by remember { mutableStateOf(Settings.ThemeMode.SYSTEM) }
             var appLockEnabled by remember { mutableStateOf(false) }
 
@@ -211,6 +224,12 @@ class MainActivity : FragmentActivity() {
                                         androidx.compose.material3.MediumTopAppBar(
                                             title = { Text("日历") },
                                             actions = {
+                                                IconButton(onClick = { currentScreen = AppScreen.Main("history") }) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.History,
+                                                        contentDescription = "历史记录"
+                                                    )
+                                                }
                                                 IconButton(onClick = { showLegendDialog = true }) {
                                                     Icon(
                                                         imageVector = Icons.Rounded.Info,
@@ -253,12 +272,20 @@ class MainActivity : FragmentActivity() {
                                     topBar = {
                                         androidx.compose.material3.MediumTopAppBar(
                                             title = { Text("历史记录") },
+                                            navigationIcon = {
+                                                IconButton(onClick = { currentScreen = AppScreen.Main("calendar") }) {
+                                                    Icon(
+                                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                                        contentDescription = "返回"
+                                                    )
+                                                }
+                                            },
                                             scrollBehavior = scrollBehavior
                                         )
                                     },
                                     bottomBar = {
                                         PeriodBottomNavigation(
-                                            currentRoute = screen.route,
+                                            currentRoute = "calendar",
                                             onNavigate = { route ->
                                                 currentScreen = AppScreen.Main(route)
                                             }
@@ -353,6 +380,35 @@ class MainActivity : FragmentActivity() {
                         onDismiss = { showLegendDialog = false }
                     )
                 }
+            }
+        }
+    }
+
+    private fun handleBackPress() {
+        when (val screen = currentScreen) {
+            is AppScreen.Main -> {
+                when (screen.route) {
+                    "history" -> {
+                        // 在历史页面，返回到日历页面
+                        currentScreen = AppScreen.Main("calendar")
+                    }
+                    "calendar", "settings" -> {
+                        // 在日历或设置页面，返回到首页
+                        currentScreen = AppScreen.Main("home")
+                    }
+                    else -> {
+                        // 在首页或其他页面，使用默认行为（可能退出 app）
+                        finish()
+                    }
+                }
+            }
+            is AppScreen.DeveloperOptions -> {
+                // 在开发者选项页面，返回到设置
+                currentScreen = AppScreen.Main("settings")
+            }
+            else -> {
+                // 其他情况，使用默认行为
+                finish()
             }
         }
     }
