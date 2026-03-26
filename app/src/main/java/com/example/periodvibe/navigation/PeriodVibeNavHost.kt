@@ -3,12 +3,14 @@ package com.example.periodvibe.navigation
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.animation.with
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.History
@@ -52,7 +54,7 @@ import com.example.periodvibe.ui.setup.InitialSetupScreen
 import com.example.periodvibe.ui.viewmodel.MainViewModel
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
 @Composable
 fun PeriodVibeNavHost(
     mainViewModel: MainViewModel,
@@ -396,32 +398,49 @@ fun PeriodVibeNavHost(
         backStack = backStack,
         entryProvider = myEntryProvider,
         onBack = { goBack() },
+//        transitionSpec = {
+//            // 获取初始和目标状态的 key
+//            val initialKey = initialState.entries.lastOrNull()?.contentKey as? Screen
+//            val targetKey = targetState.entries.lastOrNull()?.contentKey as? Screen
+//
+//            // 判断是否是 Tab 切换
+//            val isTabChange = (initialKey is Screen.Home || initialKey is Screen.Calendar || initialKey is Screen.Settings) &&
+//                (targetKey is Screen.Home || targetKey is Screen.Calendar || targetKey is Screen.Settings)
+//
+//            when {
+//                isTabChange -> {
+//                    // 底部 Tab 切换 - 无动画
+//                    ContentTransform(EnterTransition.None, ExitTransition.None)
+//                }
+//                else -> {
+//                    // 子页面滑动动画
+//                    slideInHorizontally(
+//                        initialOffsetX = { it },
+//                        animationSpec = tween(300)
+//                    ) + fadeIn() togetherWith slideOutHorizontally(
+//                        targetOffsetX = { -it / 3 },
+//                        animationSpec = tween(300)
+//                    ) + fadeOut()
+//                }
+//            }
+//        },
         transitionSpec = {
-            // 获取初始和目标状态的 key
-            val initialKey = initialState.entries.lastOrNull()?.contentKey as? Screen
-            val targetKey = targetState.entries.lastOrNull()?.contentKey as? Screen
-
-            // 判断是否是 Tab 切换
-            val isTabChange = (initialKey is Screen.Home || initialKey is Screen.Calendar || initialKey is Screen.Settings) &&
-                (targetKey is Screen.Home || targetKey is Screen.Calendar || targetKey is Screen.Settings)
-
-            when {
-                isTabChange -> {
-                    // 底部 Tab 切换 - 无动画
-                    ContentTransform(EnterTransition.None, ExitTransition.None)
-                }
-                else -> {
-                    // 子页面滑动动画
-                    slideInHorizontally(
-                        initialOffsetX = { it },
-                        animationSpec = tween(300)
-                    ) + fadeIn() togetherWith slideOutHorizontally(
-                        targetOffsetX = { -it / 3 },
-                        animationSpec = tween(300)
-                    ) + fadeOut()
-                }
-            }
+            // Slide in from right when navigating forward
+            slideInHorizontally(initialOffsetX = { it }) togetherWith
+                    slideOutHorizontally(targetOffsetX = { -it })
         },
+        popTransitionSpec = {
+            // Slide in from left when navigating back
+            slideInHorizontally(initialOffsetX = { -it }) togetherWith
+                    slideOutHorizontally(targetOffsetX = { it })
+        },
+        predictivePopTransitionSpec = {
+            // Slide in from left when navigating back
+            slideInHorizontally(initialOffsetX = { -it }) togetherWith
+                    slideOutHorizontally(targetOffsetX = { it })
+        },
+
+
         modifier = modifier
     )
 }
