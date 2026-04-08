@@ -264,20 +264,6 @@ fun PeriodVibeNavHost(
                             },
                             scrollBehavior = scrollBehavior
                         )
-                    },
-                    bottomBar = {
-                        PeriodBottomNavigation(
-                            currentRoute = "calendar",
-                            onNavigate = { routeStr ->
-                                val route = when (routeStr) {
-                                    "home" -> Screen.Home
-                                    "calendar" -> Screen.Calendar
-                                    "settings" -> Screen.Settings
-                                    else -> Screen.Home
-                                }
-                                navigateToBottomBarScreen(route)
-                            }
-                        )
                     }
                 ) { paddingValues ->
                     HistoryScreen(
