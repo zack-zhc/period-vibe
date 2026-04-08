@@ -384,48 +384,51 @@ fun PeriodVibeNavHost(
         backStack = backStack,
         entryProvider = myEntryProvider,
         onBack = { goBack() },
-//        transitionSpec = {
-//            // 获取初始和目标状态的 key
-//            val initialKey = initialState.entries.lastOrNull()?.contentKey as? Screen
-//            val targetKey = targetState.entries.lastOrNull()?.contentKey as? Screen
-//
-//            // 判断是否是 Tab 切换
-//            val isTabChange = (initialKey is Screen.Home || initialKey is Screen.Calendar || initialKey is Screen.Settings) &&
-//                (targetKey is Screen.Home || targetKey is Screen.Calendar || targetKey is Screen.Settings)
-//
-//            when {
-//                isTabChange -> {
-//                    // 底部 Tab 切换 - 无动画
-//                    ContentTransform(EnterTransition.None, ExitTransition.None)
-//                }
-//                else -> {
-//                    // 子页面滑动动画
-//                    slideInHorizontally(
-//                        initialOffsetX = { it },
-//                        animationSpec = tween(300)
-//                    ) + fadeIn() togetherWith slideOutHorizontally(
-//                        targetOffsetX = { -it / 3 },
-//                        animationSpec = tween(300)
-//                    ) + fadeOut()
-//                }
-//            }
-//        },
         transitionSpec = {
-            // Slide in from right when navigating forward
-            slideInHorizontally(initialOffsetX = { it }) togetherWith
-                    slideOutHorizontally(targetOffsetX = { -it })
+            val targetKey = targetState.entries.lastOrNull()?.contentKey as? Screen
+            // 只有明确进入子页面时才有动画
+            if (targetKey is Screen.History || targetKey is Screen.DeveloperOptions) {
+                slideInHorizontally(
+                    initialOffsetX = { it },
+                    animationSpec = tween(300)
+                ) + fadeIn() togetherWith slideOutHorizontally(
+                    targetOffsetX = { -it / 3 },
+                    animationSpec = tween(300)
+                ) + fadeOut()
+            } else {
+                ContentTransform(EnterTransition.None, ExitTransition.None)
+            }
         },
         popTransitionSpec = {
-            // Slide in from left when navigating back
-            slideInHorizontally(initialOffsetX = { -it }) togetherWith
-                    slideOutHorizontally(targetOffsetX = { it })
+            val initialKey = initialState.entries.lastOrNull()?.contentKey as? Screen
+            // 只有明确从子页面返回时才有动画
+            if (initialKey is Screen.History || initialKey is Screen.DeveloperOptions) {
+                slideInHorizontally(
+                    initialOffsetX = { -it / 3 },
+                    animationSpec = tween(300)
+                ) + fadeIn() togetherWith slideOutHorizontally(
+                    targetOffsetX = { it },
+                    animationSpec = tween(300)
+                ) + fadeOut()
+            } else {
+                ContentTransform(EnterTransition.None, ExitTransition.None)
+            }
         },
         predictivePopTransitionSpec = {
-            // Slide in from left when navigating back
-            slideInHorizontally(initialOffsetX = { -it }) togetherWith
-                    slideOutHorizontally(targetOffsetX = { it })
+            val initialKey = initialState.entries.lastOrNull()?.contentKey as? Screen
+            // 只有明确从子页面返回时才有动画
+            if (initialKey is Screen.History || initialKey is Screen.DeveloperOptions) {
+                slideInHorizontally(
+                    initialOffsetX = { -it / 3 },
+                    animationSpec = tween(300)
+                ) + fadeIn() togetherWith slideOutHorizontally(
+                    targetOffsetX = { it },
+                    animationSpec = tween(300)
+                ) + fadeOut()
+            } else {
+                ContentTransform(EnterTransition.None, ExitTransition.None)
+            }
         },
-
 
         modifier = modifier
     )
