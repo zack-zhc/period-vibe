@@ -10,7 +10,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
-import androidx.compose.animation.with
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.History
@@ -32,11 +31,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavEntry
-import androidx.navigation3.runtime.rememberNavBackStack
+import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.metadata
 import androidx.navigation3.ui.NavDisplay
 import com.example.periodvibe.domain.model.Settings
 import com.example.periodvibe.ui.applock.AppLockScreen
@@ -54,6 +55,62 @@ import com.example.periodvibe.ui.setup.InitialSetupScreen
 import com.example.periodvibe.ui.viewmodel.MainViewModel
 import kotlinx.coroutines.launch
 
+/**
+ * 动画时长（毫秒）
+ */
+private const val ANIMATION_DURATION = 300
+
+/**
+ * 二级页面的滑动动画 metadata
+ */
+private val SlideInFromRightMetadata = metadata {
+    // 进入动画：新页面从右侧滑入，旧页面向左滑出一点
+    put(NavDisplay.TransitionKey) {
+        slideInHorizontally(
+            initialOffsetX = { it },
+            animationSpec = tween(ANIMATION_DURATION)
+        ) + fadeIn(animationSpec = tween(ANIMATION_DURATION)) togetherWith
+                slideOutHorizontally(
+                    targetOffsetX = { -it / 3 },
+                    animationSpec = tween(ANIMATION_DURATION)
+                ) + fadeOut(animationSpec = tween(ANIMATION_DURATION))
+    }
+
+    // 返回动画：旧页面从右侧滑出，新页面从左侧滑入
+    put(NavDisplay.PopTransitionKey) {
+        slideInHorizontally(
+            initialOffsetX = { -it / 3 },
+            animationSpec = tween(ANIMATION_DURATION)
+        ) + fadeIn(animationSpec = tween(ANIMATION_DURATION)) togetherWith
+                slideOutHorizontally(
+                    targetOffsetX = { it },
+                    animationSpec = tween(ANIMATION_DURATION)
+                ) + fadeOut(animationSpec = tween(ANIMATION_DURATION))
+    }
+
+    // 预测性返回动画
+    put(NavDisplay.PredictivePopTransitionKey) {
+        slideInHorizontally(
+            initialOffsetX = { -it / 3 },
+            animationSpec = tween(ANIMATION_DURATION)
+        ) + fadeIn(animationSpec = tween(ANIMATION_DURATION)) togetherWith
+                slideOutHorizontally(
+                    targetOffsetX = { it },
+                    animationSpec = tween(ANIMATION_DURATION)
+                ) + fadeOut(animationSpec = tween(ANIMATION_DURATION))
+    }
+}
+
+/**
+ * 创建并记住 TopLevelBackStack 实例
+ */
+@Composable
+fun rememberPeriodVibeNavState(
+    startKey: Screen = Screen.Loading
+): TopLevelBackStack<Screen> {
+    return remember { TopLevelBackStack(startKey) }
+}
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
 @Composable
 fun PeriodVibeNavHost(
@@ -69,9 +126,8 @@ fun PeriodVibeNavHost(
     val pinSetupViewModel: PinSetupViewModel = hiltViewModel()
     val scope = rememberCoroutineScope()
 
-    // Navigation 3: 使用 rememberNavBackStack 直接管理返回栈
-    @Suppress("UNCHECKED_CAST")
-    val backStack = rememberNavBackStack(Screen.Loading) as NavBackStack<Screen>
+    // 使用多返回栈导航状态
+    val navState = rememberPeriodVibeNavState()
 
     LaunchedEffect(Unit) {
         mainViewModel.getSettings().collect { settings ->
@@ -90,346 +146,319 @@ fun PeriodVibeNavHost(
                 showOnboarding == true -> Screen.Onboarding
                 else -> Screen.Home
             }
-            if (backStack.lastOrNull() == Screen.Loading) {
-                backStack.clear()
-                backStack.add(destination)
+            if (navState.backStack.firstOrNull() == Screen.Loading) {
+                navState.replaceWith(destination)
             }
         }
     }
 
-    // 导航到子页面（历史、开发者选项）- 添加到栈顶
+    // 导航到子页面
     val navigateToDetail: (Screen) -> Unit = { screen ->
-        backStack.add(screen)
+        navState.navigateToDetail(screen)
     }
 
-    // 底部导航栏切换 - 替换当前栈
-    val navigateToBottomBarScreen: (Screen) -> Unit = { screen ->
-        val newKeys = if (screen == Screen.Home) {
-            listOf(Screen.Home)
-        } else {
-            listOf(Screen.Home, screen)
-        }
-        backStack.clear()
-        backStack.addAll(newKeys)
+    // 底部导航栏切换
+    val navigateToTopLevel: (Screen) -> Unit = { screen ->
+        navState.navigateToTopLevel(screen)
     }
 
     // 返回上一页
     val goBack: () -> Unit = {
-        if (backStack.size > 1) {
-            backStack.removeLastOrNull()
-        }
+        navState.goBack()
     }
 
-    // Navigation 3: 定义目的地提供者
-    val myEntryProvider: (Screen) -> NavEntry<Screen> = { key ->
-        when (key) {
-            is Screen.Loading -> NavEntry(key) { }
-            is Screen.AppLock -> NavEntry(key) {
-                AppLockScreen(
-                    onUnlock = {
-                        val destination = if (showOnboarding == true) {
-                            Screen.Onboarding
-                        } else {
-                            Screen.Home
-                        }
-                        backStack.clear()
-                        backStack.add(destination)
-                    }
-                )
-            }
-            is Screen.Onboarding -> NavEntry(key) {
-                OnboardingScreen(
-                    onGetStarted = {
-                        mainViewModel.markOnboardingCompleted()
-                    },
-                    onComplete = {
-                        backStack.clear()
-                        backStack.add(Screen.InitialSetup)
-                    },
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
-            is Screen.InitialSetup -> NavEntry(key) {
-                InitialSetupScreen(
-                    onComplete = {
-                        backStack.clear()
-                        backStack.add(Screen.Home)
-                    },
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
-            is Screen.Home -> NavEntry(key) {
-                Scaffold(
-                    modifier = Modifier.fillMaxSize(),
-                    bottomBar = {
-                        PeriodBottomNavigation(
-                            currentRoute = "home",
-                            onNavigate = { routeStr ->
-                                val route = when (routeStr) {
-                                    "home" -> Screen.Home
-                                    "calendar" -> Screen.Calendar
-                                    "settings" -> Screen.Settings
-                                    else -> Screen.Home
-                                }
-                                navigateToBottomBarScreen(route)
-                            }
-                        )
-                    }
-                ) { innerPadding ->
-                    HomeScreen(
-                        onRecordClick = { },
-                        onCalendarClick = { navigateToBottomBarScreen(Screen.Calendar) },
-                        onHistoryClick = { navigateToDetail(Screen.History) },
-                        onSettingsClick = { navigateToBottomBarScreen(Screen.Settings) },
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding)
-                    )
-                }
-            }
-            is Screen.Calendar -> NavEntry(key) {
-                val scrollBehavior = androidx.compose.material3.TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
-                    androidx.compose.material3.rememberTopAppBarState()
-                )
-                Scaffold(
-                    modifier = Modifier.fillMaxSize(),
-                    topBar = {
-                        androidx.compose.material3.MediumTopAppBar(
-                            title = { Text("日历") },
-                            actions = {
-                                IconButton(onClick = { navigateToDetail(Screen.History) }) {
-                                    Icon(
-                                        imageVector = Icons.Default.History,
-                                        contentDescription = "历史记录"
-                                    )
-                                }
-                                IconButton(onClick = { showLegendDialog = true }) {
-                                    Icon(
-                                        imageVector = Icons.Rounded.Info,
-                                        contentDescription = "图例"
-                                    )
-                                }
-                            },
-                            scrollBehavior = scrollBehavior
-                        )
-                    },
-                    bottomBar = {
-                        PeriodBottomNavigation(
-                            currentRoute = "calendar",
-                            onNavigate = { routeStr ->
-                                val route = when (routeStr) {
-                                    "home" -> Screen.Home
-                                    "calendar" -> Screen.Calendar
-                                    "settings" -> Screen.Settings
-                                    else -> Screen.Home
-                                }
-                                navigateToBottomBarScreen(route)
-                            }
-                        )
-                    }
-                ) { paddingValues ->
-                    CalendarScreen(
-                        onNavigateToHome = { navigateToBottomBarScreen(Screen.Home) },
-                        onNavigateToHistory = { navigateToDetail(Screen.History) },
-                        onNavigateToSettings = { navigateToBottomBarScreen(Screen.Settings) },
-                        onDateClick = {},
-                        scrollBehavior = scrollBehavior,
-                        onLegendClick = { showLegendDialog = true },
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(paddingValues)
-                    )
-                }
+    // 重置到指定页面（用于完成引导等场景）
+    val resetTo: (Screen) -> Unit = { screen ->
+        navState.resetTo(screen)
+    }
 
-                if (showLegendDialog) {
-                    LegendDialog(onDismiss = { showLegendDialog = false })
-                }
-            }
-            is Screen.History -> NavEntry(key) {
-                val scrollBehavior = androidx.compose.material3.TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
-                    androidx.compose.material3.rememberTopAppBarState()
-                )
-                Scaffold(
-                    modifier = Modifier.fillMaxSize(),
-                    topBar = {
-                        androidx.compose.material3.MediumTopAppBar(
-                            title = { Text("历史记录") },
-                            navigationIcon = {
-                                IconButton(onClick = { goBack() }) {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                        contentDescription = "返回"
-                                    )
-                                }
-                            },
-                            scrollBehavior = scrollBehavior
-                        )
-                    }
-                ) { paddingValues ->
-                    HistoryScreen(
-                        onNavigateToHome = { navigateToBottomBarScreen(Screen.Home) },
-                        onNavigateToCalendar = { goBack() },
-                        onNavigateToSettings = { navigateToBottomBarScreen(Screen.Settings) },
-                        scrollBehavior = scrollBehavior,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(paddingValues)
-                    )
-                }
-            }
-            is Screen.Settings -> NavEntry(key) {
-                val scrollBehavior = androidx.compose.material3.TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
-                    androidx.compose.material3.rememberTopAppBarState()
-                )
-                Scaffold(
-                    modifier = Modifier.fillMaxSize(),
-                    topBar = {
-                        androidx.compose.material3.MediumTopAppBar(
-                            title = { Text("设置") },
-                            scrollBehavior = scrollBehavior
-                        )
-                    },
-                    bottomBar = {
-                        PeriodBottomNavigation(
-                            currentRoute = "settings",
-                            onNavigate = { routeStr ->
-                                val route = when (routeStr) {
-                                    "home" -> Screen.Home
-                                    "calendar" -> Screen.Calendar
-                                    "settings" -> Screen.Settings
-                                    else -> Screen.Home
-                                }
-                                navigateToBottomBarScreen(route)
-                            }
-                        )
-                    }
-                ) { paddingValues ->
-                    SettingsScreen(
-                        onNavigateToHome = { navigateToBottomBarScreen(Screen.Home) },
-                        onNavigateToCalendar = { navigateToBottomBarScreen(Screen.Calendar) },
-                        onNavigateToHistory = { navigateToDetail(Screen.History) },
-                        onNavigateToDeveloperOptions = { navigateToDetail(Screen.DeveloperOptions) },
-                        onNavigateToPinSetup = { showPinSetupSheet = true },
-                        scrollBehavior = scrollBehavior,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(paddingValues)
-                    )
-                }
+    // 使用 entryProvider DSL 定义目的地
+    val entryProvider = entryProvider<Screen> {
+        // 初始/引导页面
+        entry<Screen.Loading> {
+            // 加载页面 - 简单的占位
+        }
 
-                if (showPinSetupSheet) {
-                    val sheetState = rememberModalBottomSheetState(
-                        skipPartiallyExpanded = true
+        entry<Screen.AppLock> {
+            AppLockScreen(
+                onUnlock = {
+                    val destination = if (showOnboarding == true) {
+                        Screen.Onboarding
+                    } else {
+                        Screen.Home
+                    }
+                    resetTo(destination)
+                }
+            )
+        }
+
+        entry<Screen.Onboarding> {
+            OnboardingScreen(
+                onGetStarted = {
+                    mainViewModel.markOnboardingCompleted()
+                },
+                onComplete = {
+                    resetTo(Screen.InitialSetup)
+                },
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+
+        entry<Screen.InitialSetup> {
+            InitialSetupScreen(
+                onComplete = {
+                    resetTo(Screen.Home)
+                },
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+
+        // 顶部级路由 - 首页
+        entry<Screen.Home> {
+            Scaffold(
+                modifier = Modifier.fillMaxSize(),
+                bottomBar = {
+                    PeriodBottomNavigationBar(
+                        currentTopLevel = navState.topLevelKey,
+                        onNavigateToTopLevel = navigateToTopLevel
                     )
-                    ModalBottomSheet(
-                        onDismissRequest = {
-                            pinSetupViewModel.resetPin()
-                            showPinSetupSheet = false
+                }
+            ) { innerPadding ->
+                HomeScreen(
+                    onRecordClick = { },
+                    onCalendarClick = { navigateToTopLevel(Screen.Calendar) },
+                    onHistoryClick = { navigateToDetail(Screen.History) },
+                    onSettingsClick = { navigateToTopLevel(Screen.Settings) },
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                )
+            }
+        }
+
+        // 顶部级路由 - 日历
+        entry<Screen.Calendar> {
+            val scrollBehavior = androidx.compose.material3.TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
+                androidx.compose.material3.rememberTopAppBarState()
+            )
+            Scaffold(
+                modifier = Modifier.fillMaxSize(),
+                topBar = {
+                    androidx.compose.material3.MediumTopAppBar(
+                        title = { Text("日历") },
+                        actions = {
+                            IconButton(onClick = { navigateToDetail(Screen.History) }) {
+                                Icon(
+                                    imageVector = Icons.Default.History,
+                                    contentDescription = "历史记录"
+                                )
+                            }
+                            IconButton(onClick = { showLegendDialog = true }) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Info,
+                                    contentDescription = "图例"
+                                )
+                            }
                         },
-                        sheetState = sheetState,
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        PinSetupScreen(
-                            onPinSet = {
-                                scope.launch {
-                                    sheetState.hide()
-                                }.invokeOnCompletion {
-                                    if (!sheetState.isVisible) {
-                                        showPinSetupSheet = false
-                                    }
-                                }
-                            },
-                            viewModel = pinSetupViewModel
-                        )
-                    }
+                        scrollBehavior = scrollBehavior
+                    )
+                },
+                bottomBar = {
+                    PeriodBottomNavigationBar(
+                        currentTopLevel = navState.topLevelKey,
+                        onNavigateToTopLevel = navigateToTopLevel
+                    )
                 }
+            ) { paddingValues ->
+                CalendarScreen(
+                    onNavigateToHome = { navigateToTopLevel(Screen.Home) },
+                    onNavigateToHistory = { navigateToDetail(Screen.History) },
+                    onNavigateToSettings = { navigateToTopLevel(Screen.Settings) },
+                    onDateClick = {},
+                    scrollBehavior = scrollBehavior,
+                    onLegendClick = { showLegendDialog = true },
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                )
             }
-            is Screen.DeveloperOptions -> NavEntry(key) {
-                Scaffold(
-                    modifier = Modifier.fillMaxSize(),
-                    topBar = {
-                        androidx.compose.material3.CenterAlignedTopAppBar(
-                            title = { Text("开发者选项") },
-                            navigationIcon = {
-                                IconButton(
-                                    onClick = { goBack() }
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                        contentDescription = "返回"
-                                    )
+
+            if (showLegendDialog) {
+                LegendDialog(onDismiss = { showLegendDialog = false })
+            }
+        }
+
+        // 顶部级路由 - 设置
+        entry<Screen.Settings> {
+            val scrollBehavior = androidx.compose.material3.TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
+                androidx.compose.material3.rememberTopAppBarState()
+            )
+            Scaffold(
+                modifier = Modifier.fillMaxSize(),
+                topBar = {
+                    androidx.compose.material3.MediumTopAppBar(
+                        title = { Text("设置") },
+                        scrollBehavior = scrollBehavior
+                    )
+                },
+                bottomBar = {
+                    PeriodBottomNavigationBar(
+                        currentTopLevel = navState.topLevelKey,
+                        onNavigateToTopLevel = navigateToTopLevel
+                    )
+                }
+            ) { paddingValues ->
+                SettingsScreen(
+                    onNavigateToHome = { navigateToTopLevel(Screen.Home) },
+                    onNavigateToCalendar = { navigateToTopLevel(Screen.Calendar) },
+                    onNavigateToHistory = { navigateToDetail(Screen.History) },
+                    onNavigateToDeveloperOptions = { navigateToDetail(Screen.DeveloperOptions) },
+                    onNavigateToPinSetup = { showPinSetupSheet = true },
+                    scrollBehavior = scrollBehavior,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                )
+            }
+
+            if (showPinSetupSheet) {
+                val sheetState = rememberModalBottomSheetState(
+                    skipPartiallyExpanded = true
+                )
+                ModalBottomSheet(
+                    onDismissRequest = {
+                        pinSetupViewModel.resetPin()
+                        showPinSetupSheet = false
+                    },
+                    sheetState = sheetState,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    PinSetupScreen(
+                        onPinSet = {
+                            scope.launch {
+                                sheetState.hide()
+                            }.invokeOnCompletion {
+                                if (!sheetState.isVisible) {
+                                    showPinSetupSheet = false
                                 }
                             }
-                        )
-                    }
-                ) { paddingValues ->
-                    DeveloperOptionsScreen(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(paddingValues),
-                        onResetOnboarding = {
-                            mainViewModel.resetOnboarding {
-                                backStack.clear()
-                                backStack.add(Screen.Onboarding)
-                            }
-                        }
+                        },
+                        viewModel = pinSetupViewModel
                     )
                 }
             }
         }
+
+        // 子页面 - 历史记录（带滑动动画）
+        entry<Screen.History>(metadata = SlideInFromRightMetadata) {
+            val scrollBehavior = androidx.compose.material3.TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
+                androidx.compose.material3.rememberTopAppBarState()
+            )
+            Scaffold(
+                modifier = Modifier.fillMaxSize(),
+                topBar = {
+                    androidx.compose.material3.MediumTopAppBar(
+                        title = { Text("历史记录") },
+                        navigationIcon = {
+                            IconButton(onClick = goBack) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "返回"
+                                )
+                            }
+                        },
+                        scrollBehavior = scrollBehavior
+                    )
+                }
+            ) { paddingValues ->
+                HistoryScreen(
+                    onNavigateToHome = { navigateToTopLevel(Screen.Home) },
+                    onNavigateToCalendar = { goBack() },
+                    onNavigateToSettings = { navigateToTopLevel(Screen.Settings) },
+                    scrollBehavior = scrollBehavior,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                )
+            }
+        }
+
+        // 子页面 - 开发者选项（带滑动动画）
+        entry<Screen.DeveloperOptions>(metadata = SlideInFromRightMetadata) {
+            Scaffold(
+                modifier = Modifier.fillMaxSize(),
+                topBar = {
+                    androidx.compose.material3.CenterAlignedTopAppBar(
+                        title = { Text("开发者选项") },
+                        navigationIcon = {
+                            IconButton(onClick = goBack) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "返回"
+                                )
+                            }
+                        }
+                    )
+                }
+            ) { paddingValues ->
+                DeveloperOptionsScreen(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    onResetOnboarding = {
+                        mainViewModel.resetOnboarding {
+                            resetTo(Screen.Onboarding)
+                        }
+                    }
+                )
+            }
+        }
     }
 
-    // Navigation 3: 使用 NavDisplay
-    NavDisplay<Screen>(
-        backStack = backStack,
-        entryProvider = myEntryProvider,
-        onBack = { goBack() },
+    NavDisplay(
+        backStack = navState.backStack,
+        entryProvider = entryProvider,
+        onBack = goBack,
+        // 默认没有动画，子页面通过 metadata 设置自己的动画
         transitionSpec = {
-            val targetKey = targetState.entries.lastOrNull()?.contentKey as? Screen
-            // 只有明确进入子页面时才有动画
-            if (targetKey is Screen.History || targetKey is Screen.DeveloperOptions) {
-                slideInHorizontally(
-                    initialOffsetX = { it },
-                    animationSpec = tween(300)
-                ) + fadeIn() togetherWith slideOutHorizontally(
-                    targetOffsetX = { -it / 3 },
-                    animationSpec = tween(300)
-                ) + fadeOut()
-            } else {
-                ContentTransform(EnterTransition.None, ExitTransition.None)
-            }
+            ContentTransform(EnterTransition.None, ExitTransition.None)
         },
         popTransitionSpec = {
-            val initialKey = initialState.entries.lastOrNull()?.contentKey as? Screen
-            // 只有明确从子页面返回时才有动画
-            if (initialKey is Screen.History || initialKey is Screen.DeveloperOptions) {
-                slideInHorizontally(
-                    initialOffsetX = { -it / 3 },
-                    animationSpec = tween(300)
-                ) + fadeIn() togetherWith slideOutHorizontally(
-                    targetOffsetX = { it },
-                    animationSpec = tween(300)
-                ) + fadeOut()
-            } else {
-                ContentTransform(EnterTransition.None, ExitTransition.None)
-            }
+            ContentTransform(EnterTransition.None, ExitTransition.None)
         },
         predictivePopTransitionSpec = {
-            val initialKey = initialState.entries.lastOrNull()?.contentKey as? Screen
-            // 只有明确从子页面返回时才有动画
-            if (initialKey is Screen.History || initialKey is Screen.DeveloperOptions) {
-                slideInHorizontally(
-                    initialOffsetX = { -it / 3 },
-                    animationSpec = tween(300)
-                ) + fadeIn() togetherWith slideOutHorizontally(
-                    targetOffsetX = { it },
-                    animationSpec = tween(300)
-                ) + fadeOut()
-            } else {
-                ContentTransform(EnterTransition.None, ExitTransition.None)
-            }
+            ContentTransform(EnterTransition.None, ExitTransition.None)
         },
-
         modifier = modifier
+    )
+}
+
+/**
+ * 底部导航栏组件
+ */
+@Composable
+private fun PeriodBottomNavigationBar(
+    currentTopLevel: Screen,
+    onNavigateToTopLevel: (Screen) -> Unit
+) {
+    val currentRoute = when (currentTopLevel) {
+        Screen.Home -> "home"
+        Screen.Calendar -> "calendar"
+        Screen.Settings -> "settings"
+        else -> "home"
+    }
+
+    PeriodBottomNavigation(
+        currentRoute = currentRoute,
+        onNavigate = { routeStr ->
+            val route = when (routeStr) {
+                "home" -> Screen.Home
+                "calendar" -> Screen.Calendar
+                "settings" -> Screen.Settings
+                else -> Screen.Home
+            }
+            onNavigateToTopLevel(route)
+        },
+        modifier = Modifier.shadow(8.dp)
     )
 }
