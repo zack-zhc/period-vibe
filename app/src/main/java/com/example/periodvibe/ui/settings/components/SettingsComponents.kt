@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -20,13 +21,21 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.SettingsBrightness
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -36,11 +45,14 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -292,37 +304,54 @@ fun NotificationTimeDialog(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DaysBeforeDialog(
-    daysBefore: Int,
+    initialDaysBefore: Int,
     onDismiss: () -> Unit,
     onConfirm: (Int) -> Unit
 ) {
-    var daysBeforeValue by remember { mutableIntStateOf(daysBefore) }
+    val options = (1..7).map { it }
+    var expanded by remember { mutableStateOf(false) }
+    var selectedDays by remember { mutableIntStateOf(initialDaysBefore) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("提前天数设置") },
         text = {
-            Column {
+            ExposedDropdownMenuBox(
+                expanded = expanded,
+                onExpandedChange = { expanded = !expanded }
+            ) {
                 OutlinedTextField(
-                    value = daysBeforeValue.toString(),
-                    onValueChange = { value ->
-                        value.toIntOrNull()?.let {
-                            if (it in 1..7) {
-                                daysBeforeValue = it
-                            }
-                        }
-                    },
-                    label = { Text("提前天数 (1-7)") },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.fillMaxWidth()
+                    value = "$selectedDays 天",
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("提前天数") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor()
                 )
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    options.forEach { days ->
+                        DropdownMenuItem(
+                            text = { Text("$days 天") },
+                            onClick = {
+                                selectedDays = days
+                                expanded = false
+                            },
+                            contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                        )
+                    }
+                }
             }
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(daysBeforeValue) }) {
+            TextButton(onClick = { onConfirm(selectedDays) }) {
                 Text("保存")
             }
         },
@@ -334,26 +363,45 @@ fun DaysBeforeDialog(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ThemeSettingsSection(
     themeMode: com.example.periodvibe.domain.model.Settings.ThemeMode,
-    onClick: () -> Unit
+    onThemeModeChange: (com.example.periodvibe.domain.model.Settings.ThemeMode) -> Unit
 ) {
-    val themeText = when (themeMode) {
-        com.example.periodvibe.domain.model.Settings.ThemeMode.LIGHT -> "浅色"
-        com.example.periodvibe.domain.model.Settings.ThemeMode.DARK -> "深色"
-        com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM -> "跟随系统"
-    }
-
-    SettingsSection(
-        title = "主题设置",
-        onClick = onClick
-    ) {
-        SettingItem(
-            label = "主题模式",
-            value = themeText,
-            showChevron = true
-        )
+    SettingsSection(title = "主题设置") {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Text(
+                text = "主题模式",
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+            SingleChoiceSegmentedButtonRow(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                val themeOptions = listOf(
+                    com.example.periodvibe.domain.model.Settings.ThemeMode.LIGHT to "浅色",
+                    com.example.periodvibe.domain.model.Settings.ThemeMode.DARK to "深色",
+                    com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM to "系统"
+                )
+                themeOptions.forEachIndexed { index, (mode, label) ->
+                    SegmentedButton(
+                        selected = themeMode == mode,
+                        onClick = { onThemeModeChange(mode) },
+                        shape = SegmentedButtonDefaults.itemShape(
+                            index = index,
+                            count = themeOptions.size
+                        )
+                    ) {
+                        Text(label)
+                    }
+                }
+            }
+        }
     }
 }
 

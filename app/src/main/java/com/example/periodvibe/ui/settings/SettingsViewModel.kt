@@ -510,7 +510,6 @@ class SettingsViewModel @Inject constructor(
                 val updatedSettings = it.updateThemeMode(mode)
                 settingsRepository.updateSettings(updatedSettings)
             }
-            hideThemeDialog()
         }
     }
 

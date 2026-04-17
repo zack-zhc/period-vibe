@@ -43,7 +43,6 @@ import com.example.periodvibe.ui.settings.components.ImportResultDialog
 import com.example.periodvibe.ui.settings.components.NotificationSettingsSection
 import com.example.periodvibe.ui.settings.components.NotificationTimeDialog
 import com.example.periodvibe.ui.settings.components.PrivacySettingsSection
-import com.example.periodvibe.ui.settings.components.ThemeSettingsDialog
 import com.example.periodvibe.ui.settings.components.ThemeSettingsSection
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -67,7 +66,6 @@ fun SettingsScreen(
     val showDisableAppLockDialog by viewModel.showDisableAppLockDialog.collectAsState()
     val showDaysBeforeDialog by viewModel.showDaysBeforeDialog.collectAsState()
     val showTimeDialog by viewModel.showTimeDialog.collectAsState()
-    val showThemeDialog by viewModel.showThemeDialog.collectAsState()
     val showPrivacyDialog by viewModel.showPrivacyDialog.collectAsState()
     val showAboutDialog by viewModel.showAboutDialog.collectAsState()
     val showClearDataConfirmationDialog by viewModel.showClearDataConfirmationDialog.collectAsState()
@@ -151,7 +149,7 @@ fun SettingsScreen(
 
                 ThemeSettingsSection(
                     themeMode = state.themeMode,
-                    onClick = { viewModel.showThemeDialog() }
+                    onThemeModeChange = { viewModel.updateThemeMode(it) }
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -222,15 +220,6 @@ fun SettingsScreen(
         )
     }
 
-    if (showThemeDialog && uiState is SettingsUiState.Success) {
-        val state = uiState as SettingsUiState.Success
-        ThemeSettingsDialog(
-            currentThemeMode = state.themeMode,
-            onDismiss = { viewModel.hideThemeDialog() },
-            onConfirm = { mode: Settings.ThemeMode -> viewModel.updateThemeMode(mode) }
-        )
-    }
-
     if (showAboutDialog) {
         AboutDialog(
             onDismiss = { viewModel.hideAboutDialog() }
@@ -240,11 +229,9 @@ fun SettingsScreen(
     if (showDaysBeforeDialog && uiState is SettingsUiState.Success) {
         val state = uiState as SettingsUiState.Success
         DaysBeforeDialog(
-            daysBefore = state.notificationDaysBefore,
+            initialDaysBefore = state.notificationDaysBefore,
             onDismiss = { viewModel.hideDaysBeforeDialog() },
-            onConfirm = { daysBefore ->
-                viewModel.updateNotificationDaysBefore(daysBefore)
-            }
+            onConfirm = { daysBefore -> viewModel.updateNotificationDaysBefore(daysBefore) }
         )
     }
 
