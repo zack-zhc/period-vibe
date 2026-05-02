@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
@@ -23,11 +22,6 @@ import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.SettingsBrightness
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -108,9 +102,7 @@ fun CycleParametersSection(
     onAutoCalculateToggle: (Boolean) -> Unit
 ) {
     ExpressiveSettingsSection(
-        title = "周期参数",
-        icon = Icons.Default.CalendarMonth,
-        iconContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+        title = "周期参数"
     ) {
         ExpressiveSettingItemWithSwitch(
             label = "自动计算周期",
@@ -211,9 +203,7 @@ fun NotificationSettingsSection(
     onEnabledToggle: (Boolean) -> Unit
 ) {
     ExpressiveSettingsSection(
-        title = "提醒设置",
-        icon = Icons.Default.Notifications,
-        iconContainerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.15f)
+        title = "提醒设置"
     ) {
         ExpressiveSettingItemWithSwitch(
             label = "经期提醒",
@@ -400,9 +390,7 @@ fun ThemeSettingsSection(
     onThemeModeChange: (com.example.periodvibe.domain.model.Settings.ThemeMode) -> Unit
 ) {
     ExpressiveSettingsSection(
-        title = "主题设置",
-        icon = Icons.Default.Palette,
-        iconContainerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.15f)
+        title = "主题设置"
     ) {
         Text(
             text = "选择你的偏好",
@@ -486,9 +474,7 @@ fun PrivacySettingsSection(
     onPrivacyModeToggle: (Boolean) -> Unit
 ) {
     ExpressiveSettingsSection(
-        title = "隐私设置",
-        icon = Icons.Default.Lock,
-        iconContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 1f)
+        title = "隐私设置"
     ) {
         ExpressiveSettingItemWithSwitch(
             label = "应用锁",
@@ -515,9 +501,7 @@ fun DataManagementSection(
     onClearDataClick: () -> Unit
 ) {
     ExpressiveSettingsSection(
-        title = "数据管理",
-        icon = Icons.Default.Folder,
-        iconContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 1f)
+        title = "数据管理"
     ) {
         ExpressiveSettingItem(
             label = "导出数据",
@@ -700,9 +684,7 @@ fun AboutSection(
     var firstClickTime by remember { mutableStateOf(0L) }
 
     ExpressiveSettingsSection(
-        title = "关于",
-        icon = Icons.Default.Info,
-        iconContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 1f)
+        title = "关于"
     ) {
         ExpressiveSettingItem(
             label = "应用介绍",
@@ -920,51 +902,29 @@ fun SettingItemWithSwitch(
 @Composable
 fun ExpressiveSettingsSection(
     title: String,
-    icon: ImageVector,
-    iconContainerColor: Color,
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(28.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp)
+                .padding(16.dp)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.padding(bottom = 16.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(iconContainerColor)
-                ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier
-                            .size(24.dp)
-                            .align(Alignment.Center)
-                    )
-                }
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
             content()
         }
     }
