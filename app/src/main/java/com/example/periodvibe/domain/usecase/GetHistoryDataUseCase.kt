@@ -106,6 +106,9 @@ data class CycleWithRecords(
     val durationDays: Int
         get() = cycle.duration
 
+    val cycleLengthDays: Int?
+        get() = cycle.cycleLength
+
     val periodDaysCount: Int
         get() = records.count { it.isPeriod }
 

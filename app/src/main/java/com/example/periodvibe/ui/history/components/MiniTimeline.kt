@@ -14,12 +14,13 @@ import com.example.periodvibe.ui.theme.CalendarPeriodLight
 
 @Composable
 fun MiniTimeline(
-    totalDays: Int,
+    cycleLengthDays: Int?,
     periodDays: Int,
     isDark: Boolean,
     modifier: Modifier = Modifier
 ) {
     val periodColor = if (isDark) CalendarPeriodDark else CalendarPeriodLight
+    val totalDays = cycleLengthDays ?: 28
 
     Column(
         modifier = modifier,
@@ -34,7 +35,7 @@ fun MiniTimeline(
             horizontalArrangement = Arrangement.Start
         ) {
             if (totalDays > 0 && periodDays > 0) {
-                val periodRatio = periodDays.toFloat() / totalDays.toFloat()
+                val periodRatio = periodDays.toFloat() / totalDays.toFloat().coerceAtLeast(periodDays.toFloat())
                 Spacer(
                     modifier = Modifier
                         .fillMaxHeight()
@@ -54,7 +55,7 @@ fun MiniTimeline(
                 color = periodColor
             )
             Text(
-                text = "周期 $totalDays 天",
+                text = if (cycleLengthDays != null) "周期 $cycleLengthDays 天" else "周期 -- 天",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

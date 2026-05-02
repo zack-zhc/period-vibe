@@ -401,7 +401,7 @@ private fun TimelineCycleCard(
                 }
 
                 MiniTimeline(
-                    totalDays = cycleWithRecords.durationDays,
+                    cycleLengthDays = cycleWithRecords.cycleLengthDays,
                     periodDays = cycleWithRecords.periodDaysCount,
                     isDark = isDark
                 )
