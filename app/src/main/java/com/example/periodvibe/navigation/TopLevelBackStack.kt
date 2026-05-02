@@ -51,9 +51,9 @@ class TopLevelBackStack<T : Any>(startKey: T) {
      * 如果该路由不存在，则创建新的返回栈
      * 如果已存在，则将其移到栈顶（激活）
      */
-    fun navigateToTopLevel(key: T) {
-        if (topLevelStacks[key] == null) {
-            // 新的顶部级路由，创建返回栈
+    fun navigateToTopLevel(key: T, resetStack: Boolean = false) {
+        if (topLevelStacks[key] == null || resetStack) {
+            // 新的顶部级路由，或需要重置栈，创建干净的返回栈
             topLevelStacks[key] = mutableStateListOf(key)
         } else {
             // 已存在的顶部级路由，移到最后（激活状态）
