@@ -33,6 +33,14 @@ class HistoryViewModel @Inject constructor(
     private val _showEditDialog = MutableStateFlow<com.example.periodvibe.domain.model.DailyRecord?>(null)
     val showEditDialog: StateFlow<com.example.periodvibe.domain.model.DailyRecord?> = _showEditDialog.asStateFlow()
 
+    // 编辑模式状态
+    private val _isEditMode = MutableStateFlow(false)
+    val isEditMode: StateFlow<Boolean> = _isEditMode.asStateFlow()
+
+    // 多选选中的周期
+    private val _selectedCycles = MutableStateFlow<Set<Long>>(emptySet())
+    val selectedCycles: StateFlow<Set<Long>> = _selectedCycles.asStateFlow()
+
     init {
         loadHistoryData()
     }
@@ -128,6 +136,37 @@ class HistoryViewModel @Inject constructor(
 
     fun refresh() {
         loadHistoryData()
+    }
+
+    fun toggleEditMode() {
+        _isEditMode.value = !_isEditMode.value
+        if (!_isEditMode.value) {
+            _selectedCycles.value = emptySet()
+        }
+    }
+
+    fun toggleCycleSelection(cycleId: Long) {
+        val current = _selectedCycles.value.toMutableSet()
+        if (current.contains(cycleId)) {
+            current.remove(cycleId)
+        } else {
+            current.add(cycleId)
+        }
+        _selectedCycles.value = current
+    }
+
+    fun deleteSelectedCycles() {
+        viewModelScope.launch {
+            _selectedCycles.value.forEach { cycleId ->
+                getHistoryDataUseCase.deleteCycle(cycleId)
+            }
+            _selectedCycles.value = emptySet()
+            _isEditMode.value = false
+        }
+    }
+
+    fun clearSelection() {
+        _selectedCycles.value = emptySet()
     }
 }
 
