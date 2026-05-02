@@ -105,21 +105,8 @@ class CycleRepository @Inject constructor(
                 activeCycle
             }
 
-            // 计算并设置 cycleLength：找到上一个已完成的周期，计算两个周期开始日期的间隔
-            val allCycles = getAllCyclesOnce()
-            val previousCompletedCycle = allCycles
-                .filter { it.isCompleted && it.id != activeCycle.id }
-                .maxByOrNull { it.startDate }
-
-            val cycleLength = if (previousCompletedCycle != null) {
-                Period.between(previousCompletedCycle.startDate, cycleToComplete.startDate).days
-            } else {
-                null
-            }
-
             val updatedCycle = cycleToComplete
                 .updatePeriodLength(periodLength ?: 0)
-                .copy(cycleLength = cycleLength)
 
             updateCycle(updatedCycle)
         }
@@ -132,6 +119,18 @@ class CycleRepository @Inject constructor(
             isCompleted = false
         )
         val cycleId = insertCycle(newCycle)
+
+        // 在新周期创建后，更新上一个周期的 cycleLength 为：新周期开始日 - 上一个周期开始日
+        if (activeCycle != null) {
+            val allCyclesAfterNew = getAllCyclesOnce()
+            val updatedPreviousCycle = allCyclesAfterNew.find { it.id == activeCycle.id }
+            if (updatedPreviousCycle != null) {
+                val cycleLength = Period.between(activeCycle.startDate, startDate).days
+                val finalCycle = updatedPreviousCycle.copy(cycleLength = cycleLength)
+                updateCycle(finalCycle)
+            }
+        }
+
         return newCycle.copy(id = cycleId)
     }
 
