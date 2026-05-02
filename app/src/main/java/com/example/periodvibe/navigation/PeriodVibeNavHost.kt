@@ -351,36 +351,10 @@ fun PeriodVibeNavHost(
 
         // 子页面 - 历史记录（带滑动动画）
         entry<Screen.History>(metadata = SlideInFromRightMetadata) {
-            val scrollBehavior = androidx.compose.material3.TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
-                androidx.compose.material3.rememberTopAppBarState()
+            HistoryScreen(
+                onNavigateBack = goBack,
+                onNavigateToCalendar = { navigateToTopLevel(Screen.Calendar) }
             )
-            Scaffold(
-                modifier = Modifier.fillMaxSize(),
-                topBar = {
-                    androidx.compose.material3.MediumTopAppBar(
-                        title = { Text("历史记录") },
-                        navigationIcon = {
-                            IconButton(onClick = goBack) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = "返回"
-                                )
-                            }
-                        },
-                        scrollBehavior = scrollBehavior
-                    )
-                }
-            ) { paddingValues ->
-                HistoryScreen(
-                    onNavigateToHome = { navigateToTopLevel(Screen.Home) },
-                    onNavigateToCalendar = { goBack() },
-                    onNavigateToSettings = { navigateToTopLevel(Screen.Settings) },
-                    scrollBehavior = scrollBehavior,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
-                )
-            }
         }
 
         // 子页面 - 开发者选项（带滑动动画）
