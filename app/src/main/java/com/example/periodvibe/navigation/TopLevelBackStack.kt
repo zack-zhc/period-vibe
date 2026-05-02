@@ -124,4 +124,20 @@ class TopLevelBackStack<T : Any>(startKey: T) {
      */
     val currentStackSize: Int
         get() = topLevelStacks[topLevelKey]?.size ?: 0
+
+    /**
+     * 导航到指定的顶部级路由并重置其栈，同时保留其他标签的状态
+     */
+    fun navigateToTopLevelAndReset(key: T) {
+        // 重置目标标签的栈
+        topLevelStacks[key] = mutableStateListOf(key)
+        // 将目标标签移到顶部
+        topLevelStacks.apply {
+            remove(key)?.let {
+                put(key, it)
+            }
+        }
+        topLevelKey = key
+        updateBackStack()
+    }
 }

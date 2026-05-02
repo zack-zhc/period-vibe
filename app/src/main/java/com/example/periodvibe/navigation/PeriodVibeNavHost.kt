@@ -163,6 +163,11 @@ fun PeriodVibeNavHost(
         navState.navigateToTopLevel(screen, resetStack)
     }
 
+    // 导航到指定的顶部级路由并重置其栈
+    val navigateToTopLevelAndReset: (Screen) -> Unit = { screen ->
+        navState.navigateToTopLevelAndReset(screen)
+    }
+
     // 返回上一页
     val goBack: () -> Unit = {
         navState.goBack()
@@ -362,8 +367,8 @@ fun PeriodVibeNavHost(
                 onNavigateBack = goBack,
                 onNavigateHomeToRecord = {
                     showRecordSheetOnHome = true
-                    // 导航到 Home 并重置 Home 的返回栈，确保没有子页面
-                    navigateToTopLevel(Screen.Home, true)
+                    // 使用新方法导航到 Home 并重置其栈，同时保留其他标签的状态
+                    navigateToTopLevelAndReset(Screen.Home)
                 }
             )
         }
