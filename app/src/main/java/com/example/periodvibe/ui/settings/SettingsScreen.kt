@@ -58,6 +58,28 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
+@Composable
+private fun SettingsHeader() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+    ) {
+        Text(
+            text = "设置",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Text(
+            text = "个性化你的体验",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 4.dp)
+        )
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
@@ -131,8 +153,9 @@ fun SettingsScreen(
                     .fillMaxSize()
                     .let { if (scrollBehavior != null) it.nestedScroll(scrollBehavior.nestedScrollConnection) else it }
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 16.dp)
+                    .padding(vertical = 16.dp)
             ) {
+                SettingsHeader()
                 CycleParametersSection(
                     autoCalculateCycle = state.autoCalculateCycle,
                     cycleLengthDefault = state.cycleLengthDefault,

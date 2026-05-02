@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
@@ -22,6 +23,12 @@ import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.SettingsBrightness
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -102,7 +109,9 @@ fun CycleParametersSection(
     onAutoCalculateToggle: (Boolean) -> Unit
 ) {
     ExpressiveSettingsSection(
-        title = "周期参数"
+        title = "周期参数",
+        icon = Icons.Default.CalendarMonth,
+        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
     ) {
         ExpressiveSettingItemWithSwitch(
             label = "自动计算周期",
@@ -203,7 +212,9 @@ fun NotificationSettingsSection(
     onEnabledToggle: (Boolean) -> Unit
 ) {
     ExpressiveSettingsSection(
-        title = "提醒设置"
+        title = "提醒设置",
+        icon = Icons.Default.Notifications,
+        containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)
     ) {
         ExpressiveSettingItemWithSwitch(
             label = "经期提醒",
@@ -390,7 +401,9 @@ fun ThemeSettingsSection(
     onThemeModeChange: (com.example.periodvibe.domain.model.Settings.ThemeMode) -> Unit
 ) {
     ExpressiveSettingsSection(
-        title = "主题设置"
+        title = "主题设置",
+        icon = Icons.Default.Palette,
+        containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.4f)
     ) {
         Text(
             text = "选择你的偏好",
@@ -474,7 +487,9 @@ fun PrivacySettingsSection(
     onPrivacyModeToggle: (Boolean) -> Unit
 ) {
     ExpressiveSettingsSection(
-        title = "隐私设置"
+        title = "隐私设置",
+        icon = Icons.Default.Lock,
+        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
     ) {
         ExpressiveSettingItemWithSwitch(
             label = "应用锁",
@@ -501,7 +516,9 @@ fun DataManagementSection(
     onClearDataClick: () -> Unit
 ) {
     ExpressiveSettingsSection(
-        title = "数据管理"
+        title = "数据管理",
+        icon = Icons.Default.Folder,
+        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
     ) {
         ExpressiveSettingItem(
             label = "导出数据",
@@ -684,7 +701,9 @@ fun AboutSection(
     var firstClickTime by remember { mutableStateOf(0L) }
 
     ExpressiveSettingsSection(
-        title = "关于"
+        title = "关于",
+        icon = Icons.Default.Info,
+        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
     ) {
         ExpressiveSettingItem(
             label = "应用介绍",
@@ -902,29 +921,51 @@ fun SettingItemWithSwitch(
 @Composable
 fun ExpressiveSettingsSection(
     title: String,
+    icon: ImageVector,
+    containerColor: Color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(32.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(24.dp)
         ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 12.dp)
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.padding(bottom = 20.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(containerColor)
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .size(24.dp)
+                            .align(Alignment.Center)
+                    )
+                }
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
             content()
         }
     }
@@ -948,7 +989,7 @@ fun ExpressiveSettingItem(
         modifier = Modifier
             .fillMaxWidth()
             .then(clickableModifier)
-            .padding(vertical = 12.dp),
+            .padding(vertical = 14.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -960,7 +1001,7 @@ fun ExpressiveSettingItem(
         )
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             if (value.isNotEmpty()) {
                 Text(
@@ -974,7 +1015,7 @@ fun ExpressiveSettingItem(
                     imageVector = Icons.Default.ChevronRight,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(22.dp)
                 )
             }
         }
@@ -991,7 +1032,7 @@ fun ExpressiveSettingItemWithSwitch(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 12.dp)
+            .padding(vertical = 14.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -1009,7 +1050,7 @@ fun ExpressiveSettingItemWithSwitch(
                         text = description,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 4.dp)
+                        modifier = Modifier.padding(top = 6.dp)
                     )
                 }
             }
