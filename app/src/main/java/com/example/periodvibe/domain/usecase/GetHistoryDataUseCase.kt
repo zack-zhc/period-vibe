@@ -7,6 +7,7 @@ import com.example.periodvibe.domain.model.FlowLevel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import java.time.LocalDate
+import java.time.Period
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import javax.inject.Inject
@@ -20,11 +21,21 @@ class GetHistoryDataUseCase @Inject constructor(
             cycleRepository.getAllCycles(),
             cycleRepository.getAllDailyRecords()
         ) { cycles, records ->
-            val cycleWithRecords = cycles.map { cycle ->
+            val sortedCycles = cycles.sortedBy { it.startDate }
+
+            val cycleWithRecords = sortedCycles.mapIndexed { index, cycle ->
                 val cycleRecords = records.filter { it.cycleId == cycle.id }
+                // 动态计算周期长度：下一个周期的开始日期 - 当前周期的开始日期
+                val calculatedCycleLength = if (index < sortedCycles.size - 1) {
+                    val nextCycle = sortedCycles[index + 1]
+                    Period.between(cycle.startDate, nextCycle.startDate).days
+                } else {
+                    null
+                }
                 CycleWithRecords(
                     cycle = cycle,
-                    records = cycleRecords.sortedBy { it.date }
+                    records = cycleRecords.sortedBy { it.date },
+                    calculatedCycleLength = calculatedCycleLength
                 )
             }.sortedByDescending { it.cycle.startDate }
 
@@ -96,7 +107,8 @@ data class HistoryData(
 
 data class CycleWithRecords(
     val cycle: Cycle,
-    val records: List<DailyRecord>
+    val records: List<DailyRecord>,
+    val calculatedCycleLength: Int? = null
 ) {
     val startDateFormatted: String
         get() = cycle.startDate.format(
@@ -107,7 +119,7 @@ data class CycleWithRecords(
         get() = cycle.duration
 
     val cycleLengthDays: Int?
-        get() = cycle.cycleLength
+        get() = calculatedCycleLength ?: cycle.cycleLength
 
     val periodDaysCount: Int
         get() = records.count { it.isPeriod }
