@@ -6,14 +6,24 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.draw.clip
+import androidx.compose.material3.Icon
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -47,6 +57,46 @@ import com.example.periodvibe.ui.settings.components.ThemeSettingsSection
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
+
+@Composable
+private fun SettingsHeader() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(horizontalAlignment = Alignment.Start) {
+            Text(
+                text = "设置",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = "个性化你的体验",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Box(
+            modifier = Modifier
+                .size(56.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primaryContainer)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Settings,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .size(28.dp)
+                    .align(Alignment.Center)
+            )
+        }
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -121,8 +171,10 @@ fun SettingsScreen(
                     .fillMaxSize()
                     .let { if (scrollBehavior != null) it.nestedScroll(scrollBehavior.nestedScrollConnection) else it }
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 16.dp)
+                    .padding(vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                SettingsHeader()
 
                 CycleParametersSection(
                     autoCalculateCycle = state.autoCalculateCycle,
@@ -134,8 +186,6 @@ fun SettingsScreen(
                     onAutoCalculateToggle = { viewModel.toggleAutoCalculateCycle(it) }
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
-
                 NotificationSettingsSection(
                     enabled = state.notificationEnabled,
                     daysBefore = state.notificationDaysBefore,
@@ -145,14 +195,10 @@ fun SettingsScreen(
                     onEnabledToggle = { viewModel.toggleNotificationEnabled(it) }
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
-
                 ThemeSettingsSection(
                     themeMode = state.themeMode,
                     onThemeModeChange = { viewModel.updateThemeMode(it) }
                 )
-
-                Spacer(modifier = Modifier.height(16.dp))
 
                 PrivacySettingsSection(
                     appLockEnabled = state.appLockEnabled,
@@ -167,8 +213,6 @@ fun SettingsScreen(
                     onPrivacyModeToggle = { viewModel.togglePrivacyMode(it) }
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
-
                 DataManagementSection(
                     onExportDataClick = {
                         viewModel.showExportFormatDialog()
@@ -179,8 +223,6 @@ fun SettingsScreen(
                     },
                     onClearDataClick = { viewModel.showClearDataConfirmationDialog() }
                 )
-
-                Spacer(modifier = Modifier.height(16.dp))
 
                 AboutSection(
                     onAppIntroClick = { viewModel.showAboutDialog() },
