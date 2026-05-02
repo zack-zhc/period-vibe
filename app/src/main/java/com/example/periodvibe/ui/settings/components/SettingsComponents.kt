@@ -61,6 +61,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -696,7 +697,7 @@ fun AboutSection(
     onDeveloperOptionsClick: () -> Unit
 ) {
     var clickCount by remember { mutableIntStateOf(0) }
-    var firstClickTime by remember { mutableLongStateOf(0L) }
+    var firstClickTime by remember { mutableStateOf(0L) }
 
     ExpressiveSettingsSection(
         title = "关于",
