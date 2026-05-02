@@ -4,15 +4,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
@@ -28,16 +27,27 @@ import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Switch
-import androidx.compose.ui.draw.clip
-import androidx.compose.foundation.background
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
@@ -45,35 +55,356 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TimePickerState
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import java.time.LocalTime
+
+// ======================= 基础组件 =======================
+
+@Composable
+fun SettingsGroup(
+    title: String,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+            content()
+        }
+    }
+}
+
+@Composable
+fun SettingItem(
+    label: String,
+    value: String = "",
+    showChevron: Boolean = false,
+    onClick: (() -> Unit)? = null
+) {
+    val clickableModifier = if (onClick != null) {
+        Modifier.clickable(onClick = onClick)
+    } else {
+        Modifier
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(clickableModifier)
+            .padding(vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f)
+        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            if (value.isNotEmpty()) {
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            if (showChevron) {
+                Icon(
+                    imageVector = Icons.Default.ChevronRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun SettingItemWithSwitch(
+    label: String,
+    description: String? = null,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                if (description != null) {
+                    Text(
+                        text = description,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+            }
+            Switch(
+                checked = checked,
+                onCheckedChange = onCheckedChange
+            )
+        }
+    }
+}
+
+// ======================= 业务组件 =======================
+
+@Composable
+fun CycleParametersSection(
+    autoCalculateCycle: Boolean,
+    cycleLengthDefault: Int,
+    periodLengthDefault: Int,
+    cycleLengthRange: IntRange,
+    periodLengthRange: IntRange,
+    onClick: () -> Unit,
+    onAutoCalculateToggle: (Boolean) -> Unit
+) {
+    SettingsGroup(title = "周期参数") {
+        SettingItemWithSwitch(
+            label = "自动计算周期",
+            description = if (autoCalculateCycle) "根据历史数据自动计算" else "使用手动设置的值",
+            checked = autoCalculateCycle,
+            onCheckedChange = onAutoCalculateToggle
+        )
+        if (!autoCalculateCycle) {
+            Spacer(modifier = Modifier.height(4.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+            Spacer(modifier = Modifier.height(4.dp))
+            SettingItem(
+                label = "平均周期天数",
+                value = "$cycleLengthDefault 天",
+                showChevron = true,
+                onClick = onClick
+            )
+            SettingItem(
+                label = "平均经期天数",
+                value = "$periodLengthDefault 天",
+                showChevron = true,
+                onClick = onClick
+            )
+        }
+    }
+}
+
+@Composable
+fun NotificationSettingsSection(
+    enabled: Boolean,
+    daysBefore: Int,
+    time: LocalTime,
+    onDaysBeforeClick: () -> Unit,
+    onTimeClick: () -> Unit,
+    onEnabledToggle: (Boolean) -> Unit
+) {
+    SettingsGroup(title = "提醒设置") {
+        SettingItemWithSwitch(
+            label = "经期提醒",
+            description = if (enabled) "在经期前提醒你" else "关闭所有提醒",
+            checked = enabled,
+            onCheckedChange = onEnabledToggle
+        )
+        if (enabled) {
+            Spacer(modifier = Modifier.height(4.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+            Spacer(modifier = Modifier.height(4.dp))
+            SettingItem(
+                label = "提前天数",
+                value = "$daysBefore 天",
+                showChevron = true,
+                onClick = onDaysBeforeClick
+            )
+            SettingItem(
+                label = "提醒时间",
+                value = "${time.hour.toString().padStart(2, '0')}:${time.minute.toString().padStart(2, '0')}",
+                showChevron = true,
+                onClick = onTimeClick
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ThemeSettingsSection(
+    themeMode: com.example.periodvibe.domain.model.Settings.ThemeMode,
+    onThemeModeChange: (com.example.periodvibe.domain.model.Settings.ThemeMode) -> Unit
+) {
+    SettingsGroup(title = "主题设置") {
+        Text(
+            text = "选择你的偏好",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 12.dp)
+        )
+        SingleChoiceSegmentedButtonRow(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            val themeOptions = listOf(
+                com.example.periodvibe.domain.model.Settings.ThemeMode.LIGHT to "浅色",
+                com.example.periodvibe.domain.model.Settings.ThemeMode.DARK to "深色",
+                com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM to "系统"
+            )
+            themeOptions.forEachIndexed { index, (mode, label) ->
+                SegmentedButton(
+                    selected = themeMode == mode,
+                    onClick = { onThemeModeChange(mode) },
+                    shape = SegmentedButtonDefaults.itemShape(
+                        index = index,
+                        count = themeOptions.size
+                    )
+                ) {
+                    Text(label)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun PrivacySettingsSection(
+    appLockEnabled: Boolean,
+    privacyModeEnabled: Boolean,
+    onAppLockToggle: (Boolean) -> Unit,
+    onPrivacyModeToggle: (Boolean) -> Unit
+) {
+    SettingsGroup(title = "隐私设置") {
+        SettingItemWithSwitch(
+            label = "应用锁",
+            description = "使用指纹或密码保护应用",
+            checked = appLockEnabled,
+            onCheckedChange = onAppLockToggle
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+        Spacer(modifier = Modifier.height(4.dp))
+        SettingItemWithSwitch(
+            label = "隐私模式",
+            description = "隐藏通知内容",
+            checked = privacyModeEnabled,
+            onCheckedChange = onPrivacyModeToggle
+        )
+    }
+}
+
+@Composable
+fun DataManagementSection(
+    onExportDataClick: () -> Unit,
+    onImportDataClick: () -> Unit,
+    onClearDataClick: () -> Unit
+) {
+    SettingsGroup(title = "数据管理") {
+        SettingItem(
+            label = "导出数据",
+            value = "选择格式",
+            showChevron = true,
+            onClick = onExportDataClick
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+        Spacer(modifier = Modifier.height(4.dp))
+        SettingItem(
+            label = "导入数据",
+            value = "从备份恢复",
+            showChevron = true,
+            onClick = onImportDataClick
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+        Spacer(modifier = Modifier.height(4.dp))
+        SettingItem(
+            label = "清除数据",
+            value = "删除所有记录",
+            showChevron = true,
+            onClick = onClearDataClick
+        )
+    }
+}
+
+@Composable
+fun AboutSection(
+    onAppIntroClick: () -> Unit,
+    onDeveloperOptionsClick: () -> Unit
+) {
+    var clickCount by remember { mutableIntStateOf(0) }
+    var firstClickTime by remember { mutableLongStateOf(0L) }
+
+    SettingsGroup(title = "关于") {
+        SettingItem(
+            label = "应用介绍",
+            value = "",
+            showChevron = true,
+            onClick = onAppIntroClick
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+        Spacer(modifier = Modifier.height(4.dp))
+        SettingItem(
+            label = "版本信息",
+            value = "v1.0.0",
+            showChevron = false,
+            onClick = {
+                val currentTime = System.currentTimeMillis()
+
+                if (firstClickTime == 0L) {
+                    firstClickTime = currentTime
+                    clickCount = 1
+                } else {
+                    val elapsedTime = currentTime - firstClickTime
+                    if (elapsedTime > 8000) {
+                        clickCount = 1
+                        firstClickTime = currentTime
+                    } else {
+                        clickCount++
+                    }
+                }
+
+                if (clickCount >= 10) {
+                    clickCount = 1
+                    firstClickTime = currentTime
+                    onDeveloperOptionsClick()
+                }
+            }
+        )
+    }
+}
+
+// ======================= Dialogs =======================
 
 @Composable
 fun DisableAppLockConfirmationDialog(
@@ -95,47 +426,6 @@ fun DisableAppLockConfirmationDialog(
             }
         }
     )
-}
-
-@Composable
-fun CycleParametersSection(
-    autoCalculateCycle: Boolean,
-    cycleLengthDefault: Int,
-    periodLengthDefault: Int,
-    cycleLengthRange: IntRange,
-    periodLengthRange: IntRange,
-    onClick: () -> Unit,
-    onAutoCalculateToggle: (Boolean) -> Unit
-) {
-    ExpressiveSettingsSection(
-        title = "周期参数",
-        icon = Icons.Default.CalendarMonth,
-        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
-    ) {
-        ExpressiveSettingItemWithSwitch(
-            label = "自动计算周期",
-            description = if (autoCalculateCycle) "根据历史数据自动计算" else "使用手动设置的值",
-            checked = autoCalculateCycle,
-            onCheckedChange = onAutoCalculateToggle
-        )
-        if (!autoCalculateCycle) {
-            Spacer(modifier = Modifier.height(4.dp))
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-            Spacer(modifier = Modifier.height(4.dp))
-            ExpressiveSettingItem(
-                label = "平均周期天数",
-                value = "$cycleLengthDefault 天",
-                showChevron = true,
-                onClick = onClick
-            )
-            ExpressiveSettingItem(
-                label = "平均经期天数",
-                value = "$periodLengthDefault 天",
-                showChevron = true,
-                onClick = onClick
-            )
-        }
-    }
 }
 
 @Composable
@@ -191,139 +481,6 @@ fun CycleParametersDialog(
         confirmButton = {
             TextButton(onClick = { onConfirm(cycleLengthValue, periodLengthValue) }) {
                 Text("保存")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("取消")
-            }
-        }
-    )
-}
-
-@Composable
-fun NotificationSettingsSection(
-    enabled: Boolean,
-    daysBefore: Int,
-    time: LocalTime,
-    onDaysBeforeClick: () -> Unit,
-    onTimeClick: () -> Unit,
-    onEnabledToggle: (Boolean) -> Unit
-) {
-    ExpressiveSettingsSection(
-        title = "提醒设置",
-        icon = Icons.Default.Notifications,
-        containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)
-    ) {
-        ExpressiveSettingItemWithSwitch(
-            label = "经期提醒",
-            description = if (enabled) "在经期前提醒你" else "关闭所有提醒",
-            checked = enabled,
-            onCheckedChange = onEnabledToggle
-        )
-        if (enabled) {
-            Spacer(modifier = Modifier.height(4.dp))
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-            Spacer(modifier = Modifier.height(4.dp))
-            ExpressiveSettingItem(
-                label = "提前天数",
-                value = "$daysBefore 天",
-                showChevron = true,
-                onClick = onDaysBeforeClick
-            )
-            ExpressiveSettingItem(
-                label = "提醒时间",
-                value = "${time.hour.toString().padStart(2, '0')}:${time.minute.toString().padStart(2, '0')}",
-                showChevron = true,
-                onClick = onTimeClick
-            )
-        }
-    }
-}
-
-@Composable
-fun ThemeSettingsDialog(
-    currentThemeMode: com.example.periodvibe.domain.model.Settings.ThemeMode,
-    onDismiss: () -> Unit,
-    onConfirm: (com.example.periodvibe.domain.model.Settings.ThemeMode) -> Unit
-) {
-    var selectedTheme by remember {
-        mutableIntStateOf(
-            when (currentThemeMode) {
-                com.example.periodvibe.domain.model.Settings.ThemeMode.LIGHT -> 0
-                com.example.periodvibe.domain.model.Settings.ThemeMode.DARK -> 1
-                com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM -> 2
-            }
-        )
-    }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("主题设置") },
-        text = {
-            Column {
-                ThemeOption(
-                    text = "浅色模式",
-                    selected = selectedTheme == 0,
-                    onClick = { selectedTheme = 0 },
-                    icon = Icons.Default.LightMode
-                )
-                ThemeOption(
-                    text = "深色模式",
-                    selected = selectedTheme == 1,
-                    onClick = { selectedTheme = 1 },
-                    icon = Icons.Default.DarkMode
-                )
-                ThemeOption(
-                    text = "跟随系统",
-                    selected = selectedTheme == 2,
-                    onClick = { selectedTheme = 2 },
-                    icon = Icons.Default.SettingsBrightness
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                val theme = when (selectedTheme) {
-                    0 -> com.example.periodvibe.domain.model.Settings.ThemeMode.LIGHT
-                    1 -> com.example.periodvibe.domain.model.Settings.ThemeMode.DARK
-                    else -> com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM
-                }
-                onConfirm(theme)
-            }) {
-                Text("保存")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("取消")
-            }
-        }
-    )
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun NotificationTimeDialog(
-    time: LocalTime,
-    onDismiss: () -> Unit,
-    onConfirm: (LocalTime) -> Unit
-) {
-    val timePickerState = remember { TimePickerState(initialHour = time.hour, initialMinute = time.minute, is24Hour = true) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("提醒时间设置") },
-        text = {
-            TimePicker(
-                state = timePickerState
-            )
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                onConfirm(LocalTime.of(timePickerState.hour, timePickerState.minute))
-            }) {
-                Text("确定")
             }
         },
         dismissButton = {
@@ -395,156 +552,114 @@ fun DaysBeforeDialog(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ThemeSettingsSection(
-    themeMode: com.example.periodvibe.domain.model.Settings.ThemeMode,
-    onThemeModeChange: (com.example.periodvibe.domain.model.Settings.ThemeMode) -> Unit
+fun NotificationTimeDialog(
+    time: LocalTime,
+    onDismiss: () -> Unit,
+    onConfirm: (LocalTime) -> Unit
 ) {
-    ExpressiveSettingsSection(
-        title = "主题设置",
-        icon = Icons.Default.Palette,
-        containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.4f)
-    ) {
-        Text(
-            text = "选择你的偏好",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 12.dp)
-        )
-        SingleChoiceSegmentedButtonRow(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            val themeOptions = listOf(
-                com.example.periodvibe.domain.model.Settings.ThemeMode.LIGHT to "浅色",
-                com.example.periodvibe.domain.model.Settings.ThemeMode.DARK to "深色",
-                com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM to "系统"
+    val timePickerState = remember { TimePickerState(initialHour = time.hour, initialMinute = time.minute, is24Hour = true) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("提醒时间设置") },
+        text = {
+            TimePicker(
+                state = timePickerState
             )
-            themeOptions.forEachIndexed { index, (mode, label) ->
-                SegmentedButton(
-                    selected = themeMode == mode,
-                    onClick = { onThemeModeChange(mode) },
-                    shape = SegmentedButtonDefaults.itemShape(
-                        index = index,
-                        count = themeOptions.size
-                    )
-                ) {
-                    Text(label)
-                }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                onConfirm(LocalTime.of(timePickerState.hour, timePickerState.minute))
+            }) {
+                Text("确定")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
             }
         }
-    }
+    )
 }
 
 @Composable
-fun ThemeOption(
-    text: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-    icon: androidx.compose.ui.graphics.vector.ImageVector
+fun ClearDataConfirmationDialog(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
 ) {
-    Surface(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        color = if (selected) {
-            MaterialTheme.colorScheme.primaryContainer
-        } else {
-            MaterialTheme.colorScheme.surface
-        }
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(end = 12.dp)
-            )
-            Text(
-                text = text,
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.weight(1f)
-            )
-            if (selected) {
-                Icon(
-                    imageVector = Icons.Default.Check,
-                    contentDescription = "已选择",
-                    tint = MaterialTheme.colorScheme.primary
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("确认清除数据") },
+        text = {
+            Text("此操作将永久删除所有周期记录和日常数据，且无法恢复。确定要继续吗？")
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onConfirm
+            ) {
+                Text(
+                    "确定清除",
+                    color = MaterialTheme.colorScheme.error
                 )
             }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
         }
-    }
+    )
 }
 
 @Composable
-fun PrivacySettingsSection(
-    appLockEnabled: Boolean,
-    privacyModeEnabled: Boolean,
-    onAppLockToggle: (Boolean) -> Unit,
-    onPrivacyModeToggle: (Boolean) -> Unit
+fun ImportConfirmationDialog(
+    cycleCount: Int,
+    recordCount: Int,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
 ) {
-    ExpressiveSettingsSection(
-        title = "隐私设置",
-        icon = Icons.Default.Lock,
-        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
-    ) {
-        ExpressiveSettingItemWithSwitch(
-            label = "应用锁",
-            description = "使用指纹或密码保护应用",
-            checked = appLockEnabled,
-            onCheckedChange = onAppLockToggle
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-        Spacer(modifier = Modifier.height(4.dp))
-        ExpressiveSettingItemWithSwitch(
-            label = "隐私模式",
-            description = "隐藏通知内容",
-            checked = privacyModeEnabled,
-            onCheckedChange = onPrivacyModeToggle
-        )
-    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("确认导入数据") },
+        text = {
+            Text(
+                "即将导入：\n" +
+                    "• $cycleCount 个周期记录\n" +
+                    "• $recordCount 条日常记录\n\n" +
+                    "注意：导入将覆盖现有数据，请确保已备份当前数据。"
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onConfirm
+            ) {
+                Text("确认导入")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        }
+    )
 }
 
 @Composable
-fun DataManagementSection(
-    onExportDataClick: () -> Unit,
-    onImportDataClick: () -> Unit,
-    onClearDataClick: () -> Unit
+fun ImportResultDialog(
+    success: Boolean,
+    message: String,
+    onDismiss: () -> Unit
 ) {
-    ExpressiveSettingsSection(
-        title = "数据管理",
-        icon = Icons.Default.Folder,
-        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
-    ) {
-        ExpressiveSettingItem(
-            label = "导出数据",
-            value = "选择格式",
-            showChevron = true,
-            onClick = onExportDataClick
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-        Spacer(modifier = Modifier.height(4.dp))
-        ExpressiveSettingItem(
-            label = "导入数据",
-            value = "从备份恢复",
-            showChevron = true,
-            onClick = onImportDataClick
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-        Spacer(modifier = Modifier.height(4.dp))
-        ExpressiveSettingItem(
-            label = "清除数据",
-            value = "删除所有记录",
-            showChevron = true,
-            valueColor = MaterialTheme.colorScheme.error,
-            onClick = onClearDataClick
-        )
-    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(if (success) "导入成功" else "导入失败") },
+        text = { Text(message) },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("确定")
+            }
+        }
+    )
 }
 
 @Composable
@@ -594,57 +709,6 @@ fun ExportFormatDialog(
 }
 
 @Composable
-fun ImportConfirmationDialog(
-    cycleCount: Int,
-    recordCount: Int,
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("确认导入数据") },
-        text = {
-            Text(
-                "即将导入：\n" +
-                        "• $cycleCount 个周期记录\n" +
-                        "• $recordCount 条日常记录\n\n" +
-                        "注意：导入将覆盖现有数据，请确保已备份当前数据。"
-            )
-        },
-        confirmButton = {
-            TextButton(
-                onClick = onConfirm
-            ) {
-                Text("确认导入")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("取消")
-            }
-        }
-    )
-}
-
-@Composable
-fun ImportResultDialog(
-    success: Boolean,
-    message: String,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(if (success) "导入成功" else "导入失败") },
-        text = { Text(message) },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("确定")
-            }
-        }
-    )
-}
-
-@Composable
 fun ExportResultDialog(
     success: Boolean,
     message: String,
@@ -663,87 +727,6 @@ fun ExportResultDialog(
 }
 
 @Composable
-fun ClearDataConfirmationDialog(
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("确认清除数据") },
-        text = {
-            Text("此操作将永久删除所有周期记录和日常数据，且无法恢复。确定要继续吗？")
-        },
-        confirmButton = {
-            TextButton(
-                onClick = onConfirm
-            ) {
-                Text(
-                    "确定清除",
-                    color = MaterialTheme.colorScheme.error
-                )
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("取消")
-            }
-        }
-    )
-}
-
-@Composable
-fun AboutSection(
-    onAppIntroClick: () -> Unit,
-    onDeveloperOptionsClick: () -> Unit
-) {
-    var clickCount by remember { mutableIntStateOf(0) }
-    var firstClickTime by remember { mutableStateOf(0L) }
-
-    ExpressiveSettingsSection(
-        title = "关于",
-        icon = Icons.Default.Info,
-        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
-    ) {
-        ExpressiveSettingItem(
-            label = "应用介绍",
-            value = "",
-            showChevron = true,
-            onClick = onAppIntroClick
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-        Spacer(modifier = Modifier.height(4.dp))
-        ExpressiveSettingItem(
-            label = "版本信息",
-            value = "v1.0.0",
-            showChevron = false,
-            onClick = {
-                val currentTime = System.currentTimeMillis()
-
-                if (firstClickTime == 0L) {
-                    firstClickTime = currentTime
-                    clickCount = 1
-                } else {
-                    val elapsedTime = currentTime - firstClickTime
-                    if (elapsedTime > 8000) {
-                        clickCount = 1
-                        firstClickTime = currentTime
-                    } else {
-                        clickCount++
-                    }
-                }
-
-                if (clickCount >= 10) {
-                    clickCount = 1
-                    firstClickTime = currentTime
-                    onDeveloperOptionsClick()
-                }
-            }
-        )
-    }
-}
-
-@Composable
 fun AboutDialog(
     onDismiss: () -> Unit
 ) {
@@ -754,10 +737,11 @@ fun AboutDialog(
             dismissOnClickOutside = true
         )
     ) {
-        Surface(
+        Card(
             shape = MaterialTheme.shapes.large,
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 6.dp
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            )
         ) {
             Column(
                 modifier = Modifier
@@ -799,264 +783,6 @@ fun AboutDialog(
                     Text("用户协议")
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun SettingsSection(
-    title: String,
-    onClick: (() -> Unit)? = null,
-    content: @Composable () -> Unit
-) {
-    Column {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-        Surface(
-            onClick = onClick ?: {},
-            modifier = Modifier.fillMaxWidth(),
-            shape = MaterialTheme.shapes.medium,
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 1.dp
-        ) {
-            Column {
-                content()
-            }
-        }
-    }
-}
-
-@Composable
-fun SettingItem(
-    label: String,
-    value: String,
-    showChevron: Boolean = false,
-    valueColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurfaceVariant,
-    onClick: (() -> Unit)? = null
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .let { modifier ->
-                if (onClick != null) {
-                    modifier.clickable(onClick = onClick)
-                } else {
-                    modifier
-                }
-            }
-            .padding(16.dp),
-        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.weight(1f)
-        )
-        Row(
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (value.isNotEmpty()) {
-                Text(
-                    text = value,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = valueColor
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-            }
-            if (showChevron) {
-                Icon(
-                    imageVector = Icons.Default.ChevronRight,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun SettingItemWithSwitch(
-    label: String,
-    description: String? = null,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                if (description != null) {
-                    Text(
-                        text = description,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-            androidx.compose.material3.Switch(
-                checked = checked,
-                onCheckedChange = onCheckedChange
-            )
-        }
-    }
-}
-
-@Composable
-fun ExpressiveSettingsSection(
-    title: String,
-    icon: ImageVector,
-    containerColor: Color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-    modifier: Modifier = Modifier,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(32.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.padding(bottom = 20.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(containerColor)
-                ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier
-                            .size(24.dp)
-                            .align(Alignment.Center)
-                    )
-                }
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-            content()
-        }
-    }
-}
-
-@Composable
-fun ExpressiveSettingItem(
-    label: String,
-    value: String = "",
-    showChevron: Boolean = false,
-    valueColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
-    onClick: (() -> Unit)? = null
-) {
-    val clickableModifier = if (onClick != null) {
-        Modifier.clickable(onClick = onClick)
-    } else {
-        Modifier
-    }
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .then(clickableModifier)
-            .padding(vertical = 14.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f)
-        )
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            if (value.isNotEmpty()) {
-                Text(
-                    text = value,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = valueColor
-                )
-            }
-            if (showChevron) {
-                Icon(
-                    imageVector = Icons.Default.ChevronRight,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(22.dp)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun ExpressiveSettingItemWithSwitch(
-    label: String,
-    description: String? = null,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 14.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                if (description != null) {
-                    Text(
-                        text = description,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 6.dp)
-                    )
-                }
-            }
-            Switch(
-                checked = checked,
-                onCheckedChange = onCheckedChange
-            )
         }
     }
 }
