@@ -362,7 +362,8 @@ fun PeriodVibeNavHost(
                 onNavigateBack = goBack,
                 onNavigateHomeToRecord = {
                     showRecordSheetOnHome = true
-                    navigateToTopLevel(Screen.Home)
+                    // 返回上一页来移除历史记录页面，回到干净的 Home 页面
+                    goBack()
                 }
             )
         }
