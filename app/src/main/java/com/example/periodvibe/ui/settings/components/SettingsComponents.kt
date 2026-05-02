@@ -200,7 +200,6 @@ fun CycleParametersDialog(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationSettingsSection(
     enabled: Boolean,
@@ -210,21 +209,28 @@ fun NotificationSettingsSection(
     onTimeClick: () -> Unit,
     onEnabledToggle: (Boolean) -> Unit
 ) {
-    SettingsSection(title = "提醒设置") {
-        SettingItemWithSwitch(
+    ExpressiveSettingsSection(
+        title = "提醒设置",
+        icon = Icons.Default.Notifications,
+        iconContainerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.15f)
+    ) {
+        ExpressiveSettingItemWithSwitch(
             label = "经期提醒",
-            description = if (enabled) "在经期前提醒您" else "关闭所有提醒",
+            description = if (enabled) "在经期前提醒你" else "关闭所有提醒",
             checked = enabled,
             onCheckedChange = onEnabledToggle
         )
         if (enabled) {
-            SettingItem(
+            Spacer(modifier = Modifier.height(4.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+            Spacer(modifier = Modifier.height(4.dp))
+            ExpressiveSettingItem(
                 label = "提前天数",
                 value = "$daysBefore 天",
                 showChevron = true,
                 onClick = onDaysBeforeClick
             )
-            SettingItem(
+            ExpressiveSettingItem(
                 label = "提醒时间",
                 value = "${time.hour.toString().padStart(2, '0')}:${time.minute.toString().padStart(2, '0')}",
                 showChevron = true,
@@ -392,36 +398,35 @@ fun ThemeSettingsSection(
     themeMode: com.example.periodvibe.domain.model.Settings.ThemeMode,
     onThemeModeChange: (com.example.periodvibe.domain.model.Settings.ThemeMode) -> Unit
 ) {
-    SettingsSection(title = "主题设置") {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
+    ExpressiveSettingsSection(
+        title = "主题设置",
+        icon = Icons.Default.Palette,
+        iconContainerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.15f)
+    ) {
+        Text(
+            text = "选择你的偏好",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 12.dp)
+        )
+        SingleChoiceSegmentedButtonRow(
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Text(
-                text = "主题模式",
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.padding(bottom = 12.dp)
+            val themeOptions = listOf(
+                com.example.periodvibe.domain.model.Settings.ThemeMode.LIGHT to "浅色",
+                com.example.periodvibe.domain.model.Settings.ThemeMode.DARK to "深色",
+                com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM to "系统"
             )
-            SingleChoiceSegmentedButtonRow(
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                val themeOptions = listOf(
-                    com.example.periodvibe.domain.model.Settings.ThemeMode.LIGHT to "浅色",
-                    com.example.periodvibe.domain.model.Settings.ThemeMode.DARK to "深色",
-                    com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM to "系统"
-                )
-                themeOptions.forEachIndexed { index, (mode, label) ->
-                    SegmentedButton(
-                        selected = themeMode == mode,
-                        onClick = { onThemeModeChange(mode) },
-                        shape = SegmentedButtonDefaults.itemShape(
-                            index = index,
-                            count = themeOptions.size
-                        )
-                    ) {
-                        Text(label)
-                    }
+            themeOptions.forEachIndexed { index, (mode, label) ->
+                SegmentedButton(
+                    selected = themeMode == mode,
+                    onClick = { onThemeModeChange(mode) },
+                    shape = SegmentedButtonDefaults.itemShape(
+                        index = index,
+                        count = themeOptions.size
+                    )
+                ) {
+                    Text(label)
                 }
             }
         }
@@ -479,14 +484,21 @@ fun PrivacySettingsSection(
     onAppLockToggle: (Boolean) -> Unit,
     onPrivacyModeToggle: (Boolean) -> Unit
 ) {
-    SettingsSection(title = "隐私设置") {
-        SettingItemWithSwitch(
+    ExpressiveSettingsSection(
+        title = "隐私设置",
+        icon = Icons.Default.Lock,
+        iconContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 1f)
+    ) {
+        ExpressiveSettingItemWithSwitch(
             label = "应用锁",
             description = "使用指纹或密码保护应用",
             checked = appLockEnabled,
             onCheckedChange = onAppLockToggle
         )
-        SettingItemWithSwitch(
+        Spacer(modifier = Modifier.height(4.dp))
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+        Spacer(modifier = Modifier.height(4.dp))
+        ExpressiveSettingItemWithSwitch(
             label = "隐私模式",
             description = "隐藏通知内容",
             checked = privacyModeEnabled,
@@ -501,22 +513,30 @@ fun DataManagementSection(
     onImportDataClick: () -> Unit,
     onClearDataClick: () -> Unit
 ) {
-    SettingsSection(
-        title = "数据管理"
+    ExpressiveSettingsSection(
+        title = "数据管理",
+        icon = Icons.Default.Folder,
+        iconContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 1f)
     ) {
-        SettingItem(
+        ExpressiveSettingItem(
             label = "导出数据",
             value = "选择格式",
             showChevron = true,
             onClick = onExportDataClick
         )
-        SettingItem(
+        Spacer(modifier = Modifier.height(4.dp))
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+        Spacer(modifier = Modifier.height(4.dp))
+        ExpressiveSettingItem(
             label = "导入数据",
             value = "从备份恢复",
             showChevron = true,
             onClick = onImportDataClick
         )
-        SettingItem(
+        Spacer(modifier = Modifier.height(4.dp))
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+        Spacer(modifier = Modifier.height(4.dp))
+        ExpressiveSettingItem(
             label = "清除数据",
             value = "删除所有记录",
             showChevron = true,
@@ -675,23 +695,30 @@ fun AboutSection(
     onAppIntroClick: () -> Unit,
     onDeveloperOptionsClick: () -> Unit
 ) {
-    var clickCount by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }
-    var firstClickTime by androidx.compose.runtime.remember { androidx.compose.runtime.mutableLongStateOf(0L) }
+    var clickCount by remember { mutableIntStateOf(0) }
+    var firstClickTime by remember { mutableLongStateOf(0L) }
 
-    SettingsSection(title = "关于") {
-        SettingItem(
+    ExpressiveSettingsSection(
+        title = "关于",
+        icon = Icons.Default.Info,
+        iconContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 1f)
+    ) {
+        ExpressiveSettingItem(
             label = "应用介绍",
             value = "",
             showChevron = true,
             onClick = onAppIntroClick
         )
-        SettingItem(
+        Spacer(modifier = Modifier.height(4.dp))
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+        Spacer(modifier = Modifier.height(4.dp))
+        ExpressiveSettingItem(
             label = "版本信息",
             value = "v1.0.0",
             showChevron = false,
             onClick = {
                 val currentTime = System.currentTimeMillis()
-                
+
                 if (firstClickTime == 0L) {
                     firstClickTime = currentTime
                     clickCount = 1
@@ -704,7 +731,7 @@ fun AboutSection(
                         clickCount++
                     }
                 }
-                
+
                 if (clickCount >= 10) {
                     clickCount = 1
                     firstClickTime = currentTime
