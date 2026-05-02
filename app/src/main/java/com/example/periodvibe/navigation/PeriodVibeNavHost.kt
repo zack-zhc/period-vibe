@@ -123,6 +123,7 @@ fun PeriodVibeNavHost(
 
     var showPinSetupSheet by remember { mutableStateOf(false) }
     var showLegendDialog by remember { mutableStateOf(false) }
+    var showRecordSheetOnHome by remember { mutableStateOf(false) }
     val pinSetupViewModel: PinSetupViewModel = hiltViewModel()
     val scope = rememberCoroutineScope()
 
@@ -215,6 +216,11 @@ fun PeriodVibeNavHost(
 
         // 顶部级路由 - 首页
         entry<Screen.Home> {
+            // 当进入首页时，检查是否需要显示记录弹窗，然后重置状态
+            LaunchedEffect(Unit) {
+                showRecordSheetOnHome = false
+            }
+
             Scaffold(
                 modifier = Modifier.fillMaxSize(),
                 bottomBar = {
@@ -229,6 +235,7 @@ fun PeriodVibeNavHost(
                     onCalendarClick = { navigateToTopLevel(Screen.Calendar) },
                     onHistoryClick = { navigateToDetail(Screen.History) },
                     onSettingsClick = { navigateToTopLevel(Screen.Settings) },
+                    showRecordSheetOnStart = showRecordSheetOnHome,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding)
@@ -353,7 +360,10 @@ fun PeriodVibeNavHost(
         entry<Screen.History>(metadata = SlideInFromRightMetadata) {
             HistoryScreen(
                 onNavigateBack = goBack,
-                onNavigateToCalendar = { navigateToTopLevel(Screen.Calendar) }
+                onNavigateHomeToRecord = {
+                    showRecordSheetOnHome = true
+                    navigateToTopLevel(Screen.Home)
+                }
             )
         }
 

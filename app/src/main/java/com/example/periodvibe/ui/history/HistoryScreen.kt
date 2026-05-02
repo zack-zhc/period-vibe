@@ -77,7 +77,7 @@ import java.util.Locale
 @Composable
 fun HistoryScreen(
     onNavigateBack: () -> Unit,
-    onNavigateToCalendar: () -> Unit,
+    onNavigateHomeToRecord: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: HistoryViewModel = hiltViewModel()
 ) {
@@ -91,6 +91,12 @@ fun HistoryScreen(
 
     val cycleToDelete = remember { mutableStateOf<Long?>(null) }
 
+    // 检查是否有数据
+    val hasData = when (val state = historyData) {
+        is HistoryUiState.Success -> state.hasData || state.unassociatedRecords.isNotEmpty()
+        else -> false
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -101,7 +107,7 @@ fun HistoryScreen(
                     }
                 },
                 actions = {
-                    if (!isEditMode) {
+                    if (hasData && !isEditMode) {
                         TextButton(onClick = { viewModel.toggleEditMode() }) {
                             Text("编辑")
                         }
@@ -163,7 +169,7 @@ fun HistoryScreen(
                         )
                     } else {
                         EmptyState(
-                            onNavigateToCalendar = onNavigateToCalendar,
+                            onNavigateHomeToRecord = onNavigateHomeToRecord,
                             modifier = Modifier.fillMaxSize()
                         )
                     }
@@ -452,7 +458,7 @@ private fun LoadingState(modifier: Modifier = Modifier) {
 
 @Composable
 private fun EmptyState(
-    onNavigateToCalendar: () -> Unit,
+    onNavigateHomeToRecord: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -490,7 +496,7 @@ private fun EmptyState(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "去日历页开始记录吧",
+            text = "去首页开始记录吧",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -498,7 +504,7 @@ private fun EmptyState(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        Button(onClick = onNavigateToCalendar) {
+        Button(onClick = onNavigateHomeToRecord) {
             Text("去记录")
         }
     }

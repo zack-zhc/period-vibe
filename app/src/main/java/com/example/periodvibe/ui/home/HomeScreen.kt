@@ -7,6 +7,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -95,6 +96,7 @@ fun HomeScreen(
     onCalendarClick: () -> Unit,
     onHistoryClick: () -> Unit,
     onSettingsClick: () -> Unit,
+    showRecordSheetOnStart: Boolean = false,
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
@@ -110,6 +112,17 @@ fun HomeScreen(
     val hasCurrentCycle = when (val state = homeData) {
         is HomeUiState.Success -> state.hasCurrentCycle
         else -> false
+    }
+
+    // 如果需要在启动时显示记录弹窗
+    LaunchedEffect(showRecordSheetOnStart) {
+        if (showRecordSheetOnStart) {
+            if (hasCurrentCycle) {
+                viewModel.showRecordSheet()
+            } else {
+                viewModel.showNewCycleSheet()
+            }
+        }
     }
 
     androidx.compose.foundation.layout.Box(
