@@ -51,9 +51,9 @@ class TopLevelBackStack<T : Any>(startKey: T) {
      * 如果该路由不存在，则创建新的返回栈
      * 如果已存在，则将其移到栈顶（激活）
      */
-    fun navigateToTopLevel(key: T, resetStack: Boolean = false) {
-        if (topLevelStacks[key] == null || resetStack) {
-            // 新的顶部级路由，或需要重置栈，创建干净的返回栈
+    fun navigateToTopLevel(key: T) {
+        if (topLevelStacks[key] == null) {
+            // 新的顶部级路由，创建返回栈
             topLevelStacks[key] = mutableStateListOf(key)
         } else {
             // 已存在的顶部级路由，移到最后（激活状态）
@@ -124,20 +124,4 @@ class TopLevelBackStack<T : Any>(startKey: T) {
      */
     val currentStackSize: Int
         get() = topLevelStacks[topLevelKey]?.size ?: 0
-
-    /**
-     * 导航到指定的顶部级路由并重置其栈，同时保留其他标签的状态
-     */
-    fun navigateToTopLevelAndReset(key: T) {
-        // 重置目标标签的栈
-        topLevelStacks[key] = mutableStateListOf(key)
-        // 将目标标签移到顶部
-        topLevelStacks.apply {
-            remove(key)?.let {
-                put(key, it)
-            }
-        }
-        topLevelKey = key
-        updateBackStack()
-    }
 }

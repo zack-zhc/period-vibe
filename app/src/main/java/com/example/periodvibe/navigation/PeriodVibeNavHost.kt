@@ -159,13 +159,8 @@ fun PeriodVibeNavHost(
     }
 
     // 底部导航栏切换
-    val navigateToTopLevel: (Screen, Boolean) -> Unit = { screen, resetStack ->
-        navState.navigateToTopLevel(screen, resetStack)
-    }
-
-    // 导航到指定的顶部级路由并重置其栈
-    val navigateToTopLevelAndReset: (Screen) -> Unit = { screen ->
-        navState.navigateToTopLevelAndReset(screen)
+    val navigateToTopLevel: (Screen) -> Unit = { screen ->
+        navState.navigateToTopLevel(screen)
     }
 
     // 返回上一页
@@ -237,9 +232,9 @@ fun PeriodVibeNavHost(
             ) { innerPadding ->
                 HomeScreen(
                     onRecordClick = { },
-                    onCalendarClick = { navigateToTopLevel(Screen.Calendar, false) },
+                    onCalendarClick = { navigateToTopLevel(Screen.Calendar) },
                     onHistoryClick = { navigateToDetail(Screen.History) },
-                    onSettingsClick = { navigateToTopLevel(Screen.Settings, false) },
+                    onSettingsClick = { navigateToTopLevel(Screen.Settings) },
                     showRecordSheetOnStart = showRecordSheetOnHome,
                     modifier = Modifier
                         .fillMaxSize()
@@ -283,9 +278,9 @@ fun PeriodVibeNavHost(
                 }
             ) { paddingValues ->
                 CalendarScreen(
-                    onNavigateToHome = { navigateToTopLevel(Screen.Home, false) },
+                    onNavigateToHome = { navigateToTopLevel(Screen.Home) },
                     onNavigateToHistory = { navigateToDetail(Screen.History) },
-                    onNavigateToSettings = { navigateToTopLevel(Screen.Settings, false) },
+                    onNavigateToSettings = { navigateToTopLevel(Screen.Settings) },
                     onDateClick = {},
                     scrollBehavior = scrollBehavior,
                     onLegendClick = { showLegendDialog = true },
@@ -321,8 +316,8 @@ fun PeriodVibeNavHost(
                 }
             ) { paddingValues ->
                 SettingsScreen(
-                    onNavigateToHome = { navigateToTopLevel(Screen.Home, false) },
-                    onNavigateToCalendar = { navigateToTopLevel(Screen.Calendar, false) },
+                    onNavigateToHome = { navigateToTopLevel(Screen.Home) },
+                    onNavigateToCalendar = { navigateToTopLevel(Screen.Calendar) },
                     onNavigateToHistory = { navigateToDetail(Screen.History) },
                     onNavigateToDeveloperOptions = { navigateToDetail(Screen.DeveloperOptions) },
                     onNavigateToPinSetup = { showPinSetupSheet = true },
@@ -367,8 +362,8 @@ fun PeriodVibeNavHost(
                 onNavigateBack = goBack,
                 onNavigateHomeToRecord = {
                     showRecordSheetOnHome = true
-                    // 使用新方法导航到 Home 并重置其栈，同时保留其他标签的状态
-                    navigateToTopLevelAndReset(Screen.Home)
+                    // 最简单直接的方案：重置到 Home
+                    resetTo(Screen.Home)
                 }
             )
         }
@@ -429,7 +424,7 @@ fun PeriodVibeNavHost(
 @Composable
 private fun PeriodBottomNavigationBar(
     currentTopLevel: Screen,
-    onNavigateToTopLevel: (Screen, Boolean) -> Unit
+    onNavigateToTopLevel: (Screen) -> Unit
 ) {
     val currentRoute = when (currentTopLevel) {
         Screen.Home -> "home"
@@ -447,7 +442,7 @@ private fun PeriodBottomNavigationBar(
                 "settings" -> Screen.Settings
                 else -> Screen.Home
             }
-            onNavigateToTopLevel(route, false)
+            onNavigateToTopLevel(route)
         },
         modifier = Modifier.shadow(8.dp)
     )

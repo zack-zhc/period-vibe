@@ -114,11 +114,9 @@ fun HomeScreen(
         else -> false
     }
 
-    // 如果需要在启动时显示记录弹窗 - 确保在 homeData 加载后再显示
-    LaunchedEffect(showRecordSheetOnStart, homeData) {
+    // 如果需要在启动时显示记录弹窗
+    LaunchedEffect(showRecordSheetOnStart) {
         if (showRecordSheetOnStart) {
-            // 延迟一点确保 UI 准备好
-            kotlinx.coroutines.delay(100)
             if (hasCurrentCycle) {
                 viewModel.showRecordSheet()
             } else {
