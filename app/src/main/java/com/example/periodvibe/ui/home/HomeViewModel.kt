@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import com.example.periodvibe.domain.model.FlowLevel
 import java.time.LocalDate
 import javax.inject.Inject
 
@@ -46,6 +47,12 @@ class HomeViewModel @Inject constructor(
 
     private val _showEndCycleMenu = MutableStateFlow(false)
     val showEndCycleMenu: StateFlow<Boolean> = _showEndCycleMenu.asStateFlow()
+
+    private val _showNewCycleConfirmation = MutableStateFlow(false)
+    val showNewCycleConfirmation: StateFlow<Boolean> = _showNewCycleConfirmation.asStateFlow()
+
+    private var pendingNewCycleDate: LocalDate? = null
+    private var pendingNewCycleFlowLevel: FlowLevel? = null
 
     private var loadJob: Job? = null
 
@@ -121,15 +128,46 @@ class HomeViewModel @Inject constructor(
         flowLevel: com.example.periodvibe.domain.model.FlowLevel?
     ) {
         viewModelScope.launch {
-            saveRecordUseCase(date, RecordMode.NEW_CYCLE, flowLevel)
-                .onSuccess {
-                    hideNewCycleSheet()
-                    refresh()
-                }
-                .onFailure { e ->
-                    e.printStackTrace()
-                }
+            val hasActiveCycle = cycleRepository.getActiveCycle() != null
+            if (hasActiveCycle) {
+                pendingNewCycleDate = date
+                pendingNewCycleFlowLevel = flowLevel
+                _showNewCycleConfirmation.value = true
+            } else {
+                saveNewCycleInternal(date, flowLevel)
+            }
         }
+    }
+
+    fun confirmNewCycle() {
+        val date = pendingNewCycleDate ?: return
+        val flowLevel = pendingNewCycleFlowLevel
+        viewModelScope.launch {
+            saveNewCycleInternal(date, flowLevel)
+            _showNewCycleConfirmation.value = false
+            pendingNewCycleDate = null
+            pendingNewCycleFlowLevel = null
+        }
+    }
+
+    fun cancelNewCycle() {
+        _showNewCycleConfirmation.value = false
+        pendingNewCycleDate = null
+        pendingNewCycleFlowLevel = null
+    }
+
+    private suspend fun saveNewCycleInternal(
+        date: LocalDate,
+        flowLevel: com.example.periodvibe.domain.model.FlowLevel?
+    ) {
+        saveRecordUseCase(date, RecordMode.NEW_CYCLE, flowLevel)
+            .onSuccess {
+                hideNewCycleSheet()
+                refresh()
+            }
+            .onFailure { e ->
+                e.printStackTrace()
+            }
     }
 
     fun showEndCycleMenu() {

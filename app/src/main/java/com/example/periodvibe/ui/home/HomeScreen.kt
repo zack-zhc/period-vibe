@@ -102,6 +102,7 @@ fun HomeScreen(
     val showRecordSheet by viewModel.showRecordSheet.collectAsState()
     val showNewCycleSheet by viewModel.showNewCycleSheet.collectAsState()
     val showEndCycleMenu by viewModel.showEndCycleMenu.collectAsState()
+    val showNewCycleConfirmation by viewModel.showNewCycleConfirmation.collectAsState()
     val selectedDate by viewModel.selectedDate.collectAsState()
     val recordMode by viewModel.recordMode.collectAsState()
     val existingRecord by viewModel.existingRecord.collectAsState()
@@ -180,6 +181,13 @@ fun HomeScreen(
         EndCycleConfirmationDialog(
             onDismiss = { viewModel.hideEndCycleMenu() },
             onConfirm = { viewModel.endCycle() }
+        )
+    }
+
+    if (showNewCycleConfirmation) {
+        NewCycleConfirmationDialog(
+            onDismiss = { viewModel.cancelNewCycle() },
+            onConfirm = { viewModel.confirmNewCycle() }
         )
     }
 }
@@ -705,6 +713,47 @@ private fun EndCycleConfirmationDialog(
         text = {
             Text(
                 text = "确定要结束当前周期吗？这将标记当前周期的结束日期。",
+                style = MaterialTheme.typography.bodyLarge
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
+            ) {
+                Text("确定")
+            }
+        },
+        dismissButton = {
+            OutlinedButton(
+                onClick = onDismiss
+            ) {
+                Text("取消")
+            }
+        }
+    )
+}
+
+@Composable
+private fun NewCycleConfirmationDialog(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "开始新周期",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Text(
+                text = "这将同时结束上一个周期。上一个周期的结束日期将设为昨天。确定要继续吗？",
                 style = MaterialTheme.typography.bodyLarge
             )
         },
