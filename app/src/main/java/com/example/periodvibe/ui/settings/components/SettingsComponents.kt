@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,6 +31,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Switch
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.background
@@ -104,21 +106,28 @@ fun CycleParametersSection(
     onClick: () -> Unit,
     onAutoCalculateToggle: (Boolean) -> Unit
 ) {
-    SettingsSection(title = "周期参数") {
-        SettingItemWithSwitch(
+    ExpressiveSettingsSection(
+        title = "周期参数",
+        icon = Icons.Default.CalendarMonth,
+        iconContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+    ) {
+        ExpressiveSettingItemWithSwitch(
             label = "自动计算周期",
             description = if (autoCalculateCycle) "根据历史数据自动计算" else "使用手动设置的值",
             checked = autoCalculateCycle,
             onCheckedChange = onAutoCalculateToggle
         )
         if (!autoCalculateCycle) {
-            SettingItem(
-                label = "平均周期长度",
+            Spacer(modifier = Modifier.height(4.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+            Spacer(modifier = Modifier.height(4.dp))
+            ExpressiveSettingItem(
+                label = "平均周期天数",
                 value = "$cycleLengthDefault 天",
                 showChevron = true,
                 onClick = onClick
             )
-            SettingItem(
+            ExpressiveSettingItem(
                 label = "平均经期天数",
                 value = "$periodLengthDefault 天",
                 showChevron = true,
