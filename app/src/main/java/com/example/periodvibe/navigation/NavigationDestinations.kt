@@ -49,6 +49,25 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data object DeveloperOptions : Screen
+
+    // 设置子页面
+    @Serializable
+    data object CycleParameters : Screen
+
+    @Serializable
+    data object Reminders : Screen
+
+    @Serializable
+    data object Theme : Screen
+
+    @Serializable
+    data object Privacy : Screen
+
+    @Serializable
+    data object DataManagement : Screen
+
+    @Serializable
+    data object About : Screen
 }
 
 /**

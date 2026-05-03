@@ -1,109 +1,62 @@
 package com.example.periodvibe.ui.settings
 
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.TopAppBarScrollBehavior
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.AdminPanelSettings
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.periodvibe.data.exportimport.ImportResult
-import com.example.periodvibe.domain.model.Settings
-import com.example.periodvibe.ui.settings.components.AboutDialog
-import com.example.periodvibe.ui.settings.components.AboutSection
-import com.example.periodvibe.ui.settings.components.ClearDataConfirmationDialog
-import com.example.periodvibe.ui.settings.components.CycleParametersDialog
-import com.example.periodvibe.ui.settings.components.CycleParametersSection
-import com.example.periodvibe.ui.settings.components.DataManagementSection
-import com.example.periodvibe.ui.settings.components.DaysBeforeDialog
-import com.example.periodvibe.ui.settings.components.DisableAppLockConfirmationDialog
-import com.example.periodvibe.ui.settings.components.ExportFormatDialog
-import com.example.periodvibe.ui.settings.components.ExportResultDialog
-import com.example.periodvibe.ui.settings.components.ImportConfirmationDialog
-import com.example.periodvibe.ui.settings.components.ImportResultDialog
-import com.example.periodvibe.ui.settings.components.NotificationSettingsSection
-import com.example.periodvibe.ui.settings.components.NotificationTimeDialog
-import com.example.periodvibe.ui.settings.components.PrivacySettingsSection
-import com.example.periodvibe.ui.settings.components.ThemeSettingsSection
-import java.time.LocalDateTime
-import java.time.LocalTime
-import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    onNavigateToHome: () -> Unit,
-    onNavigateToCalendar: () -> Unit,
-    onNavigateToHistory: () -> Unit,
-    onNavigateToDeveloperOptions: () -> Unit,
-    onNavigateToPinSetup: () -> Unit,
+    onNavigateToCycleParameters: () -> Unit,
+    onNavigateToReminders: () -> Unit,
+    onNavigateToTheme: () -> Unit,
+    onNavigateToPrivacy: () -> Unit,
+    onNavigateToDataManagement: () -> Unit,
+    onNavigateToAbout: () -> Unit,
     scrollBehavior: TopAppBarScrollBehavior? = null,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
-    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
-    val showCycleDialog by viewModel.showCycleDialog.collectAsState()
-    val showDisableAppLockDialog by viewModel.showDisableAppLockDialog.collectAsState()
-    val showDaysBeforeDialog by viewModel.showDaysBeforeDialog.collectAsState()
-    val showTimeDialog by viewModel.showTimeDialog.collectAsState()
-    val showPrivacyDialog by viewModel.showPrivacyDialog.collectAsState()
-    val showAboutDialog by viewModel.showAboutDialog.collectAsState()
-    val showClearDataConfirmationDialog by viewModel.showClearDataConfirmationDialog.collectAsState()
-    val showImportConfirmationDialog by viewModel.showImportConfirmationDialog.collectAsState()
-    val showImportResultDialog by viewModel.showImportResultDialog.collectAsState()
-    val showExportResultDialog by viewModel.showExportResultDialog.collectAsState()
-    val showExportFormatDialog by viewModel.showExportFormatDialog.collectAsState()
-    val importResult by viewModel.importResult.collectAsState()
-    val exportResult by viewModel.exportResult.collectAsState()
-
-    // 创建导出文件的 launcher
-    val exportFileLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("*/*")
-    ) { uri ->
-        uri?.let {
-            viewModel.exportData(it)
-        }
-    }
-
-    // 选择导入文件的 launcher
-    val importFileLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        uri?.let {
-            // 获取持久化权限
-            val takeFlags = android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
-            context.contentResolver.takePersistableUriPermission(it, takeFlags)
-            viewModel.previewImportData(it)
-        }
-    }
-
-    // 生成导出文件名
-    fun generateExportFileName(): String {
-        val formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")
-        val timestamp = LocalDateTime.now().format(formatter)
-        val extension = viewModel.getSelectedExportFormat().extension
-        return "period_vibe_backup_$timestamp.$extension"
-    }
 
     when (uiState) {
         is SettingsUiState.Loading -> {
@@ -115,7 +68,6 @@ fun SettingsScreen(
             }
         }
         is SettingsUiState.Success -> {
-            val state = uiState as SettingsUiState.Success
             Column(
                 modifier = modifier
                     .fillMaxSize()
@@ -123,176 +75,139 @@ fun SettingsScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(16.dp)
             ) {
-                Text(
-                    text = "设置",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp)
+                    ) {
+                        SettingsMenuItem(
+                            icon = Icons.Default.DateRange,
+                            title = "周期参数",
+                            subtitle = "设置周期和经期长度",
+                            onClick = onNavigateToCycleParameters
+                        )
+                        SettingsMenuItem(
+                            icon = Icons.Default.Notifications,
+                            title = "提醒设置",
+                            subtitle = "设置经期提醒",
+                            onClick = onNavigateToReminders
+                        )
+                        SettingsMenuItem(
+                            icon = Icons.Default.Palette,
+                            title = "主题设置",
+                            subtitle = "选择应用主题",
+                            onClick = onNavigateToTheme
+                        )
+                        SettingsMenuItem(
+                            icon = Icons.Default.Lock,
+                            title = "隐私设置",
+                            subtitle = "应用锁和隐私模式",
+                            onClick = onNavigateToPrivacy
+                        )
+                        SettingsMenuItem(
+                            icon = Icons.Default.Folder,
+                            title = "数据管理",
+                            subtitle = "导出、导入和清除数据",
+                            onClick = onNavigateToDataManagement
+                        )
+                        SettingsMenuItem(
+                            icon = Icons.Default.Info,
+                            title = "关于",
+                            subtitle = "应用介绍和版本信息",
+                            onClick = onNavigateToAbout
+                        )
+                    }
+                }
 
-                CycleParametersSection(
-                    autoCalculateCycle = state.autoCalculateCycle,
-                    cycleLengthDefault = state.cycleLengthDefault,
-                    periodLengthDefault = state.periodLengthDefault,
-                    cycleLengthRange = state.cycleLengthRange,
-                    periodLengthRange = state.periodLengthRange,
-                    onClick = { viewModel.showCycleDialog() },
-                    onAutoCalculateToggle = { viewModel.toggleAutoCalculateCycle(it) }
-                )
+                Spacer(modifier = Modifier.height(24.dp))
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                NotificationSettingsSection(
-                    enabled = state.notificationEnabled,
-                    daysBefore = state.notificationDaysBefore,
-                    time = state.notificationTime,
-                    onDaysBeforeClick = { viewModel.showDaysBeforeDialog() },
-                    onTimeClick = { viewModel.showTimeDialog() },
-                    onEnabledToggle = { viewModel.toggleNotificationEnabled(it) }
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                ThemeSettingsSection(
-                    themeMode = state.themeMode,
-                    onThemeModeChange = { viewModel.updateThemeMode(it) }
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                PrivacySettingsSection(
-                    appLockEnabled = state.appLockEnabled,
-                    privacyModeEnabled = state.privacyModeEnabled,
-                    onAppLockToggle = { enabled ->
-                        if (enabled) {
-                            onNavigateToPinSetup()
-                        } else {
-                            viewModel.showDisableAppLockDialog()
-                        }
-                    },
-                    onPrivacyModeToggle = { viewModel.togglePrivacyMode(it) }
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                DataManagementSection(
-                    onExportDataClick = {
-                        viewModel.showExportFormatDialog()
-                    },
-                    onImportDataClick = {
-                        // 使用 */* 来显示所有文件，然后在代码中检测类型
-                        importFileLauncher.launch(arrayOf("*/*"))
-                    },
-                    onClearDataClick = { viewModel.showClearDataConfirmationDialog() }
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                    modifier = Modifier.padding(horizontal = 16.dp)
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                AboutSection(
-                    onAppIntroClick = { viewModel.showAboutDialog() },
-                    onDeveloperOptionsClick = onNavigateToDeveloperOptions
-                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AdminPanelSettings,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Text(
+                        text = "所有数据都存储在您的设备本地，最大限度保护您的隐私。",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(80.dp))
             }
         }
     }
+}
 
-    if (showCycleDialog && uiState is SettingsUiState.Success) {
-        val state = uiState as SettingsUiState.Success
-        CycleParametersDialog(
-            cycleLength = state.cycleLengthDefault,
-            periodLength = state.periodLengthDefault,
-            cycleLengthRange = state.cycleLengthRange,
-            periodLengthRange = state.periodLengthRange,
-            onDismiss = { viewModel.hideCycleDialog() },
-            onConfirm = { cycleLength, periodLength ->
-                viewModel.updateCycleParameters(cycleLength, periodLength)
+@Composable
+fun SettingsMenuItem(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 8.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.weight(1f)
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Column {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
-        )
-    }
-
-    if (showDisableAppLockDialog) {
-        DisableAppLockConfirmationDialog(
-            onDismiss = { viewModel.hideDisableAppLockDialog() },
-            onConfirm = { viewModel.toggleAppLock(false) }
-        )
-    }
-
-    if (showClearDataConfirmationDialog) {
-        ClearDataConfirmationDialog(
-            onDismiss = { viewModel.hideClearDataConfirmationDialog() },
-            onConfirm = { viewModel.clearAllData() }
-        )
-    }
-
-    if (showAboutDialog) {
-        AboutDialog(
-            onDismiss = { viewModel.hideAboutDialog() }
-        )
-    }
-
-    if (showDaysBeforeDialog && uiState is SettingsUiState.Success) {
-        val state = uiState as SettingsUiState.Success
-        DaysBeforeDialog(
-            initialDaysBefore = state.notificationDaysBefore,
-            onDismiss = { viewModel.hideDaysBeforeDialog() },
-            onConfirm = { daysBefore -> viewModel.updateNotificationDaysBefore(daysBefore) }
-        )
-    }
-
-    if (showTimeDialog && uiState is SettingsUiState.Success) {
-        val state = uiState as SettingsUiState.Success
-        NotificationTimeDialog(
-            time = state.notificationTime,
-            onDismiss = { viewModel.hideTimeDialog() },
-            onConfirm = { time: LocalTime ->
-                viewModel.updateNotificationTime(time)
-            }
-        )
-    }
-
-    if (showImportConfirmationDialog) {
-        val (cycleCount, recordCount) = viewModel.getPendingImportDataCount()
-        ImportConfirmationDialog(
-            cycleCount = cycleCount,
-            recordCount = recordCount,
-            onDismiss = { viewModel.hideImportConfirmationDialog() },
-            onConfirm = { viewModel.confirmImportData() }
-        )
-    }
-
-    if (showImportResultDialog && importResult != null) {
-        val result = importResult
-        val (success, message) = when (result) {
-            is ImportResult.Success -> Pair(true, "成功导入 ${result.cycles.size} 个周期记录和 ${result.dailyRecords.size} 条日常记录")
-            is ImportResult.Failure -> Pair(false, result.errorMessage)
-            null -> Pair(false, "未知错误")
         }
-        ImportResultDialog(
-            success = success,
-            message = message,
-            onDismiss = { viewModel.hideImportResultDialog() }
-        )
-    }
-
-    if (showExportResultDialog && exportResult != null) {
-        val (success, message) = exportResult ?: Pair(false, "未知错误")
-        ExportResultDialog(
-            success = success,
-            message = message,
-            onDismiss = { viewModel.hideExportResultDialog() }
-        )
-    }
-
-    if (showExportFormatDialog) {
-        ExportFormatDialog(
-            onDismiss = { viewModel.hideExportFormatDialog() },
-            onFormatSelected = { format ->
-                viewModel.setSelectedExportFormat(format)
-                exportFileLauncher.launch(generateExportFileName())
-            }
+        Spacer(modifier = Modifier.width(8.dp))
+        Icon(
+            imageVector = Icons.Default.ChevronRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(20.dp)
         )
     }
 }

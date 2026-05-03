@@ -49,8 +49,14 @@ import com.example.periodvibe.ui.home.HomeScreen
 import com.example.periodvibe.ui.home.PeriodBottomNavigation
 import com.example.periodvibe.ui.history.HistoryScreen
 import com.example.periodvibe.ui.onboarding.OnboardingScreen
+import com.example.periodvibe.ui.settings.AboutScreen
+import com.example.periodvibe.ui.settings.CycleParametersScreen
+import com.example.periodvibe.ui.settings.DataManagementScreen
 import com.example.periodvibe.ui.settings.DeveloperOptionsScreen
+import com.example.periodvibe.ui.settings.PrivacyScreen
+import com.example.periodvibe.ui.settings.RemindersScreen
 import com.example.periodvibe.ui.settings.SettingsScreen
+import com.example.periodvibe.ui.settings.ThemeScreen
 import com.example.periodvibe.ui.setup.InitialSetupScreen
 import com.example.periodvibe.ui.viewmodel.MainViewModel
 import kotlinx.coroutines.launch
@@ -303,7 +309,7 @@ fun PeriodVibeNavHost(
             Scaffold(
                 modifier = Modifier.fillMaxSize(),
                 topBar = {
-                    androidx.compose.material3.MediumTopAppBar(
+                    androidx.compose.material3.LargeTopAppBar(
                         title = { Text("设置") },
                         scrollBehavior = scrollBehavior
                     )
@@ -316,43 +322,17 @@ fun PeriodVibeNavHost(
                 }
             ) { paddingValues ->
                 SettingsScreen(
-                    onNavigateToHome = { navigateToTopLevel(Screen.Home) },
-                    onNavigateToCalendar = { navigateToTopLevel(Screen.Calendar) },
-                    onNavigateToHistory = { navigateToDetail(Screen.History) },
-                    onNavigateToDeveloperOptions = { navigateToDetail(Screen.DeveloperOptions) },
-                    onNavigateToPinSetup = { showPinSetupSheet = true },
+                    onNavigateToCycleParameters = { navigateToDetail(Screen.CycleParameters) },
+                    onNavigateToReminders = { navigateToDetail(Screen.Reminders) },
+                    onNavigateToTheme = { navigateToDetail(Screen.Theme) },
+                    onNavigateToPrivacy = { navigateToDetail(Screen.Privacy) },
+                    onNavigateToDataManagement = { navigateToDetail(Screen.DataManagement) },
+                    onNavigateToAbout = { navigateToDetail(Screen.About) },
                     scrollBehavior = scrollBehavior,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues)
                 )
-            }
-
-            if (showPinSetupSheet) {
-                val sheetState = rememberModalBottomSheetState(
-                    skipPartiallyExpanded = true
-                )
-                ModalBottomSheet(
-                    onDismissRequest = {
-                        pinSetupViewModel.resetPin()
-                        showPinSetupSheet = false
-                    },
-                    sheetState = sheetState,
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    PinSetupScreen(
-                        onPinSet = {
-                            scope.launch {
-                                sheetState.hide()
-                            }.invokeOnCompletion {
-                                if (!sheetState.isVisible) {
-                                    showPinSetupSheet = false
-                                }
-                            }
-                        },
-                        viewModel = pinSetupViewModel
-                    )
-                }
             }
         }
 
@@ -398,6 +378,50 @@ fun PeriodVibeNavHost(
                 )
             }
         }
+
+        // 子页面 - 周期参数设置（带滑动动画）
+        entry<Screen.CycleParameters>(metadata = SlideInFromRightMetadata) {
+            CycleParametersScreen(
+                onNavigateBack = goBack
+            )
+        }
+
+        // 子页面 - 提醒设置（带滑动动画）
+        entry<Screen.Reminders>(metadata = SlideInFromRightMetadata) {
+            RemindersScreen(
+                onNavigateBack = goBack
+            )
+        }
+
+        // 子页面 - 主题设置（带滑动动画）
+        entry<Screen.Theme>(metadata = SlideInFromRightMetadata) {
+            ThemeScreen(
+                onNavigateBack = goBack
+            )
+        }
+
+        // 子页面 - 隐私设置（带滑动动画）
+        entry<Screen.Privacy>(metadata = SlideInFromRightMetadata) {
+            PrivacyScreen(
+                onNavigateBack = goBack,
+                onNavigateToPinSetup = { showPinSetupSheet = true }
+            )
+        }
+
+        // 子页面 - 数据管理（带滑动动画）
+        entry<Screen.DataManagement>(metadata = SlideInFromRightMetadata) {
+            DataManagementScreen(
+                onNavigateBack = goBack
+            )
+        }
+
+        // 子页面 - 关于（带滑动动画）
+        entry<Screen.About>(metadata = SlideInFromRightMetadata) {
+            AboutScreen(
+                onNavigateBack = goBack,
+                onNavigateToDeveloperOptions = { navigateToDetail(Screen.DeveloperOptions) }
+            )
+        }
     }
 
     NavDisplay(
@@ -416,6 +440,33 @@ fun PeriodVibeNavHost(
         },
         modifier = modifier
     )
+
+    if (showPinSetupSheet) {
+        val sheetState = rememberModalBottomSheetState(
+            skipPartiallyExpanded = true
+        )
+        ModalBottomSheet(
+            onDismissRequest = {
+                pinSetupViewModel.resetPin()
+                showPinSetupSheet = false
+            },
+            sheetState = sheetState,
+            modifier = Modifier.fillMaxSize()
+        ) {
+            PinSetupScreen(
+                onPinSet = {
+                    scope.launch {
+                        sheetState.hide()
+                    }.invokeOnCompletion {
+                        if (!sheetState.isVisible) {
+                            showPinSetupSheet = false
+                        }
+                    }
+                },
+                viewModel = pinSetupViewModel
+            )
+        }
+    }
 }
 
 /**
