@@ -77,6 +77,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -151,7 +152,11 @@ fun HomeScreen(
                     cycleDay = state.cycleDay,
                     daysUntilPeriod = state.daysUntilPeriod,
                     phase = state.phase,
-                    hasCurrentCycle = state.hasCurrentCycle
+                    hasCurrentCycle = state.hasCurrentCycle,
+                    cycleLength = state.cycleLength,
+                    daysUntilNextPhase = state.daysUntilNextPhase,
+                    nextPhaseName = state.nextPhaseName,
+                    ovulationDate = state.ovulationDate
                 )
             }
         }
@@ -192,7 +197,7 @@ fun HomeScreen(
         RecordBottomSheet(
             initialDate = selectedDate,
             recordMode = RecordMode.NEW_CYCLE,
-            hasCurrentCycle = false,
+            hasCurrentCycle = hasCurrentCycle,
             existingRecord = existingRecord,
             onDismiss = { viewModel.hideNewCycleSheet() },
             onSave = { date, flowLevel ->
@@ -221,7 +226,11 @@ private fun HomeContent(
     cycleDay: Int,
     daysUntilPeriod: Int,
     phase: CyclePhase,
-    hasCurrentCycle: Boolean
+    hasCurrentCycle: Boolean,
+    cycleLength: Int,
+    daysUntilNextPhase: Int,
+    nextPhaseName: String,
+    ovulationDate: java.time.LocalDate?
 ) {
     val phaseData = getPhaseData(phase)
     val nextPhase = getNextPhase(phase)
@@ -239,10 +248,11 @@ private fun HomeContent(
 
         MainStatusCard(
             cycleDay = cycleDay,
-            daysUntilPeriod = daysUntilPeriod,
             phase = phase,
             phaseData = phaseData,
-            hasCurrentCycle = hasCurrentCycle
+            cycleLength = cycleLength,
+            daysUntilNextPhase = daysUntilNextPhase,
+            nextPhaseName = nextPhaseName
         )
 
         // 信息卡片网格
@@ -264,11 +274,6 @@ private fun HomeContent(
             )
         }
 
-        PhaseDetailCard(
-            phase = phase,
-            phaseData = phaseData
-        )
-
         Spacer(modifier = Modifier.height(80.dp))
     }
 }
@@ -276,156 +281,116 @@ private fun HomeContent(
 @Composable
 private fun GreetingSection() {
     val greeting = getGreeting()
-    Row(
+    Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+        horizontalAlignment = Alignment.Start
     ) {
-        Column(horizontalAlignment = Alignment.Start) {
-            Text(
-                text = greeting,
-                style = MaterialTheme.typography.displaySmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = "今天是你的专属时刻",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        Box(
-            modifier = Modifier
-                .size(56.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primaryContainer)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Favorite,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier
-                    .size(28.dp)
-                    .align(Alignment.Center)
-            )
-        }
+        Text(
+            text = greeting,
+            style = MaterialTheme.typography.displaySmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Text(
+            text = "今天是你的专属时刻",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
 @Composable
 private fun MainStatusCard(
     cycleDay: Int,
-    daysUntilPeriod: Int,
     phase: CyclePhase,
     phaseData: PhaseData,
-    hasCurrentCycle: Boolean
+    cycleLength: Int,
+    daysUntilNextPhase: Int,
+    nextPhaseName: String
 ) {
-    val scale by animateFloatAsState(
-        targetValue = 1f,
-        animationSpec = tween(durationMillis = 600, delayMillis = 100),
-        label = "card_scale"
-    )
+    val progress = cycleDay.toFloat() / cycleLength.toFloat()
+    val phaseTip = getPhaseTip(phase)
 
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .scale(scale),
-        shape = RoundedCornerShape(36.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            phaseData.primary.copy(alpha = 0.08f),
-                            phaseData.primary.copy(alpha = 0.02f),
-                            MaterialTheme.colorScheme.surface
-                        )
-                    )
-                )
-                .padding(32.dp)
+        // Circular Progress Ring
+        CircularProgressRing(
+            progress = progress,
+            size = 256.dp,
+            strokeWidth = 8.dp,
+            backgroundColor = MaterialTheme.colorScheme.surfaceVariant,
+            progressColor = MaterialTheme.colorScheme.primaryContainer
         ) {
-            Box(
-                modifier = Modifier
-                    .size(200.dp)
-                    .align(Alignment.TopEnd)
-                    .offset(x = 40.dp, y = (-60).dp)
-                    .blur(
-                        radius = 50.dp,
-                        edgeTreatment = BlurredEdgeTreatment.Unbounded
-                    )
-                    .background(
-                        color = phaseData.primary.copy(alpha = 0.35f),
-                        shape = CircleShape
-                    )
-            )
-
             Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
+                Text(
+                    text = "第",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "$cycleDay",
+                    style = MaterialTheme.typography.displayLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = "天",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
                 Surface(
-                    color = phaseData.container,
-                    contentColor = phaseData.onContainer,
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
                     shape = RoundedCornerShape(50),
                     tonalElevation = 0.dp
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Icon(
-                            imageVector = phaseData.icon,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Text(
-                            text = phase.displayName,
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    if (hasCurrentCycle) {
-                        StatItem(
-                            value = "$cycleDay",
-                            label = "周期天数",
-                            highlightColor = phaseData.primary
-                        )
-
-                        Box(
-                            modifier = Modifier
-                                .width(1.dp)
-                                .height(60.dp)
-                                .background(
-                                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                                )
-                        )
-                    }
-
-                    StatItem(
-                        value = if (daysUntilPeriod == 0) "今天" else "$daysUntilPeriod",
-                        label = "距离下次",
-                        highlightColor = phaseData.primary,
-                        valueUnit = if (daysUntilPeriod != 0) "天" else ""
+                    Text(
+                        text = phase.displayName,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
                     )
                 }
             }
         }
+
+        // Days until next phase
+        Text(
+            text = if (daysUntilNextPhase == 1) {
+                "距离 $nextPhaseName 还有 1 天"
+            } else {
+                "距离 $nextPhaseName 还有 $daysUntilNextPhase 天"
+            },
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+
+        // Phase tip
+        Text(
+            text = phaseTip,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 32.dp)
+        )
+    }
+}
+
+private fun getPhaseTip(phase: CyclePhase): String {
+    return when (phase) {
+        CyclePhase.MENSTRATION -> "记得多休息，补充铁质，注意保暖"
+        CyclePhase.FOLLICULAR -> "能量正在回升，适合开始新计划或运动"
+        CyclePhase.OVULATION -> "精力最旺盛的时期，好好把握"
+        CyclePhase.FERTILE -> "注意身体变化，保持轻松心情"
+        CyclePhase.LUTEAL -> "可能会有情绪波动，尝试放松活动"
+        CyclePhase.SAFE -> "享受这段平稳的时光"
     }
 }
 
