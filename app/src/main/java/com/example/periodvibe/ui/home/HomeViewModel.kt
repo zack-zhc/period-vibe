@@ -100,9 +100,7 @@ class HomeViewModel @Inject constructor(
 
     fun showNewCycleSheet(date: LocalDate = LocalDate.now()) {
         _selectedDate.value = date
-        viewModelScope.launch {
-            _existingRecord.value = cycleRepository.getDailyRecordByDate(date)
-        }
+        _existingRecord.value = null // 新周期不应该显示为编辑记录
         _showNewCycleSheet.value = true
     }
 

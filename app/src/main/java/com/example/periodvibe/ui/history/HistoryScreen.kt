@@ -27,29 +27,29 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Delete
-import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,8 +59,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.periodvibe.domain.model.DailyRecord
 import com.example.periodvibe.domain.model.FlowLevel
@@ -68,8 +66,11 @@ import com.example.periodvibe.domain.usecase.CycleWithRecords
 import com.example.periodvibe.ui.history.components.DailyRecordRow
 import com.example.periodvibe.ui.history.components.EditModeBottomBar
 import com.example.periodvibe.ui.history.components.MiniTimeline
+import com.example.periodvibe.ui.home.RecordBottomSheetContent
+import com.example.periodvibe.ui.home.RecordMode
 import com.example.periodvibe.ui.theme.CalendarPeriodDark
 import com.example.periodvibe.ui.theme.CalendarPeriodLight
+import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -191,13 +192,37 @@ fun HistoryScreen(
         )
     }
 
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val scope = rememberCoroutineScope()
+
     if (showEditDialog != null) {
-        RecordEditDialog(
-            record = showEditDialog!!,
-            onDismiss = { viewModel.hideEditDialog() },
-            onSave = { updatedRecord -> viewModel.updateDailyRecord(updatedRecord) },
-            isDark = isDark
-        )
+        ModalBottomSheet(
+            onDismissRequest = { viewModel.hideEditDialog() },
+            sheetState = sheetState,
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+        ) {
+            RecordBottomSheetContent(
+                initialDate = showEditDialog!!.date,
+                initialFlowLevel = showEditDialog!!.flowLevel,
+                recordMode = RecordMode.AUTO,
+                hasCurrentCycle = true,
+                existingRecord = showEditDialog,
+                onDismiss = {
+                    scope.launch { sheetState.hide() }.invokeOnCompletion {
+                        viewModel.hideEditDialog()
+                    }
+                },
+                onSave = { date, flowLevel ->
+                    scope.launch { sheetState.hide() }.invokeOnCompletion {
+                        val updatedRecord = showEditDialog!!.copy(
+                            date = date,
+                            flowLevel = flowLevel
+                        )
+                        viewModel.updateDailyRecord(updatedRecord)
+                    }
+                }
+            )
+        }
     }
 }
 
@@ -549,197 +574,3 @@ private fun DeleteConfirmDialog(
     )
 }
 
-@Composable
-private fun RecordEditDialog(
-    record: DailyRecord,
-    onDismiss: () -> Unit,
-    onSave: (DailyRecord) -> Unit,
-    isDark: Boolean
-) {
-    var flowLevel by remember { mutableStateOf(record.flowLevel) }
-    val periodColor = if (isDark) CalendarPeriodDark else CalendarPeriodLight
-
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            shape = RoundedCornerShape(24.dp),
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 0.dp
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Text(
-                            text = "编辑记录",
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = record.date.format(DateTimeFormatter.ofPattern("yyyy年MM月dd日", Locale.CHINA)),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    IconButton(onClick = onDismiss) {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.surfaceVariant
-                        ) {
-                            Box(
-                                modifier = Modifier.size(36.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.Close,
-                                    contentDescription = "关闭",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
-                }
-
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    color = periodColor.copy(alpha = 0.12f),
-                    tonalElevation = 0.dp
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Surface(
-                            shape = CircleShape,
-                            color = periodColor,
-                            tonalElevation = 0.dp
-                        ) {
-                            Box(
-                                modifier = Modifier.size(32.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                androidx.compose.material3.Icon(
-                                    imageVector = Icons.Rounded.History,
-                                    contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                        }
-                        Text(
-                            text = "经期记录",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = periodColor
-                        )
-                    }
-                }
-
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text(
-                        text = "经量",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        FlowLevel.values().forEach { level ->
-                            FlowLevelChip(
-                                level = level,
-                                selected = flowLevel == level,
-                                onClick = { flowLevel = level },
-                                periodColor = periodColor,
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-                    }
-                }
-
-                Button(
-                    onClick = {
-                        val updatedRecord = record.copy(
-                            isPeriod = true,
-                            flowLevel = flowLevel,
-                            symptoms = emptyList(),
-                            notes = null
-                        )
-                        onSave(updatedRecord)
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Check,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        "保存",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun FlowLevelChip(
-    level: FlowLevel,
-    selected: Boolean,
-    onClick: () -> Unit,
-    periodColor: Color,
-    modifier: Modifier = Modifier
-) {
-    val containerColor = if (selected) periodColor.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant
-    val textColor = if (selected) periodColor else MaterialTheme.colorScheme.onSurfaceVariant
-
-    FilterChip(
-        selected = selected,
-        onClick = onClick,
-        label = {
-            Text(
-                text = level.displayName,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
-            )
-        },
-        modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
-        colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
-            selectedContainerColor = containerColor,
-            selectedLabelColor = textColor,
-            containerColor = containerColor,
-            labelColor = textColor
-        ),
-        border = null
-    )
-}

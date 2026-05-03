@@ -26,9 +26,11 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -45,7 +47,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.periodvibe.ui.home.RecordBottomSheet
+import com.example.periodvibe.ui.home.RecordBottomSheetContent
 import com.example.periodvibe.ui.home.RecordMode
 import com.example.periodvibe.ui.theme.CalendarFertileDark
 import com.example.periodvibe.ui.theme.CalendarFertileLight
@@ -188,18 +190,33 @@ fun CalendarScreen(
         )
     }
 
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val scope = rememberCoroutineScope()
+
     if (showRecordSheet) {
-        RecordBottomSheet(
-            initialDate = recordDate,
-            recordMode = recordMode,
-            hasCurrentCycle = hasCurrentCycle,
-            existingRecord = null,
-            onDismiss = { showRecordSheet = false },
-            onSave = { date, flowLevel ->
-                viewModel.saveRecord(date, recordMode, flowLevel)
-                showRecordSheet = false
-            }
-        )
+        ModalBottomSheet(
+            onDismissRequest = { showRecordSheet = false },
+            sheetState = sheetState,
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+        ) {
+            RecordBottomSheetContent(
+                initialDate = recordDate,
+                recordMode = recordMode,
+                hasCurrentCycle = hasCurrentCycle,
+                existingRecord = null,
+                onDismiss = {
+                    scope.launch { sheetState.hide() }.invokeOnCompletion {
+                        showRecordSheet = false
+                    }
+                },
+                onSave = { date, flowLevel ->
+                    scope.launch { sheetState.hide() }.invokeOnCompletion {
+                        viewModel.saveRecord(date, recordMode, flowLevel)
+                        showRecordSheet = false
+                    }
+                }
+            )
+        }
     }
 }
 

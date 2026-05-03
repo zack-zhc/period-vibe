@@ -1,6 +1,5 @@
 package com.example.periodvibe.ui.home
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -18,19 +18,14 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SelectableDates
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -42,15 +37,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.onFocusEvent
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import com.example.periodvibe.domain.model.FlowLevel
 import java.time.LocalDate
 import java.time.ZoneId
@@ -58,7 +47,7 @@ import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RecordBottomSheet(
+fun RecordBottomSheetContent(
     initialDate: LocalDate = LocalDate.now(),
     initialFlowLevel: FlowLevel? = FlowLevel.LIGHT,
     recordMode: RecordMode = RecordMode.AUTO,
@@ -73,163 +62,158 @@ fun RecordBottomSheet(
 
     val dateFormatter = remember { DateTimeFormatter.ofPattern("yyyy年MM月dd日") }
 
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(
-            dismissOnBackPress = true,
-            dismissOnClickOutside = true,
-            usePlatformDefaultWidth = false
-        )
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Box(
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = 24.dp)
         ) {
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(24.dp)),
-                tonalElevation = 6.dp
+            // Header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(
+                Text(
+                    text = if (existingRecord != null) {
+                        "编辑记录"
+                    } else if (!hasCurrentCycle) {
+                        "开始新周期"
+                    } else {
+                        "记录今日状态"
+                    },
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                Surface(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(24.dp)
-                        .verticalScroll(rememberScrollState()),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .clickable(onClick = onDismiss),
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh
                 ) {
-                    Text(
-                        text = if (existingRecord != null) {
-                            "编辑记录"
-                        } else if (!hasCurrentCycle) {
-                            "开始新周期"
-                        } else {
-                            "记录今日状态"
-                        },
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    DateSelector(
-                        selectedDate = selectedDate,
-                        dateFormatter = dateFormatter,
-                        onClick = { showDatePicker = true }
-                    )
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    FlowLevelSelector(
-                        selectedFlowLevel = flowLevel,
-                        onFlowLevelSelected = { flowLevel = it }
-                    )
-
-                    Spacer(modifier = Modifier.height(32.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp, alignment = Alignment.End)
+                    Box(
+                        contentAlignment = Alignment.Center
                     ) {
-                        TextButton(
-                            onClick = onDismiss
-                        ) {
-                            Text("取消", fontSize = 16.sp)
-                        }
-                        Button(
-                            onClick = {
-                                onSave(selectedDate, flowLevel)
-                            },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary
-                            )
-                        ) {
-                            Text("保存", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                        }
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "关闭",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(24.dp)
+                        )
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            DateSelector(
+                selectedDate = selectedDate,
+                dateFormatter = dateFormatter,
+                onClick = { showDatePicker = true }
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            FlowLevelSelector(
+                selectedFlowLevel = flowLevel,
+                onFlowLevelSelected = { flowLevel = it }
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Button(
+                    onClick = onDismiss,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        contentColor = MaterialTheme.colorScheme.primary
+                    ),
+                    shape = RoundedCornerShape(50)
+                ) {
+                    Text("取消", fontWeight = FontWeight.SemiBold)
+                }
+                Button(
+                    onClick = { onSave(selectedDate, flowLevel) },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    ),
+                    shape = RoundedCornerShape(50)
+                ) {
+                    Text("保存", fontWeight = FontWeight.SemiBold)
+                }
+            }
         }
+
+        Spacer(modifier = Modifier.height(40.dp))
     }
 
     if (showDatePicker) {
-        val threeMonthsAgo = java.time.Instant.now()
-            .minus(java.time.Duration.ofDays(90))
-            .toEpochMilli()
-
-        val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = selectedDate.atStartOfDay(ZoneId.systemDefault())
-                .toInstant()
-                .toEpochMilli(),
-            selectableDates = object : SelectableDates {
-                override fun isSelectableDate(utcTimeMillis: Long): Boolean {
-                    return utcTimeMillis in threeMonthsAgo..System.currentTimeMillis()
-                }
-            }
-        )
-
         DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        datePickerState.selectedDateMillis?.let { millis ->
-                            selectedDate = java.time.Instant.ofEpochMilli(millis)
-                                .atZone(ZoneId.systemDefault())
-                                .toLocalDate()
-                        }
-                        showDatePicker = false
-                    }
-                ) {
-                    Text("确定")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) {
-                    Text("取消")
-                }
-            }
-        ) {
-            DatePicker(state = datePickerState)
-        }
+            selectedDate = selectedDate,
+            onDateSelected = { selectedDate = it },
+            onDismiss = { showDatePicker = false }
+        )
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DateSelector(
     selectedDate: LocalDate,
     dateFormatter: DateTimeFormatter,
     onClick: () -> Unit
 ) {
-    Box(modifier = Modifier.fillMaxWidth()) {
-        OutlinedTextField(
-            value = selectedDate.format(dateFormatter),
-            onValueChange = { },
-            label = { Text("日期") },
-            readOnly = true,
-            trailingIcon = {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = "日期",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .clickable(onClick = onClick),
+            color = MaterialTheme.colorScheme.surfaceContainer
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Icon(
                     imageVector = Icons.Default.CalendarMonth,
-                    contentDescription = null
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
                 )
-            },
-            modifier = Modifier.fillMaxWidth()
-        )
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .alpha(0f)
-                .clickable(onClick = onClick)
-        )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = selectedDate.format(dateFormatter),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+        }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun FlowLevelSelector(
     selectedFlowLevel: FlowLevel?,
@@ -239,26 +223,140 @@ private fun FlowLevelSelector(
         Text(
             text = "经量",
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(bottom = 12.dp)
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 8.dp)
         )
 
-        SingleChoiceSegmentedButtonRow(
-            modifier = Modifier.fillMaxWidth()
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(50),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh
         ) {
-            FlowLevel.values().forEachIndexed { index, level ->
-                SegmentedButton(
-                    selected = selectedFlowLevel == level,
-                    onClick = { onFlowLevelSelected(level) },
-                    shape = SegmentedButtonDefaults.itemShape(
-                        index = index,
-                        count = FlowLevel.values().size
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(4.dp)
+            ) {
+                FlowLevel.values().forEach { level ->
+                    val isSelected = selectedFlowLevel == level
+                    FlowLevelButton(
+                        level = level,
+                        isSelected = isSelected,
+                        onClick = { onFlowLevelSelected(level) },
+                        modifier = Modifier.weight(1f)
                     )
-                ) {
-                    Text(level.displayName)
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun FlowLevelButton(
+    level: FlowLevel,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val iconCount = when (level) {
+        FlowLevel.LIGHT -> 1
+        FlowLevel.MEDIUM -> 2
+        FlowLevel.HEAVY -> 3
+    }
+
+    Surface(
+        modifier = modifier
+            .clip(RoundedCornerShape(50))
+            .clickable(onClick = onClick),
+        color = if (isSelected) {
+            MaterialTheme.colorScheme.primaryContainer
+        } else {
+            MaterialTheme.colorScheme.surfaceContainerHigh
+        }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                repeat(iconCount) {
+                    Icon(
+                        imageVector = Icons.Default.WaterDrop,
+                        contentDescription = null,
+                        tint = if (isSelected) {
+                            MaterialTheme.colorScheme.onPrimaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = level.displayName,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = if (isSelected) {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DatePickerDialog(
+    selectedDate: LocalDate,
+    onDateSelected: (LocalDate) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val threeMonthsAgo = java.time.Instant.now()
+        .minus(java.time.Duration.ofDays(90))
+        .toEpochMilli()
+
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = selectedDate.atStartOfDay(ZoneId.systemDefault())
+            .toInstant()
+            .toEpochMilli(),
+        selectableDates = object : androidx.compose.material3.SelectableDates {
+            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                return utcTimeMillis in threeMonthsAgo..System.currentTimeMillis()
+            }
+        }
+    )
+
+    androidx.compose.material3.DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        val date = java.time.Instant.ofEpochMilli(millis)
+                            .atZone(ZoneId.systemDefault())
+                            .toLocalDate()
+                        onDateSelected(date)
+                    }
+                    onDismiss()
+                }
+            ) {
+                Text("确定")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        }
+    ) {
+        DatePicker(state = datePickerState)
     }
 }

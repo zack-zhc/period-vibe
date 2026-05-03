@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChildCare
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.EditNote
@@ -49,22 +50,21 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.FloatingActionButtonMenu
-import androidx.compose.material3.FloatingActionButtonMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.ToggleFloatingActionButton
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -97,6 +97,7 @@ import com.example.periodvibe.ui.theme.LutealColor
 import com.example.periodvibe.ui.theme.MenstruationColor
 import com.example.periodvibe.ui.theme.OvulationColor
 import com.example.periodvibe.ui.theme.SafeColor
+import kotlinx.coroutines.launch
 import java.time.LocalTime
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -124,6 +125,9 @@ fun HomeScreen(
         else -> false
     }
 
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val scope = rememberCoroutineScope()
+
     // 如果需要在启动时显示记录弹窗
     LaunchedEffect(showRecordSheetOnStart) {
         if (showRecordSheetOnStart) {
@@ -143,9 +147,7 @@ fun HomeScreen(
                 LoadingState()
             }
             is HomeUiState.NoData -> {
-                NoDataState(
-                    onLogPeriodClick = { viewModel.showNewCycleSheet() }
-                )
+                NoDataState()
             }
             is HomeUiState.Success -> {
                 HomeContent(
@@ -169,41 +171,49 @@ fun HomeScreen(
         ) {
             if (hasCurrentCycle) {
                 RecordFAB(
-                    onClick = { viewModel.showEndCycleMenu() },
-                    onEditClick = { viewModel.showRecordSheet() }
+                    hasCurrentCycle = true,
+                    onClick = { viewModel.showEndCycleMenu() }
                 )
             } else {
                 RecordFAB(
+                    hasCurrentCycle = false,
                     onClick = { viewModel.showNewCycleSheet() }
                 )
             }
         }
     }
 
-    if (showRecordSheet) {
-        RecordBottomSheet(
-            initialDate = selectedDate,
-            recordMode = recordMode,
-            hasCurrentCycle = hasCurrentCycle,
-            existingRecord = existingRecord,
-            onDismiss = { viewModel.hideRecordSheet() },
-            onSave = { date, flowLevel ->
-                viewModel.saveDailyRecord(date, flowLevel)
-            }
-        )
-    }
-
-    if (showNewCycleSheet) {
-        RecordBottomSheet(
-            initialDate = selectedDate,
-            recordMode = RecordMode.NEW_CYCLE,
-            hasCurrentCycle = hasCurrentCycle,
-            existingRecord = existingRecord,
-            onDismiss = { viewModel.hideNewCycleSheet() },
-            onSave = { date, flowLevel ->
-                viewModel.saveNewCycle(date, flowLevel)
-            }
-        )
+    if (showRecordSheet || showNewCycleSheet) {
+        ModalBottomSheet(
+            onDismissRequest = {
+                if (showRecordSheet) viewModel.hideRecordSheet()
+                else viewModel.hideNewCycleSheet()
+            },
+            sheetState = sheetState,
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+        ) {
+            RecordBottomSheetContent(
+                initialDate = selectedDate,
+                recordMode = if (showNewCycleSheet) RecordMode.NEW_CYCLE else recordMode,
+                hasCurrentCycle = hasCurrentCycle,
+                existingRecord = existingRecord,
+                onDismiss = {
+                    scope.launch { sheetState.hide() }.invokeOnCompletion {
+                        if (showRecordSheet) viewModel.hideRecordSheet()
+                        else viewModel.hideNewCycleSheet()
+                    }
+                },
+                onSave = { date, flowLevel ->
+                    scope.launch { sheetState.hide() }.invokeOnCompletion {
+                        if (showNewCycleSheet) {
+                            viewModel.saveNewCycle(date, flowLevel)
+                        } else {
+                            viewModel.saveDailyRecord(date, flowLevel)
+                        }
+                    }
+                }
+            )
+        }
     }
 
     if (showEndCycleMenu) {
@@ -584,55 +594,18 @@ private fun StatsCard(totalCycles: Int, hasData: Boolean) {
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun RecordFAB(
-    onClick: () -> Unit,
-    onEditClick: (() -> Unit)? = null
+    hasCurrentCycle: Boolean,
+    onClick: () -> Unit
 ) {
-    var expanded by remember { mutableStateOf(false) }
-
-    if (onEditClick != null) {
-        FloatingActionButtonMenu(
-            expanded = expanded,
-            button = {
-                ToggleFloatingActionButton(
-                    checked = expanded,
-                    onCheckedChange = { expanded = it }
-                ) {
-                    Icon(
-                        imageVector = if (expanded) Icons.Default.Close else Icons.Default.Add,
-                        contentDescription = null
-                    )
-                }
-            }
-        ) {
-            FloatingActionButtonMenuItem(
-                text = { Text("结束周期") },
-                icon = { Icon(Icons.Default.CalendarToday, contentDescription = "结束周期") },
-                onClick = {
-                    expanded = false
-                    onClick()
-                }
-            )
-            FloatingActionButtonMenuItem(
-                text = { Text("修改记录") },
-                icon = { Icon(Icons.Default.EditNote, contentDescription = "修改记录") },
-                onClick = {
-                    expanded = false
-                    onEditClick()
-                }
-            )
-        }
-    } else {
-        FloatingActionButton(
-            onClick = onClick
-        ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = "开始新周期"
-            )
-        }
+    FloatingActionButton(
+        onClick = onClick
+    ) {
+        Icon(
+            imageVector = if (hasCurrentCycle) Icons.Default.Check else Icons.Default.Add,
+            contentDescription = if (hasCurrentCycle) "结束周期" else "开始新周期"
+        )
     }
 }
 
@@ -660,9 +633,7 @@ private fun LoadingState() {
 }
 
 @Composable
-private fun NoDataState(
-    onLogPeriodClick: () -> Unit
-) {
+private fun NoDataState() {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -753,32 +724,6 @@ private fun NoDataState(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
                     )
-
-                    // 按钮
-                    Button(
-                        onClick = onLogPeriodClick,
-                        shape = RoundedCornerShape(50),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
-                        ),
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                            horizontal = 32.dp,
-                            vertical = 16.dp
-                        )
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.AddCircle,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "记录周期",
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
                 }
             }
         }

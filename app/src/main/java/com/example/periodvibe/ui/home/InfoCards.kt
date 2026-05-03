@@ -100,7 +100,7 @@ fun NextPhaseCard(
     ) {
         Text(
             text = phaseName,
-            style = MaterialTheme.typography.headlineMedium,
+            style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface
         )
@@ -128,7 +128,7 @@ fun PregnancyChanceCard(
     ) {
         Text(
             text = chanceLevel,
-            style = MaterialTheme.typography.headlineMedium,
+            style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface
         )
