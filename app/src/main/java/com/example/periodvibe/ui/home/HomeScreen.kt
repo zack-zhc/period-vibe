@@ -12,6 +12,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,7 +28,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.ChildCare
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.Favorite
@@ -81,6 +85,11 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import android.content.Context
 import com.example.periodvibe.R
 import com.example.periodvibe.domain.model.CyclePhase
+import com.example.periodvibe.ui.home.EmptyStateCard
+import com.example.periodvibe.ui.home.NextPhaseCard
+import com.example.periodvibe.ui.home.PregnancyChanceCard
+import com.example.periodvibe.ui.home.getNextPhase
+import com.example.periodvibe.ui.home.getPregnancyChance
 import com.example.periodvibe.ui.theme.FertileColor
 import com.example.periodvibe.ui.theme.FollicularColor
 import com.example.periodvibe.ui.theme.LutealColor
@@ -133,7 +142,9 @@ fun HomeScreen(
                 LoadingState()
             }
             is HomeUiState.NoData -> {
-                NoDataState()
+                NoDataState(
+                    onLogPeriodClick = { viewModel.showNewCycleSheet() }
+                )
             }
             is HomeUiState.Success -> {
                 HomeContent(
@@ -213,6 +224,8 @@ private fun HomeContent(
     hasCurrentCycle: Boolean
 ) {
     val phaseData = getPhaseData(phase)
+    val nextPhase = getNextPhase(phase)
+    val pregnancyChance = getPregnancyChance(phase)
 
     Column(
         modifier = Modifier
@@ -231,6 +244,25 @@ private fun HomeContent(
             phaseData = phaseData,
             hasCurrentCycle = hasCurrentCycle
         )
+
+        // 信息卡片网格
+        androidx.compose.foundation.layout.Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            NextPhaseCard(
+                phaseName = nextPhase.first,
+                daysUntil = daysUntilPeriod,
+                modifier = Modifier.weight(1f)
+            )
+
+            PregnancyChanceCard(
+                chanceLevel = pregnancyChance.first,
+                chanceLabel = pregnancyChance.second,
+                isFertile = pregnancyChance.third,
+                modifier = Modifier.weight(1f)
+            )
+        }
 
         PhaseDetailCard(
             phase = phase,
@@ -663,51 +695,154 @@ private fun LoadingState() {
 }
 
 @Composable
-private fun NoDataState() {
-    val heartColor = MaterialTheme.colorScheme.primary
-
+private fun NoDataState(
+    onLogPeriodClick: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 24.dp, vertical = 16.dp),
+        horizontalAlignment = Alignment.Start,
+        verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        Box(
-            modifier = Modifier.size(300.dp)
+        // 问候语区域
+        Column(
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            androidx.compose.foundation.Image(
-                painter = painterResource(id = R.drawable.ic_woman_figure),
-                contentDescription = null,
-                modifier = Modifier
-                    .size(300.dp)
-                    .align(Alignment.Center),
-                colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(heartColor)
+            Text(
+                text = "欢迎！",
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = "开始记录你的健康旅程。",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
+        // 主Hero卡片
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(28.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+            ) {
+                // 装饰性渐变背景
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .background(
+                            brush = Brush.verticalGradient(
+                                colors = listOf(
+                                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                                    MaterialTheme.colorScheme.surfaceContainerLow
+                                )
+                            )
+                        )
+                )
 
-        Text(
-            text = "开启你的健康记录",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-            textAlign = TextAlign.Center
-        )
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 40.dp, horizontal = 24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // 圆形图片 - 使用本地图片
+                    Box(
+                        modifier = Modifier
+                            .size(192.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        androidx.compose.foundation.Image(
+                            painter = painterResource(id = R.drawable.welcome_image),
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                        )
+                    }
 
-        Spacer(modifier = Modifier.height(16.dp))
+                    // 标题
+                    Text(
+                        text = "暂无数据",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
 
-        Text(
-            text = "点击右下角按钮，记录你的第一个周期，\n让我们一起好好照顾自己",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            lineHeight = 28.sp
-        )
+                    // 描述
+                    Text(
+                        text = "记录你的第一次周期，解锁个性化洞察和预测。",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+
+                    // 按钮
+                    Button(
+                        onClick = onLogPeriodClick,
+                        shape = RoundedCornerShape(50),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        ),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                            horizontal = 32.dp,
+                            vertical = 16.dp
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AddCircle,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "记录周期",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+            }
+        }
+
+        // 空状态卡片网格
+        androidx.compose.foundation.layout.Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // 下一阶段卡片
+            EmptyStateCard(
+                icon = Icons.Default.AutoAwesome,
+                title = "下一阶段",
+                subtitle = "等待数据中...",
+                modifier = Modifier.weight(1f)
+            )
+
+            // 怀孕追踪卡片
+            EmptyStateCard(
+                icon = Icons.Default.ChildCare,
+                title = "怀孕追踪",
+                subtitle = "未追踪",
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(80.dp))
     }
 }
-
 
 @Composable
 private fun EndCycleConfirmationDialog(
