@@ -2,26 +2,41 @@ package com.example.periodvibe.ui.settings
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -31,6 +46,7 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -45,12 +61,10 @@ import com.example.periodvibe.ui.settings.components.ExportResultDialog
 import com.example.periodvibe.ui.settings.components.ImportConfirmationDialog
 import com.example.periodvibe.ui.settings.components.ImportResultDialog
 import com.example.periodvibe.ui.settings.components.NotificationTimeDialog
-import com.example.periodvibe.ui.settings.components.SettingItem
-import com.example.periodvibe.ui.settings.components.SettingItemWithSwitch
 import java.time.LocalDateTime
 
 // ==================== 周期参数设置页面 ====================
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun CycleParametersScreen(
     onNavigateBack: () -> Unit,
@@ -80,36 +94,131 @@ fun CycleParametersScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 16.dp)
+                .padding(16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
             if (uiState is SettingsUiState.Success) {
                 val state = uiState as SettingsUiState.Success
-                SettingItemWithSwitch(
-                    label = "自动计算周期",
-                    description = if (state.autoCalculateCycle) "根据历史数据自动计算" else "使用手动设置的值",
-                    checked = state.autoCalculateCycle,
-                    onCheckedChange = { viewModel.toggleAutoCalculateCycle(it) }
-                )
+                val items = mutableListOf<@Composable () -> Unit>()
+                items.add {
+                    SegmentedListItem(
+                        onClick = { viewModel.toggleAutoCalculateCycle(!state.autoCalculateCycle) },
+                        shapes = if (!state.autoCalculateCycle) {
+                            ListItemDefaults.segmentedShapes(index = 0, count = 3)
+                        } else {
+                            ListItemDefaults.segmentedShapes(index = 0, count = 1)
+                        },
+                        leadingContent = {
+                            Icon(
+                                imageVector = Icons.Default.CalendarMonth,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        supportingContent = {
+                            Text(
+                                text = if (state.autoCalculateCycle) "根据历史数据自动计算" else "使用手动设置的值",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        trailingContent = {
+                            Switch(
+                                checked = state.autoCalculateCycle,
+                                onCheckedChange = { viewModel.toggleAutoCalculateCycle(it) }
+                            )
+                        },
+                        colors = ListItemDefaults.colors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainer
+                        )
+                    ) {
+                        Text(
+                            text = "自动计算周期",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+
                 if (!state.autoCalculateCycle) {
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
-                    )
-                    SettingItem(
-                        label = "平均周期天数",
-                        value = "${state.cycleLengthDefault} 天",
-                        showChevron = true,
-                        onClick = { viewModel.showCycleDialog() }
-                    )
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
-                    )
-                    SettingItem(
-                        label = "平均经期天数",
-                        value = "${state.periodLengthDefault} 天",
-                        showChevron = true,
-                        onClick = { viewModel.showCycleDialog() }
-                    )
+                    items.add {
+                        SegmentedListItem(
+                            onClick = { viewModel.showCycleDialog() },
+                            shapes = ListItemDefaults.segmentedShapes(index = 1, count = 3),
+                            leadingContent = {
+                                Icon(
+                                    imageVector = Icons.Default.CalendarMonth,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            },
+                            supportingContent = {
+                                Text(
+                                    text = "${state.cycleLengthDefault} 天",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            },
+                            trailingContent = {
+                                Icon(
+                                    imageVector = Icons.Default.ChevronRight,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            },
+                            colors = ListItemDefaults.colors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainer
+                            )
+                        ) {
+                            Text(
+                                text = "平均周期天数",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                    items.add {
+                        SegmentedListItem(
+                            onClick = { viewModel.showCycleDialog() },
+                            shapes = ListItemDefaults.segmentedShapes(index = 2, count = 3),
+                            leadingContent = {
+                                Icon(
+                                    imageVector = Icons.Default.CalendarMonth,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            },
+                            supportingContent = {
+                                Text(
+                                    text = "${state.periodLengthDefault} 天",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            },
+                            trailingContent = {
+                                Icon(
+                                    imageVector = Icons.Default.ChevronRight,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            },
+                            colors = ListItemDefaults.colors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainer
+                            )
+                        ) {
+                            Text(
+                                text = "平均经期天数",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)
+                ) {
+                    items.forEach { it() }
                 }
             }
         }
@@ -131,7 +240,7 @@ fun CycleParametersScreen(
 }
 
 // ==================== 提醒设置页面 ====================
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun RemindersScreen(
     onNavigateBack: () -> Unit,
@@ -162,36 +271,131 @@ fun RemindersScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 16.dp)
+                .padding(16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
             if (uiState is SettingsUiState.Success) {
                 val state = uiState as SettingsUiState.Success
-                SettingItemWithSwitch(
-                    label = "经期提醒",
-                    description = if (state.notificationEnabled) "在经期前提醒你" else "关闭所有提醒",
-                    checked = state.notificationEnabled,
-                    onCheckedChange = { viewModel.toggleNotificationEnabled(it) }
-                )
+                val items = mutableListOf<@Composable () -> Unit>()
+                items.add {
+                    SegmentedListItem(
+                        onClick = { viewModel.toggleNotificationEnabled(!state.notificationEnabled) },
+                        shapes = if (state.notificationEnabled) {
+                            ListItemDefaults.segmentedShapes(index = 0, count = 3)
+                        } else {
+                            ListItemDefaults.segmentedShapes(index = 0, count = 1)
+                        },
+                        leadingContent = {
+                            Icon(
+                                imageVector = Icons.Default.Notifications,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        supportingContent = {
+                            Text(
+                                text = if (state.notificationEnabled) "在经期前提醒你" else "关闭所有提醒",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        trailingContent = {
+                            Switch(
+                                checked = state.notificationEnabled,
+                                onCheckedChange = { viewModel.toggleNotificationEnabled(it) }
+                            )
+                        },
+                        colors = ListItemDefaults.colors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainer
+                        )
+                    ) {
+                        Text(
+                            text = "经期提醒",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+
                 if (state.notificationEnabled) {
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
-                    )
-                    SettingItem(
-                        label = "提前天数",
-                        value = "${state.notificationDaysBefore} 天",
-                        showChevron = true,
-                        onClick = { viewModel.showDaysBeforeDialog() }
-                    )
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
-                    )
-                    SettingItem(
-                        label = "提醒时间",
-                        value = "${state.notificationTime.hour.toString().padStart(2, '0')}:${state.notificationTime.minute.toString().padStart(2, '0')}",
-                        showChevron = true,
-                        onClick = { viewModel.showTimeDialog() }
-                    )
+                    items.add {
+                        SegmentedListItem(
+                            onClick = { viewModel.showDaysBeforeDialog() },
+                            shapes = ListItemDefaults.segmentedShapes(index = 1, count = 3),
+                            leadingContent = {
+                                Icon(
+                                    imageVector = Icons.Default.Notifications,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            },
+                            supportingContent = {
+                                Text(
+                                    text = "${state.notificationDaysBefore} 天",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            },
+                            trailingContent = {
+                                Icon(
+                                    imageVector = Icons.Default.ChevronRight,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            },
+                            colors = ListItemDefaults.colors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainer
+                            )
+                        ) {
+                            Text(
+                                text = "提前天数",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                    items.add {
+                        SegmentedListItem(
+                            onClick = { viewModel.showTimeDialog() },
+                            shapes = ListItemDefaults.segmentedShapes(index = 2, count = 3),
+                            leadingContent = {
+                                Icon(
+                                    imageVector = Icons.Default.Notifications,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            },
+                            supportingContent = {
+                                Text(
+                                    text = "${state.notificationTime.hour.toString().padStart(2, '0')}:${state.notificationTime.minute.toString().padStart(2, '0')}",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            },
+                            trailingContent = {
+                                Icon(
+                                    imageVector = Icons.Default.ChevronRight,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            },
+                            colors = ListItemDefaults.colors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainer
+                            )
+                        ) {
+                            Text(
+                                text = "提醒时间",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)
+                ) {
+                    items.forEach { it() }
                 }
             }
         }
@@ -284,7 +488,7 @@ fun ThemeScreen(
 }
 
 // ==================== 隐私设置页面 ====================
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun PrivacyScreen(
     onNavigateBack: () -> Unit,
@@ -315,33 +519,92 @@ fun PrivacyScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 16.dp)
+                .padding(16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
             if (uiState is SettingsUiState.Success) {
                 val state = uiState as SettingsUiState.Success
-                SettingItemWithSwitch(
-                    label = "应用锁",
-                    description = "使用指纹或密码保护应用",
-                    checked = state.appLockEnabled,
-                    onCheckedChange = { enabled ->
-                        if (enabled) {
-                            onNavigateToPinSetup()
-                        } else {
-                            viewModel.showDisableAppLockDialog()
-                        }
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)
+                ) {
+                    SegmentedListItem(
+                        onClick = {
+                            if (state.appLockEnabled) {
+                                viewModel.showDisableAppLockDialog()
+                            } else {
+                                onNavigateToPinSetup()
+                            }
+                        },
+                        shapes = ListItemDefaults.segmentedShapes(index = 0, count = 2),
+                        leadingContent = {
+                            Icon(
+                                imageVector = Icons.Default.Lock,
+                                contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        supportingContent = {
+                            Text(
+                                text = "使用指纹或密码保护应用",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        trailingContent = {
+                            Switch(
+                                checked = state.appLockEnabled,
+                                onCheckedChange = { enabled ->
+                                    if (enabled) {
+                                        onNavigateToPinSetup()
+                                    } else {
+                                        viewModel.showDisableAppLockDialog()
+                                    }
+                                }
+                            )
+                        },
+                        colors = ListItemDefaults.colors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainer
+                        )
+                    ) {
+                        Text(
+                            text = "应用锁",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
                     }
-                )
-                HorizontalDivider(
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
-                SettingItemWithSwitch(
-                    label = "隐私模式",
-                    description = "隐藏通知内容",
-                    checked = state.privacyModeEnabled,
-                    onCheckedChange = { viewModel.togglePrivacyMode(it) }
-                )
+
+                    SegmentedListItem(
+                        onClick = { viewModel.togglePrivacyMode(!state.privacyModeEnabled) },
+                        shapes = ListItemDefaults.segmentedShapes(index = 1, count = 2),
+                        leadingContent = {
+                            Icon(
+                                imageVector = Icons.Default.Lock,
+                                contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        supportingContent = {
+                            Text(
+                                text = "隐藏通知内容",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        trailingContent = {
+                            Switch(
+                                checked = state.privacyModeEnabled,
+                                onCheckedChange = { viewModel.togglePrivacyMode(it) }
+                            )
+                        },
+                        colors = ListItemDefaults.colors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainer
+                        )
+                    ) {
+                        Text(
+                            text = "隐私模式",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
             }
         }
     }
@@ -355,7 +618,7 @@ fun PrivacyScreen(
 }
 
 // ==================== 数据管理页面 ====================
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun DataManagementScreen(
     onNavigateBack: () -> Unit,
@@ -417,35 +680,117 @@ fun DataManagementScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 16.dp)
+                .padding(16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            SettingItem(
-                label = "导出数据",
-                value = "选择格式",
-                showChevron = true,
-                onClick = { viewModel.showExportFormatDialog() }
-            )
-            HorizontalDivider(
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-            SettingItem(
-                label = "导入数据",
-                value = "从备份恢复",
-                showChevron = true,
-                onClick = { importFileLauncher.launch(arrayOf("*/*")) }
-            )
-            HorizontalDivider(
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-            SettingItem(
-                label = "清除数据",
-                value = "删除所有记录",
-                showChevron = true,
-                onClick = { viewModel.showClearDataConfirmationDialog() }
-            )
+            Column(
+                verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)
+            ) {
+                SegmentedListItem(
+                    onClick = { viewModel.showExportFormatDialog() },
+                    shapes = ListItemDefaults.segmentedShapes(index = 0, count = 3),
+                    leadingContent = {
+                        Icon(
+                            imageVector = Icons.Default.Folder,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
+                    supportingContent = {
+                        Text(
+                            text = "选择格式",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
+                    trailingContent = {
+                        Icon(
+                            imageVector = Icons.Default.ChevronRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
+                    colors = ListItemDefaults.colors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer
+                    )
+                ) {
+                    Text(
+                        text = "导出数据",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                SegmentedListItem(
+                    onClick = { importFileLauncher.launch(arrayOf("*/*")) },
+                    shapes = ListItemDefaults.segmentedShapes(index = 1, count = 3),
+                    leadingContent = {
+                        Icon(
+                            imageVector = Icons.Default.Folder,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
+                    supportingContent = {
+                        Text(
+                            text = "从备份恢复",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
+                    trailingContent = {
+                        Icon(
+                            imageVector = Icons.Default.ChevronRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
+                    colors = ListItemDefaults.colors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer
+                    )
+                ) {
+                    Text(
+                        text = "导入数据",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                SegmentedListItem(
+                    onClick = { viewModel.showClearDataConfirmationDialog() },
+                    shapes = ListItemDefaults.segmentedShapes(index = 2, count = 3),
+                    leadingContent = {
+                        Icon(
+                            imageVector = Icons.Default.Folder,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
+                    supportingContent = {
+                        Text(
+                            text = "删除所有记录",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
+                    trailingContent = {
+                        Icon(
+                            imageVector = Icons.Default.ChevronRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
+                    colors = ListItemDefaults.colors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer
+                    )
+                ) {
+                    Text(
+                        text = "清除数据",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
         }
     }
 
@@ -504,7 +849,7 @@ fun DataManagementScreen(
 }
 
 // ==================== 关于页面 ====================
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun AboutScreen(
     onNavigateBack: () -> Unit,
@@ -535,45 +880,89 @@ fun AboutScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 16.dp)
+                .padding(16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            SettingItem(
-                label = "应用介绍",
-                value = "",
-                showChevron = true,
-                onClick = { showDialog = true }
-            )
-            HorizontalDivider(
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-            SettingItem(
-                label = "版本信息",
-                value = "v1.0.0",
-                showChevron = false,
-                onClick = {
-                    val currentTime = System.currentTimeMillis()
-
-                    if (firstClickTime == 0L) {
-                        firstClickTime = currentTime
-                        clickCount = 1
-                    } else {
-                        val elapsedTime = currentTime - firstClickTime
-                        if (elapsedTime > 8000) {                         clickCount = 1
-                            firstClickTime = currentTime
-                        } else {
-                            clickCount++
-                        }
-                    }
-
-                    if (clickCount >= 10) {
-                        clickCount = 1
-                        firstClickTime = currentTime
-                        onNavigateToDeveloperOptions()
-                    }
+            Column(
+                verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)
+            ) {
+                SegmentedListItem(
+                    onClick = { showDialog = true },
+                    shapes = ListItemDefaults.segmentedShapes(index = 0, count = 2),
+                    leadingContent = {
+                        Icon(
+                            imageVector = Icons.Default.Folder,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
+                    trailingContent = {
+                        Icon(
+                            imageVector = Icons.Default.ChevronRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
+                    colors = ListItemDefaults.colors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer
+                    )
+                ) {
+                    Text(
+                        text = "应用介绍",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
                 }
-            )
+
+                SegmentedListItem(
+                    onClick = {
+                        val currentTime = System.currentTimeMillis()
+
+                        if (firstClickTime == 0L) {
+                            firstClickTime = currentTime
+                            clickCount = 1
+                        } else {
+                            val elapsedTime = currentTime - firstClickTime
+                            if (elapsedTime > 8000) {
+                                clickCount = 1
+                                firstClickTime = currentTime
+                            } else {
+                                clickCount++
+                            }
+                        }
+
+                        if (clickCount >= 10) {
+                            clickCount = 1
+                            firstClickTime = currentTime
+                            onNavigateToDeveloperOptions()
+                        }
+                    },
+                    shapes = ListItemDefaults.segmentedShapes(index = 1, count = 2),
+                    leadingContent = {
+                        Icon(
+                            imageVector = Icons.Default.Folder,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
+                    supportingContent = {
+                        Text(
+                            text = "v1.0.0",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
+                    colors = ListItemDefaults.colors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer
+                    )
+                ) {
+                    Text(
+                        text = "版本信息",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
         }
     }
 
