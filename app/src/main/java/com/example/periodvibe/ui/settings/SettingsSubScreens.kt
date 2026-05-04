@@ -39,6 +39,7 @@ import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -74,7 +75,6 @@ fun CycleParametersScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val showCycleDialog by viewModel.showCycleDialog.collectAsState()
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -138,21 +138,23 @@ fun CycleParametersScreen(
                 if (!state.autoCalculateCycle) {
                     items.add {
                         SegmentedListItem(
-                            onClick = { viewModel.showCycleDialog() },
+                            onClick = { },
                             shapes = ListItemDefaults.segmentedShapes(index = 1, count = 3),
                             supportingContent = {
-                                Text(
-                                    text = "${state.cycleLengthDefault} 天",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            },
-                            trailingContent = {
-                                Icon(
-                                    imageVector = Icons.Default.ChevronRight,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                                Column {
+                                    Text(
+                                        text = "${state.cycleLengthDefault} 天",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Slider(
+                                        value = state.cycleLengthDefault.toFloat(),
+                                        onValueChange = { viewModel.updateCycleLength(it.toInt()) },
+                                        valueRange = state.cycleLengthRange.first.toFloat()..state.cycleLengthRange.last.toFloat(),
+                                        steps = state.cycleLengthRange.last - state.cycleLengthRange.first - 1
+                                    )
+                                }
                             },
                             colors = ListItemDefaults.colors(
                                 containerColor = MaterialTheme.colorScheme.surfaceContainer
@@ -167,21 +169,23 @@ fun CycleParametersScreen(
                     }
                     items.add {
                         SegmentedListItem(
-                            onClick = { viewModel.showCycleDialog() },
+                            onClick = { },
                             shapes = ListItemDefaults.segmentedShapes(index = 2, count = 3),
                             supportingContent = {
-                                Text(
-                                    text = "${state.periodLengthDefault} 天",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            },
-                            trailingContent = {
-                                Icon(
-                                    imageVector = Icons.Default.ChevronRight,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                                Column {
+                                    Text(
+                                        text = "${state.periodLengthDefault} 天",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Slider(
+                                        value = state.periodLengthDefault.toFloat(),
+                                        onValueChange = { viewModel.updatePeriodLength(it.toInt()) },
+                                        valueRange = state.periodLengthRange.first.toFloat()..state.periodLengthRange.last.toFloat(),
+                                        steps = state.periodLengthRange.last - state.periodLengthRange.first - 1
+                                    )
+                                }
                             },
                             colors = ListItemDefaults.colors(
                                 containerColor = MaterialTheme.colorScheme.surfaceContainer
@@ -203,20 +207,6 @@ fun CycleParametersScreen(
                 }
             }
         }
-    }
-
-    if (showCycleDialog && uiState is SettingsUiState.Success) {
-        val state = uiState as SettingsUiState.Success
-        CycleParametersDialog(
-            cycleLength = state.cycleLengthDefault,
-            periodLength = state.periodLengthDefault,
-            cycleLengthRange = state.cycleLengthRange,
-            periodLengthRange = state.periodLengthRange,
-            onDismiss = { viewModel.hideCycleDialog() },
-            onConfirm = { cycleLength, periodLength ->
-                viewModel.updateCycleParameters(cycleLength, periodLength)
-            }
-        )
     }
 }
 

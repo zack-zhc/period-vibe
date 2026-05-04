@@ -473,6 +473,26 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun updateCycleLength(cycleLength: Int) {
+        viewModelScope.launch {
+            val currentSettings = settingsRepository.getSettingsSync()
+            currentSettings?.let {
+                val updatedSettings = it.copy(cycleLengthDefault = cycleLength)
+                settingsRepository.updateSettings(updatedSettings)
+            }
+        }
+    }
+
+    fun updatePeriodLength(periodLength: Int) {
+        viewModelScope.launch {
+            val currentSettings = settingsRepository.getSettingsSync()
+            currentSettings?.let {
+                val updatedSettings = it.copy(periodLengthDefault = periodLength)
+                settingsRepository.updateSettings(updatedSettings)
+            }
+        }
+    }
+
     fun toggleAutoCalculateCycle(enabled: Boolean) {
         viewModelScope.launch {
             val currentSettings = settingsRepository.getSettingsSync()
