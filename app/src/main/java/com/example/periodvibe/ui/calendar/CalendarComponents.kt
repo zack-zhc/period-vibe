@@ -6,7 +6,10 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -72,70 +75,61 @@ fun CalendarMonthHeader(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        IconButton(
-            onClick = onPreviousMonth,
-            modifier = Modifier.size(48.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.ChevronLeft,
-                contentDescription = "上个月",
-                tint = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.size(28.dp)
-            )
-        }
-
+        // 左边：月份标题（支持双击跳转到今天）
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(2.dp)
+            modifier = Modifier
+                .combinedClickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = {},
+                    onDoubleClick = onTodayClick
+                )
         ) {
             Text(
-                text = yearMonth.month.getDisplayName(TextStyle.FULL, Locale.CHINA),
+                text = yearMonth.month.getDisplayName(TextStyle.FULL, Locale.getDefault()),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
-            Text(
-                text = "${yearMonth.year}年",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
         }
 
+        // 右边：箭头按钮
         Row(
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            IconButton(
-                onClick = onTodayClick,
-                modifier = Modifier.size(48.dp)
+            // 左箭头
+            Surface(
+                modifier = Modifier.size(48.dp),
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.surfaceContainer,
+                tonalElevation = 0.dp
             ) {
-                Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    tonalElevation = 0.dp
-                ) {
-                    Box(
-                        modifier = Modifier.size(40.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.CalendarToday,
-                            contentDescription = "今天",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
+                IconButton(onClick = onPreviousMonth) {
+                    Icon(
+                        imageVector = Icons.Rounded.ChevronLeft,
+                        contentDescription = "上个月",
+                        tint = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.size(28.dp)
+                    )
                 }
             }
-            IconButton(
-                onClick = onNextMonth,
-                modifier = Modifier.size(48.dp)
+
+            // 右箭头
+            Surface(
+                modifier = Modifier.size(48.dp),
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.surfaceContainer,
+                tonalElevation = 0.dp
             ) {
-                Icon(
-                    imageVector = Icons.Rounded.ChevronRight,
-                    contentDescription = "下个月",
-                    tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.size(28.dp)
-                )
+                IconButton(onClick = onNextMonth) {
+                    Icon(
+                        imageVector = Icons.Rounded.ChevronRight,
+                        contentDescription = "下个月",
+                        tint = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
             }
         }
     }
@@ -151,44 +145,28 @@ fun CalendarGrid(
     onDateClick: (java.time.LocalDate) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Surface(
+    Column(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(32.dp),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 0.dp
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
-                            MaterialTheme.colorScheme.surface
-                        )
-                    )
-                )
-                .padding(20.dp)
-        ) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                WeekdayHeader()
-                Spacer(modifier = Modifier.height(16.dp))
-                CalendarDaysGrid(
-                    days = days,
-                    selectedDate = selectedDate,
-                    onDateClick = onDateClick
-                )
-            }
-        }
+        WeekdayHeader()
+        Spacer(modifier = Modifier.height(16.dp))
+        CalendarDaysGrid(
+            days = days,
+            selectedDate = selectedDate,
+            onDateClick = onDateClick
+        )
     }
 }
 
 @Composable
 private fun WeekdayHeader() {
-    val weekdays = listOf("日", "一", "二", "三", "四", "五", "六")
+    val isChinese = Locale.getDefault().language == Locale.CHINESE.language
+    val weekdays = if (isChinese) {
+        listOf("日", "一", "二", "三", "四", "五", "六")
+    } else {
+        listOf("S", "M", "T", "W", "T", "F", "S")
+    }
 
     Row(
         modifier = Modifier.fillMaxWidth()
@@ -214,7 +192,7 @@ private fun CalendarDaysGrid(
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         val rows = days.chunked(7)
 
@@ -291,19 +269,19 @@ private fun DayContent(
             .aspectRatio(1f)
             .padding(2.dp)
             .scale(scale)
-            .clip(cellStyle.shape)
-            .background(backgroundColor)
             .then(
-                if (cellColors.border != Color.Transparent) {
-                    Modifier.border(
-                        width = if (day.isToday) 2.dp else 0.dp,
-                        color = cellColors.border,
-                        shape = cellStyle.shape
+                if (cellColors.hasShadow) {
+                    Modifier.shadow(
+                        elevation = 4.dp,
+                        shape = CircleShape,
+                        clip = false
                     )
                 } else {
                     Modifier
                 }
             )
+            .clip(cellStyle.shape)
+            .background(backgroundColor)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
@@ -346,15 +324,15 @@ private fun getCellStyle(day: CalendarDay.Data): CellStyle {
         day.dayType == CalendarDayType.PERIOD || day.isPredictedPeriod -> {
             // 经期：使用更大的圆点标记
             CellStyle(
-                shape = RoundedCornerShape(16.dp),
+                shape = CircleShape,
                 dotSize = 8.dp,
                 dotShape = CircleShape
             )
         }
         day.dayType == CalendarDayType.OVULATION || day.isPredictedOvulation -> {
-            // 排卵期：使用菱形/方形标记
+            // 排卵期：使用圆角方形标记
             CellStyle(
-                shape = RoundedCornerShape(16.dp),
+                shape = CircleShape,
                 dotSize = 7.dp,
                 dotShape = RoundedCornerShape(2.dp)
             )
@@ -362,14 +340,14 @@ private fun getCellStyle(day: CalendarDay.Data): CellStyle {
         day.dayType == CalendarDayType.FERTILE || day.isPredictedFertile -> {
             // 易孕期：使用小的圆点
             CellStyle(
-                shape = RoundedCornerShape(16.dp),
+                shape = CircleShape,
                 dotSize = 5.dp,
                 dotShape = CircleShape
             )
         }
         else -> {
             CellStyle(
-                shape = RoundedCornerShape(16.dp),
+                shape = CircleShape,
                 dotSize = 5.dp,
                 dotShape = CircleShape
             )
@@ -382,7 +360,8 @@ private data class CellColors(
     val text: Color,
     val border: Color,
     val showDot: Boolean,
-    val dotColor: Color
+    val dotColor: Color,
+    val hasShadow: Boolean = false
 )
 
 @Composable
@@ -395,9 +374,7 @@ private fun getCellColors(
     val onPrimary = MaterialTheme.colorScheme.onPrimary
     val primaryContainer = MaterialTheme.colorScheme.primaryContainer
     val onPrimaryContainer = MaterialTheme.colorScheme.onPrimaryContainer
-    val surface = MaterialTheme.colorScheme.surface
     val onSurface = MaterialTheme.colorScheme.onSurface
-    val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
 
     val periodColor = if (isDark) CalendarPeriodDark else CalendarPeriodLight
     val ovulationColor = if (isDark) CalendarOvulationDark else CalendarOvulationLight
@@ -405,91 +382,102 @@ private fun getCellColors(
 
     return when {
         isSelected -> {
-            val hasRecord = day.record != null
-            val dotColor = when {
-                day.dayType == CalendarDayType.PERIOD -> periodColor
-                day.dayType == CalendarDayType.OVULATION -> ovulationColor
-                day.dayType == CalendarDayType.FERTILE -> fertileColor
-                else -> primary
-            }
+            // 选中状态：primary 背景，onPrimary 文字，有阴影
             CellColors(
-                container = primaryContainer,
-                text = onPrimaryContainer,
-                border = if (day.isToday) primary else Color.Transparent,
-                showDot = hasRecord || day.isPredictedPeriod || day.isPredictedOvulation || day.isPredictedFertile,
-                dotColor = dotColor
-            )
-        }
-        day.dayType == CalendarDayType.PERIOD -> {
-            CellColors(
-                container = periodColor.copy(alpha = 0.15f),
-                text = periodColor,
-                border = if (day.isToday) primary else Color.Transparent,
-                showDot = true,
-                dotColor = periodColor
-            )
-        }
-        day.dayType == CalendarDayType.OVULATION -> {
-            CellColors(
-                container = ovulationColor.copy(alpha = 0.15f),
-                text = ovulationColor,
-                border = if (day.isToday) primary else Color.Transparent,
-                showDot = true,
-                dotColor = ovulationColor
-            )
-        }
-        day.dayType == CalendarDayType.FERTILE -> {
-            CellColors(
-                container = fertileColor.copy(alpha = 0.12f),
-                text = fertileColor,
-                border = if (day.isToday) primary else Color.Transparent,
-                showDot = true,
-                dotColor = fertileColor
-            )
-        }
-        day.isPredictedPeriod -> {
-            CellColors(
-                container = periodColor.copy(alpha = 0.08f),
-                text = onSurface,
-                border = if (day.isToday) primary else Color.Transparent,
-                showDot = true,
-                dotColor = periodColor.copy(alpha = 0.5f)
-            )
-        }
-        day.isPredictedOvulation -> {
-            CellColors(
-                container = ovulationColor.copy(alpha = 0.08f),
-                text = onSurface,
-                border = if (day.isToday) primary else Color.Transparent,
-                showDot = true,
-                dotColor = ovulationColor.copy(alpha = 0.5f)
-            )
-        }
-        day.isPredictedFertile -> {
-            CellColors(
-                container = fertileColor.copy(alpha = 0.06f),
-                text = onSurface,
-                border = if (day.isToday) primary else Color.Transparent,
-                showDot = true,
-                dotColor = fertileColor.copy(alpha = 0.5f)
+                container = primary,
+                text = onPrimary,
+                border = Color.Transparent,
+                showDot = false,
+                dotColor = Color.Transparent,
+                hasShadow = true
             )
         }
         day.isToday -> {
+            // 今天：primary 背景，onPrimary 文字，有阴影
             CellColors(
-                container = surface,
-                text = primary,
-                border = primary,
-                showDot = day.record != null,
-                dotColor = primary
+                container = primary,
+                text = onPrimary,
+                border = Color.Transparent,
+                showDot = false,
+                dotColor = Color.Transparent,
+                hasShadow = true
+            )
+        }
+        day.dayType == CalendarDayType.PERIOD -> {
+            // 经期：primaryContainer 背景，底部小圆点
+            CellColors(
+                container = primaryContainer,
+                text = onPrimaryContainer,
+                border = Color.Transparent,
+                showDot = true,
+                dotColor = primary,
+                hasShadow = false
+            )
+        }
+        day.isPredictedPeriod -> {
+            // 预测经期：primaryContainer 浅色背景，底部半透明小圆点
+            CellColors(
+                container = primaryContainer.copy(alpha = 0.5f),
+                text = onPrimaryContainer.copy(alpha = 0.7f),
+                border = Color.Transparent,
+                showDot = true,
+                dotColor = primary.copy(alpha = 0.5f),
+                hasShadow = false
+            )
+        }
+        day.dayType == CalendarDayType.OVULATION -> {
+            // 排卵期：ovulationColor 浅色背景，底部小圆点
+            CellColors(
+                container = ovulationColor.copy(alpha = 0.15f),
+                text = ovulationColor,
+                border = Color.Transparent,
+                showDot = true,
+                dotColor = ovulationColor,
+                hasShadow = false
+            )
+        }
+        day.isPredictedOvulation -> {
+            // 预测排卵期：ovulationColor 浅色背景，底部半透明小圆点
+            CellColors(
+                container = ovulationColor.copy(alpha = 0.08f),
+                text = onSurface,
+                border = Color.Transparent,
+                showDot = true,
+                dotColor = ovulationColor.copy(alpha = 0.5f),
+                hasShadow = false
+            )
+        }
+        day.dayType == CalendarDayType.FERTILE -> {
+            // 易孕期：fertileColor 浅色背景，底部小圆点
+            CellColors(
+                container = fertileColor.copy(alpha = 0.12f),
+                text = fertileColor,
+                border = Color.Transparent,
+                showDot = true,
+                dotColor = fertileColor,
+                hasShadow = false
+            )
+        }
+        day.isPredictedFertile -> {
+            // 预测易孕期：fertileColor 浅色背景，底部半透明小圆点
+            CellColors(
+                container = fertileColor.copy(alpha = 0.06f),
+                text = onSurface,
+                border = Color.Transparent,
+                showDot = true,
+                dotColor = fertileColor.copy(alpha = 0.5f),
+                hasShadow = false
             )
         }
         else -> {
+            // 其他：透明背景
             CellColors(
                 container = Color.Transparent,
                 text = onSurface,
                 border = Color.Transparent,
-                showDot = day.record != null,
-                dotColor = onSurfaceVariant
+                showDot = false,
+                dotColor = Color.Transparent,
+                hasShadow = false
             )
         }
     }
