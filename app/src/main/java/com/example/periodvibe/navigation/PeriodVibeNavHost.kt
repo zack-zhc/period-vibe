@@ -145,6 +145,12 @@ fun PeriodVibeNavHost(
         }
     }
 
+    val darkTheme = when (themeMode) {
+        Settings.ThemeMode.LIGHT -> false
+        Settings.ThemeMode.DARK -> true
+        Settings.ThemeMode.SYSTEM -> androidx.compose.foundation.isSystemInDarkTheme()
+    }
+
     // 处理初始导航
     LaunchedEffect(showOnboarding, appLockEnabled) {
         if (showOnboarding != null) {
@@ -242,6 +248,7 @@ fun PeriodVibeNavHost(
                     onHistoryClick = { navigateToDetail(Screen.History) },
                     onSettingsClick = { navigateToTopLevel(Screen.Settings) },
                     showRecordSheetOnStart = showRecordSheetOnHome,
+                    darkTheme = darkTheme,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding)

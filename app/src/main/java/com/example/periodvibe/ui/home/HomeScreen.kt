@@ -108,6 +108,7 @@ fun HomeScreen(
     onHistoryClick: () -> Unit,
     onSettingsClick: () -> Unit,
     showRecordSheetOnStart: Boolean = false,
+    darkTheme: Boolean = androidx.compose.foundation.isSystemInDarkTheme(),
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
@@ -147,7 +148,7 @@ fun HomeScreen(
                 LoadingState()
             }
             is HomeUiState.NoData -> {
-                NoDataState()
+                NoDataState(darkTheme = darkTheme)
             }
             is HomeUiState.Success -> {
                 HomeContent(
@@ -633,7 +634,7 @@ private fun LoadingState() {
 }
 
 @Composable
-private fun NoDataState() {
+private fun NoDataState(darkTheme: Boolean) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -702,7 +703,9 @@ private fun NoDataState() {
                         contentAlignment = Alignment.Center
                     ) {
                         androidx.compose.foundation.Image(
-                            painter = painterResource(id = R.drawable.welcome_image),
+                            painter = painterResource(
+                                id = if (darkTheme) R.drawable.welcome_image_dark else R.drawable.welcome_image
+                            ),
                             contentDescription = null,
                             modifier = Modifier.fillMaxSize(),
                             contentScale = androidx.compose.ui.layout.ContentScale.Crop
