@@ -4,6 +4,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -36,6 +37,8 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -54,7 +57,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.periodvibe.ui.settings.components.AboutDialog
 import com.example.periodvibe.ui.settings.components.ClearDataConfirmationDialog
 import com.example.periodvibe.ui.settings.components.CycleParametersDialog
-import com.example.periodvibe.ui.settings.components.DaysBeforeDialog
 import com.example.periodvibe.ui.settings.components.DisableAppLockConfirmationDialog
 import com.example.periodvibe.ui.settings.components.ExportFormatDialog
 import com.example.periodvibe.ui.settings.components.ExportResultDialog
@@ -108,13 +110,6 @@ fun CycleParametersScreen(
                         } else {
                             ListItemDefaults.segmentedShapes(index = 0, count = 1)
                         },
-                        leadingContent = {
-                            Icon(
-                                imageVector = Icons.Default.CalendarMonth,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        },
                         supportingContent = {
                             Text(
                                 text = if (state.autoCalculateCycle) "根据历史数据自动计算" else "使用手动设置的值",
@@ -145,13 +140,6 @@ fun CycleParametersScreen(
                         SegmentedListItem(
                             onClick = { viewModel.showCycleDialog() },
                             shapes = ListItemDefaults.segmentedShapes(index = 1, count = 3),
-                            leadingContent = {
-                                Icon(
-                                    imageVector = Icons.Default.CalendarMonth,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            },
                             supportingContent = {
                                 Text(
                                     text = "${state.cycleLengthDefault} 天",
@@ -181,13 +169,6 @@ fun CycleParametersScreen(
                         SegmentedListItem(
                             onClick = { viewModel.showCycleDialog() },
                             shapes = ListItemDefaults.segmentedShapes(index = 2, count = 3),
-                            leadingContent = {
-                                Icon(
-                                    imageVector = Icons.Default.CalendarMonth,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            },
                             supportingContent = {
                                 Text(
                                     text = "${state.periodLengthDefault} 天",
@@ -248,8 +229,8 @@ fun RemindersScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val showDaysBeforeDialog by viewModel.showDaysBeforeDialog.collectAsState()
     val showTimeDialog by viewModel.showTimeDialog.collectAsState()
+    var expanded by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -276,21 +257,16 @@ fun RemindersScreen(
         ) {
             if (uiState is SettingsUiState.Success) {
                 val state = uiState as SettingsUiState.Success
-                val items = mutableListOf<@Composable () -> Unit>()
-                items.add {
+
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)
+                ) {
                     SegmentedListItem(
                         onClick = { viewModel.toggleNotificationEnabled(!state.notificationEnabled) },
                         shapes = if (state.notificationEnabled) {
                             ListItemDefaults.segmentedShapes(index = 0, count = 3)
                         } else {
                             ListItemDefaults.segmentedShapes(index = 0, count = 1)
-                        },
-                        leadingContent = {
-                            Icon(
-                                imageVector = Icons.Default.Notifications,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
                         },
                         supportingContent = {
                             Text(
@@ -315,33 +291,45 @@ fun RemindersScreen(
                             color = MaterialTheme.colorScheme.onSurface
                         )
                     }
-                }
 
-                if (state.notificationEnabled) {
-                    items.add {
+                    if (state.notificationEnabled) {
                         SegmentedListItem(
-                            onClick = { viewModel.showDaysBeforeDialog() },
+                            onClick = { expanded = true },
                             shapes = ListItemDefaults.segmentedShapes(index = 1, count = 3),
-                            leadingContent = {
-                                Icon(
-                                    imageVector = Icons.Default.Notifications,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            },
-                            supportingContent = {
-                                Text(
-                                    text = "${state.notificationDaysBefore} 天",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            },
                             trailingContent = {
-                                Icon(
-                                    imageVector = Icons.Default.ChevronRight,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                                Box {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Text(
+                                            text = "${state.notificationDaysBefore} 天",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        Icon(
+                                            imageVector = Icons.Default.ChevronRight,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+
+                                    DropdownMenu(
+                                        expanded = expanded,
+                                        onDismissRequest = { expanded = false },
+                                        shape = MaterialTheme.shapes.extraLarge
+                                    ) {
+                                        (1..7).forEach { days ->
+                                            DropdownMenuItem(
+                                                text = { Text("$days 天") },
+                                                onClick = {
+                                                    viewModel.updateNotificationDaysBefore(days)
+                                                    expanded = false
+                                                }
+                                            )
+                                        }
+                                    }
+                                }
                             },
                             colors = ListItemDefaults.colors(
                                 containerColor = MaterialTheme.colorScheme.surfaceContainer
@@ -353,18 +341,10 @@ fun RemindersScreen(
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                         }
-                    }
-                    items.add {
+
                         SegmentedListItem(
                             onClick = { viewModel.showTimeDialog() },
                             shapes = ListItemDefaults.segmentedShapes(index = 2, count = 3),
-                            leadingContent = {
-                                Icon(
-                                    imageVector = Icons.Default.Notifications,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            },
                             supportingContent = {
                                 Text(
                                     text = "${state.notificationTime.hour.toString().padStart(2, '0')}:${state.notificationTime.minute.toString().padStart(2, '0')}",
@@ -391,23 +371,8 @@ fun RemindersScreen(
                         }
                     }
                 }
-
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)
-                ) {
-                    items.forEach { it() }
-                }
             }
         }
-    }
-
-    if (showDaysBeforeDialog && uiState is SettingsUiState.Success) {
-        val state = uiState as SettingsUiState.Success
-        DaysBeforeDialog(
-            initialDaysBefore = state.notificationDaysBefore,
-            onDismiss = { viewModel.hideDaysBeforeDialog() },
-            onConfirm = { daysBefore -> viewModel.updateNotificationDaysBefore(daysBefore) }
-        )
     }
 
     if (showTimeDialog && uiState is SettingsUiState.Success) {
@@ -536,12 +501,6 @@ fun PrivacyScreen(
                             }
                         },
                         shapes = ListItemDefaults.segmentedShapes(index = 0, count = 2),
-                        leadingContent = {
-                            Icon(
-                                imageVector = Icons.Default.Lock,
-                                contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        },
                         supportingContent = {
                             Text(
                                 text = "使用指纹或密码保护应用",
@@ -575,12 +534,6 @@ fun PrivacyScreen(
                     SegmentedListItem(
                         onClick = { viewModel.togglePrivacyMode(!state.privacyModeEnabled) },
                         shapes = ListItemDefaults.segmentedShapes(index = 1, count = 2),
-                        leadingContent = {
-                            Icon(
-                                imageVector = Icons.Default.Lock,
-                                contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        },
                         supportingContent = {
                             Text(
                                 text = "隐藏通知内容",
@@ -689,13 +642,6 @@ fun DataManagementScreen(
                 SegmentedListItem(
                     onClick = { viewModel.showExportFormatDialog() },
                     shapes = ListItemDefaults.segmentedShapes(index = 0, count = 3),
-                    leadingContent = {
-                        Icon(
-                            imageVector = Icons.Default.Folder,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    },
                     supportingContent = {
                         Text(
                             text = "选择格式",
@@ -724,13 +670,6 @@ fun DataManagementScreen(
                 SegmentedListItem(
                     onClick = { importFileLauncher.launch(arrayOf("*/*")) },
                     shapes = ListItemDefaults.segmentedShapes(index = 1, count = 3),
-                    leadingContent = {
-                        Icon(
-                            imageVector = Icons.Default.Folder,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    },
                     supportingContent = {
                         Text(
                             text = "从备份恢复",
@@ -759,13 +698,6 @@ fun DataManagementScreen(
                 SegmentedListItem(
                     onClick = { viewModel.showClearDataConfirmationDialog() },
                     shapes = ListItemDefaults.segmentedShapes(index = 2, count = 3),
-                    leadingContent = {
-                        Icon(
-                            imageVector = Icons.Default.Folder,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    },
                     supportingContent = {
                         Text(
                             text = "删除所有记录",
@@ -889,13 +821,6 @@ fun AboutScreen(
                 SegmentedListItem(
                     onClick = { showDialog = true },
                     shapes = ListItemDefaults.segmentedShapes(index = 0, count = 2),
-                    leadingContent = {
-                        Icon(
-                            imageVector = Icons.Default.Folder,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    },
                     trailingContent = {
                         Icon(
                             imageVector = Icons.Default.ChevronRight,
@@ -938,13 +863,6 @@ fun AboutScreen(
                         }
                     },
                     shapes = ListItemDefaults.segmentedShapes(index = 1, count = 2),
-                    leadingContent = {
-                        Icon(
-                            imageVector = Icons.Default.Folder,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    },
                     supportingContent = {
                         Text(
                             text = "v1.0.0",
