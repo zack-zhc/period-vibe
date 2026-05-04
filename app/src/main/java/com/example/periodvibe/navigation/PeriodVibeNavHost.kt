@@ -316,7 +316,7 @@ fun PeriodVibeNavHost(
             Scaffold(
                 modifier = Modifier.fillMaxSize(),
                 topBar = {
-                    androidx.compose.material3.LargeTopAppBar(
+                    androidx.compose.material3.MediumTopAppBar(
                         title = { Text("设置") },
                         scrollBehavior = scrollBehavior
                     )
