@@ -1,8 +1,11 @@
 package com.example.periodvibe
 
+import android.Manifest
+import android.os.Build
 import android.os.Bundle
-import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -19,14 +22,44 @@ import com.example.periodvibe.domain.model.Settings
 import com.example.periodvibe.navigation.PeriodVibeNavHost
 import com.example.periodvibe.ui.theme.PeriodVibeTheme
 import com.example.periodvibe.ui.viewmodel.MainViewModel
+import com.example.periodvibe.utils.NotificationScheduler
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : FragmentActivity() {
 
+    @Inject
+    lateinit var notificationScheduler: NotificationScheduler
+
+    private val activityScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { _ ->
+        // 无论用户是否同意，我们都继续安排通知（如果有权限的话）
+        activityScope.launch {
+            notificationScheduler.rescheduleNotificationIfNeeded()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        // 请求通知权限 (Android 13+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            // 旧版本 Android 不需要请求通知权限，直接安排通知
+            activityScope.launch {
+                notificationScheduler.rescheduleNotificationIfNeeded()
+            }
+        }
 
         setContent {
             val mainViewModel: MainViewModel = hiltViewModel()

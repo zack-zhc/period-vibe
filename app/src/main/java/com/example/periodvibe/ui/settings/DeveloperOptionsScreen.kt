@@ -34,7 +34,7 @@ fun DeveloperOptionsScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "这里是开发者选项页面，目前还没有内容。",
+            text = "测试和调试应用功能。",
             style = MaterialTheme.typography.bodyMedium
         )
 
@@ -53,7 +53,25 @@ fun DeveloperOptionsScreen(
             onClick = { viewModel.sendTestNotification() },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("测试通知")
+            Text("测试立即通知")
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Button(
+            onClick = { viewModel.sendTestDelayedNotification(10) },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("测试10秒后通知")
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Button(
+            onClick = { viewModel.rescheduleNotification() },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("重新安排周期通知")
         }
     }
 }

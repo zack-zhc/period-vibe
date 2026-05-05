@@ -15,6 +15,7 @@ import com.example.periodvibe.data.repository.SettingsRepository
 import com.example.periodvibe.domain.model.Cycle
 import com.example.periodvibe.domain.model.DailyRecord
 import com.example.periodvibe.utils.AlarmScheduler
+import com.example.periodvibe.utils.NotificationScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,7 +33,8 @@ class SettingsViewModel @Inject constructor(
     private val cycleRepository: CycleRepository,
     private val securityRepository: SecurityRepository,
     private val dataExportImportService: DataExportImportService,
-    private val csvExportImportService: CsvExportImportService
+    private val csvExportImportService: CsvExportImportService,
+    private val notificationScheduler: NotificationScheduler
 ) : ViewModel() {
 
     private val alarmScheduler = AlarmScheduler(context)
@@ -434,15 +436,7 @@ class SettingsViewModel @Inject constructor(
 
                 // 重新安排通知（失败不影响导入结果）
                 try {
-                    val settings = settingsRepository.getSettingsSync()
-                    if (settings != null && settings.notificationEnabled) {
-                        val latestCycle = cycleRepository.getLatestCycle()
-                        if (latestCycle != null) {
-                            scheduleNotification(settings)
-                        } else {
-                            alarmScheduler.cancel()
-                        }
-                    }
+                    notificationScheduler.rescheduleNotificationIfNeeded()
                 } catch (e: Exception) {
                     // 忽略通知安排错误，不影响导入成功
                     e.printStackTrace()
@@ -513,11 +507,7 @@ class SettingsViewModel @Inject constructor(
             currentSettings?.let {
                 val updatedSettings = it.updateNotificationSettings(enabled, daysBefore, time)
                 settingsRepository.updateSettings(updatedSettings)
-                if (updatedSettings.notificationEnabled) {
-                    scheduleNotification(updatedSettings)
-                } else {
-                    alarmScheduler.cancel()
-                }
+                notificationScheduler.rescheduleNotificationIfNeeded()
             }
             hideNotificationDialog()
         }
@@ -555,9 +545,7 @@ class SettingsViewModel @Inject constructor(
             currentSettings?.let {
                 val updatedSettings = it.copy(privacyModeEnabled = enabled)
                 settingsRepository.updateSettings(updatedSettings)
-                if (updatedSettings.notificationEnabled) {
-                    scheduleNotification(updatedSettings)
-                }
+                notificationScheduler.rescheduleNotificationIfNeeded()
             }
         }
     }
@@ -568,11 +556,7 @@ class SettingsViewModel @Inject constructor(
             currentSettings?.let {
                 val updatedSettings = it.copy(notificationEnabled = enabled)
                 settingsRepository.updateSettings(updatedSettings)
-                if (updatedSettings.notificationEnabled) {
-                    scheduleNotification(updatedSettings)
-                } else {
-                    alarmScheduler.cancel()
-                }
+                notificationScheduler.rescheduleNotificationIfNeeded()
             }
         }
     }
@@ -583,9 +567,7 @@ class SettingsViewModel @Inject constructor(
             currentSettings?.let {
                 val updatedSettings = it.copy(notificationDaysBefore = daysBefore)
                 settingsRepository.updateSettings(updatedSettings)
-                if (updatedSettings.notificationEnabled) {
-                    scheduleNotification(updatedSettings)
-                }
+                notificationScheduler.rescheduleNotificationIfNeeded()
             }
             hideDaysBeforeDialog()
         }
@@ -597,38 +579,9 @@ class SettingsViewModel @Inject constructor(
             currentSettings?.let {
                 val updatedSettings = it.copy(notificationTime = time)
                 settingsRepository.updateSettings(updatedSettings)
-                if (updatedSettings.notificationEnabled) {
-                    scheduleNotification(updatedSettings)
-                }
+                notificationScheduler.rescheduleNotificationIfNeeded()
             }
             hideTimeDialog()
-        }
-    }
-
-    private suspend fun scheduleNotification(settings: com.example.periodvibe.domain.model.Settings) {
-        try {
-            val latestCycle = cycleRepository.getLatestCycle()
-            if (latestCycle != null) {
-                val cycleLength = latestCycle.cycleLength ?: settings.cycleLengthDefault
-                val nextPeriodDate = latestCycle.startDate.plusDays(cycleLength.toLong())
-                val notificationDateTime = LocalDateTime.of(
-                    nextPeriodDate.minusDays(settings.notificationDaysBefore.toLong()),
-                    settings.notificationTime
-                )
-                val message = if (settings.privacyModeEnabled) {
-                    "You have a new notification."
-                } else {
-                    "Your period is expected to start in ${settings.notificationDaysBefore} days!"
-                }
-                alarmScheduler.schedule(
-                    notificationDateTime,
-                    "Period Reminder",
-                    message
-                )
-            }
-        } catch (e: Exception) {
-            // 忽略闹钟设置错误，不影响其他功能
-            e.printStackTrace()
         }
     }
 

@@ -15,6 +15,9 @@ class AlarmScheduler(private val context: Context) {
     @SuppressLint("ScheduleExactAlarm")
     fun schedule(dateTime: LocalDateTime, title: String, message: String) {
         try {
+            // 先取消之前的闹钟
+            cancel()
+
             val intent = Intent(context, NotificationReceiver::class.java).apply {
                 putExtra("title", title)
                 putExtra("message", message)
@@ -32,7 +35,8 @@ class AlarmScheduler(private val context: Context) {
             if (triggerAtMillis > System.currentTimeMillis()) {
                 // 检查是否有精确闹钟权限
                 if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.S ||
-                    alarmManager.canScheduleExactAlarms()) {
+                    alarmManager.canScheduleExactAlarms()
+                ) {
                     alarmManager.setExactAndAllowWhileIdle(
                         AlarmManager.RTC_WAKEUP,
                         triggerAtMillis,
@@ -54,14 +58,59 @@ class AlarmScheduler(private val context: Context) {
     }
 
     fun cancel() {
-        val intent = Intent(context, NotificationReceiver::class.java)
-        val pendingIntent = PendingIntent.getBroadcast(
-            context,
-            REQUEST_CODE,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        alarmManager.cancel(pendingIntent)
+        try {
+            val intent = Intent(context, NotificationReceiver::class.java)
+            val pendingIntent = PendingIntent.getBroadcast(
+                context,
+                REQUEST_CODE,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            alarmManager.cancel(pendingIntent)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    fun scheduleInSeconds(seconds: Long, title: String, message: String) {
+        try {
+            // 先取消之前的闹钟
+            cancel()
+
+            val intent = Intent(context, NotificationReceiver::class.java).apply {
+                putExtra("title", title)
+                putExtra("message", message)
+            }
+
+            val pendingIntent = PendingIntent.getBroadcast(
+                context,
+                REQUEST_CODE,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+
+            val triggerAtMillis = System.currentTimeMillis() + (seconds * 1000)
+
+            // 检查是否有精确闹钟权限
+            if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.S ||
+                alarmManager.canScheduleExactAlarms()
+            ) {
+                alarmManager.setExactAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    triggerAtMillis,
+                    pendingIntent
+                )
+            } else {
+                // 没有权限时使用不精确的闹钟
+                alarmManager.setAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    triggerAtMillis,
+                    pendingIntent
+                )
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     companion object {

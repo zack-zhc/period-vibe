@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.periodvibe.data.repository.CycleRepository
 import com.example.periodvibe.domain.usecase.GetHomeDataUseCase
+import com.example.periodvibe.utils.NotificationScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,7 +25,8 @@ class HomeViewModel @Inject constructor(
     private val getHomeDataUseCase: GetHomeDataUseCase,
     private val cycleRepository: CycleRepository,
     private val saveRecordUseCase: com.example.periodvibe.domain.usecase.SaveRecordUseCase,
-    private val endCycleUseCase: com.example.periodvibe.domain.usecase.EndCycleUseCase
+    private val endCycleUseCase: com.example.periodvibe.domain.usecase.EndCycleUseCase,
+    private val notificationScheduler: NotificationScheduler
 ) : ViewModel() {
 
     private val _homeData = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
@@ -118,6 +120,7 @@ class HomeViewModel @Inject constructor(
                 .onSuccess {
                     hideRecordSheet()
                     refresh()
+                    notificationScheduler.rescheduleNotificationIfNeeded()
                 }
                 .onFailure { e ->
                     e.printStackTrace()
@@ -166,6 +169,7 @@ class HomeViewModel @Inject constructor(
             .onSuccess {
                 hideNewCycleSheet()
                 refresh()
+                notificationScheduler.rescheduleNotificationIfNeeded()
             }
             .onFailure { e ->
                 e.printStackTrace()
@@ -186,6 +190,7 @@ class HomeViewModel @Inject constructor(
                 .onSuccess {
                     hideEndCycleMenu()
                     refresh()
+                    notificationScheduler.rescheduleNotificationIfNeeded()
                 }
                 .onFailure { e ->
                     e.printStackTrace()
