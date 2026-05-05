@@ -555,7 +555,7 @@ private fun CycleCard(
 
                 Column(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
                         text = cycleWithRecords.dateRangeWithoutYear,
@@ -563,18 +563,29 @@ private fun CycleCard(
                         color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.Bold
                     )
-                    Text(
-                        text = buildString {
-                            append(cycleWithRecords.periodDaysCount)
-                            append("天")
-                            if (flowDisplayText.isNotEmpty()) {
-                                append(" • ")
-                                append(flowDisplayText)
-                            }
-                        },
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                        ) {
+                            Text(
+                                text = "${cycleWithRecords.periodDaysCount}天",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
+                        if (flowDisplayText.isNotEmpty()) {
+                            Text(
+                                text = flowDisplayText,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 }
 
                 Column(
