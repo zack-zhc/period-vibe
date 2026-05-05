@@ -540,8 +540,9 @@ private fun EmptyState(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
+            Spacer(modifier = Modifier.height(8.dp))
             Surface(
-                shape = RoundedCornerShape(20.dp),
+                shape = RoundedCornerShape(32.dp),
                 color = MaterialTheme.colorScheme.surfaceContainer,
                 border = androidx.compose.foundation.BorderStroke(
                     1.dp,
