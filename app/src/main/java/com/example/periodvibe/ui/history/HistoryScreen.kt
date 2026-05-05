@@ -238,10 +238,13 @@ private fun HistoryContent(
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
-        modifier = modifier.padding(horizontal = 16.dp),
+        modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(16.dp),
         contentPadding = PaddingValues(vertical = 16.dp)
     ) {
+        item {
+            HistoryHeader()
+        }
         item {
             val avgCycleLength = remember(cycles) {
                 val validCycles = cycles.mapNotNull { it.cycleLengthDays }
@@ -250,7 +253,8 @@ private fun HistoryContent(
             StatsCards(
                 totalCycles = cycles.size,
                 avgCycleLength = avgCycleLength,
-                isDark = isDark
+                isDark = isDark,
+                modifier = Modifier.padding(horizontal = 16.dp)
             )
         }
 
@@ -264,7 +268,8 @@ private fun HistoryContent(
                 onClick = { onCycleClick(cycleWithRecords.cycle.id) },
                 onLongClick = { onCycleLongClick(cycleWithRecords.cycle.id) },
                 onRecordEditClick = onRecordEditClick,
-                isDark = isDark
+                isDark = isDark,
+                modifier = Modifier.padding(horizontal = 16.dp)
             )
         }
     }
@@ -523,10 +528,16 @@ private fun EmptyState(
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier.padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        modifier = modifier
     ) {
+        HistoryHeader()
+        Column(
+            modifier = Modifier
+                .padding(32.dp)
+                .fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
         Surface(
             shape = CircleShape,
             color = MaterialTheme.colorScheme.primaryContainer,
@@ -568,6 +579,28 @@ private fun EmptyState(
         Button(onClick = onNavigateHomeToRecord) {
             Text("去记录")
         }
+        }
+    }
+}
+
+@Composable
+private fun HistoryHeader(
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.padding(horizontal = 16.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = "你的旅程",
+            style = MaterialTheme.typography.headlineLarge,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Text(
+            text = "追踪你的周期，发现规律和洞察",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
