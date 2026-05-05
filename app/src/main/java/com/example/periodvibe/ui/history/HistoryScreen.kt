@@ -277,8 +277,7 @@ private fun HistoryContent(
                     onClick = { onCycleClick(cycleWithRecords.cycle.id) },
                     onLongClick = { onCycleLongClick(cycleWithRecords.cycle.id) },
                     onRecordEditClick = onRecordEditClick,
-                    isDark = isDark,
-                    modifier = Modifier.padding(horizontal = 16.dp)
+                    isDark = isDark
                 )
             }
         }
@@ -502,6 +501,7 @@ private fun CycleCard(
     Surface(
         modifier = modifier
             .fillMaxWidth()
+            .padding(horizontal = 16.dp)
             .then(
                 if (!isEditMode) {
                     Modifier.combinedClickable(
