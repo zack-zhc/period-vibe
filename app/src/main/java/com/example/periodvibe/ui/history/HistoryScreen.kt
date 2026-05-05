@@ -22,16 +22,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.History
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -84,13 +82,10 @@ fun HistoryScreen(
 ) {
     val historyData by viewModel.historyData.collectAsState()
     val selectedCycleId by viewModel.selectedCycleId.collectAsState()
-    val showDeleteDialog by viewModel.showDeleteDialog.collectAsState()
     val showEditDialog by viewModel.showEditDialog.collectAsState()
     val isEditMode by viewModel.isEditMode.collectAsState()
     val selectedCycles by viewModel.selectedCycles.collectAsState()
     val isDark = MaterialTheme.colorScheme.background == Color(0xFF1F1A1B)
-
-    val cycleToDelete = remember { mutableStateOf<Long?>(null) }
 
     // 检查是否有数据
     val hasData = when (val state = historyData) {
@@ -158,10 +153,6 @@ fun HistoryScreen(
                                     }
                                 }
                             },
-                            onDeleteClick = { cycleId ->
-                                cycleToDelete.value = cycleId
-                                viewModel.showDeleteDialog(cycleId)
-                            },
                             onRecordEditClick = { record ->
                                 viewModel.showEditDialog(record)
                             },
@@ -177,19 +168,6 @@ fun HistoryScreen(
                 }
             }
         }
-    }
-
-    if (showDeleteDialog != null && cycleToDelete.value != null) {
-        DeleteConfirmDialog(
-            onConfirm = {
-                cycleToDelete.value?.let { viewModel.deleteCycle(it) }
-                cycleToDelete.value = null
-            },
-            onDismiss = {
-                viewModel.hideDeleteDialog()
-                cycleToDelete.value = null
-            }
-        )
     }
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -233,7 +211,6 @@ private fun HistoryContent(
     isEditMode: Boolean,
     selectedCycles: Set<Long>,
     onCycleClick: (Long) -> Unit,
-    onDeleteClick: (Long) -> Unit,
     onRecordEditClick: (DailyRecord) -> Unit,
     isDark: Boolean,
     modifier: Modifier = Modifier
@@ -244,17 +221,25 @@ private fun HistoryContent(
         contentPadding = PaddingValues(vertical = 16.dp)
     ) {
         item {
-            TimelineHeader(totalCycles = cycles.size, isDark = isDark)
+            val avgCycleLength = remember(cycles) {
+                val validCycles = cycles.mapNotNull { it.cycleLengthDays }
+                if (validCycles.isNotEmpty()) validCycles.average().toInt() else null
+            }
+            StatsCards(
+                totalCycles = cycles.size,
+                avgCycleLength = avgCycleLength,
+                isDark = isDark
+            )
         }
 
-        items(cycles, key = { it.cycle.id }) { cycleWithRecords ->
+        itemsIndexed(cycles, key = { _, it -> it.cycle.id }) { index, cycleWithRecords ->
             TimelineCycleCard(
                 cycleWithRecords = cycleWithRecords,
                 isExpanded = selectedCycleId == cycleWithRecords.cycle.id,
                 isEditMode = isEditMode,
                 isSelected = selectedCycles.contains(cycleWithRecords.cycle.id),
+                isLatest = index == 0,
                 onClick = { onCycleClick(cycleWithRecords.cycle.id) },
-                onDeleteClick = { onDeleteClick(cycleWithRecords.cycle.id) },
                 onRecordEditClick = onRecordEditClick,
                 isDark = isDark
             )
@@ -263,61 +248,68 @@ private fun HistoryContent(
 }
 
 @Composable
-private fun TimelineHeader(
+private fun StatsCards(
     totalCycles: Int,
+    avgCycleLength: Int?,
     isDark: Boolean,
     modifier: Modifier = Modifier
 ) {
     val periodColor = if (isDark) CalendarPeriodDark else CalendarPeriodLight
-    val scale by animateFloatAsState(
-        targetValue = 1f,
-        animationSpec = tween(durationMillis = 500),
-        label = "header_scale"
-    )
 
-    Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .scale(scale),
-        shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-        tonalElevation = 0.dp
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        // 总周期数卡片
+        Surface(
+            modifier = Modifier.weight(1f),
+            shape = RoundedCornerShape(12.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            tonalElevation = 0.dp
         ) {
-            Surface(
-                shape = CircleShape,
-                color = periodColor.copy(alpha = 0.15f)
+            Column(
+                modifier = Modifier.padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                Box(
-                    modifier = Modifier.size(48.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.History,
-                        contentDescription = null,
-                        tint = periodColor,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-            }
-
-            Column {
                 Text(
-                    text = "已记录",
+                    text = "总周期数",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "$totalCycles 个周期",
-                    style = MaterialTheme.typography.headlineSmall,
+                    text = "$totalCycles",
+                    style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = periodColor
+                )
+            }
+        }
+
+        // 平均周期卡片
+        Surface(
+            modifier = Modifier.weight(1f),
+            shape = RoundedCornerShape(12.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            tonalElevation = 0.dp
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = "平均周期",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = if (avgCycleLength != null) "$avgCycleLength 天" else "-- 天",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = periodColor
                 )
             }
         }
@@ -330,8 +322,8 @@ private fun TimelineCycleCard(
     isExpanded: Boolean,
     isEditMode: Boolean,
     isSelected: Boolean,
+    isLatest: Boolean,
     onClick: () -> Unit,
-    onDeleteClick: () -> Unit,
     onRecordEditClick: (DailyRecord) -> Unit,
     isDark: Boolean,
     modifier: Modifier = Modifier
@@ -352,7 +344,11 @@ private fun TimelineCycleCard(
         ) {
             Surface(
                 shape = CircleShape,
-                color = if (isSelected) periodColor else periodColor.copy(alpha = 0.5f),
+                color = when {
+                    isSelected -> periodColor
+                    isLatest -> periodColor
+                    else -> periodColor.copy(alpha = 0.5f)
+                },
                 modifier = Modifier.size(12.dp)
             ) {}
             Spacer(modifier = Modifier.weight(1f))
@@ -362,11 +358,12 @@ private fun TimelineCycleCard(
             modifier = Modifier
                 .weight(1f)
                 .clickable(onClick = onClick),
-            shape = RoundedCornerShape(20.dp),
+            shape = RoundedCornerShape(12.dp),
             color = when {
                 isSelected -> periodColor.copy(alpha = 0.1f)
                 isExpanded -> periodColor.copy(alpha = 0.05f)
-                else -> MaterialTheme.colorScheme.surface
+                isLatest -> MaterialTheme.colorScheme.surfaceContainerHigh
+                else -> MaterialTheme.colorScheme.surfaceContainerLow
             },
             tonalElevation = cardElevation
         ) {
@@ -396,45 +393,40 @@ private fun TimelineCycleCard(
                                 )
                             }
                         }
+                        Spacer(modifier = Modifier.width(8.dp))
                     }
 
                     Text(
                         text = cycleWithRecords.startDateFormatted,
-                        style = MaterialTheme.typography.titleLarge,
+                        style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.weight(1f)
                     )
 
-                    if (!isEditMode) {
-                        IconButton(
-                            onClick = onDeleteClick,
-                            modifier = Modifier.size(36.dp)
-                        ) {
-                            Surface(
-                                shape = CircleShape,
-                                color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
-                            ) {
-                                Box(
-                                    modifier = Modifier.size(32.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Rounded.Delete,
-                                        contentDescription = "删除",
-                                        tint = MaterialTheme.colorScheme.error,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                            }
-                        }
+                    // 周期天数标签
+                    Surface(
+                        shape = RoundedCornerShape(50),
+                        color = if (isLatest) periodColor.copy(alpha = 0.2f) else MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
+                    ) {
+                        Text(
+                            text = "${cycleWithRecords.periodDaysCount} 天",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (isLatest) periodColor else MaterialTheme.colorScheme.onSecondaryContainer,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                        )
                     }
                 }
 
-                MiniTimeline(
-                    cycleLengthDays = cycleWithRecords.cycleLengthDays,
-                    periodDays = cycleWithRecords.periodDaysCount,
-                    isDark = isDark
+                // 周期长度描述
+                Text(
+                    text = if (cycleWithRecords.cycleLengthDays != null) {
+                        "周期长度: ${cycleWithRecords.cycleLengthDays} 天"
+                    } else {
+                        "周期长度: -- 天"
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 AnimatedVisibility(
@@ -530,44 +522,5 @@ private fun EmptyState(
             Text("去记录")
         }
     }
-}
-
-@Composable
-private fun DeleteConfirmDialog(
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                text = "确认删除",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
-            )
-        },
-        text = {
-            Text(
-                text = "确定要删除这个周期记录吗？此操作无法撤销。",
-                style = MaterialTheme.typography.bodyLarge
-            )
-        },
-        confirmButton = {
-            Button(
-                onClick = onConfirm,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.error,
-                    contentColor = MaterialTheme.colorScheme.onError
-                )
-            ) {
-                Text("删除")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("取消")
-            }
-        }
-    )
 }
 
