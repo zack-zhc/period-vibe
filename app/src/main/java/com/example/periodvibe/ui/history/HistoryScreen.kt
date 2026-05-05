@@ -239,16 +239,20 @@ private fun HistoryContent(
     isDark: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val cyclesByYear = remember(cycles) {
+        cycles.groupBy { it.year }.toSortedMap(reverseOrder())
+    }
+    val avgCycleLength = remember(cycles) {
+        val validCycles = cycles.mapNotNull { it.cycleLengthDays }
+        if (validCycles.isNotEmpty()) validCycles.average().toInt() else null
+    }
+
     LazyColumn(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(16.dp),
         contentPadding = PaddingValues(vertical = 16.dp)
     ) {
         item {
-            val avgCycleLength = remember(cycles) {
-                val validCycles = cycles.mapNotNull { it.cycleLengthDays }
-                if (validCycles.isNotEmpty()) validCycles.average().toInt() else null
-            }
             StatsCards(
                 totalCycles = cycles.size,
                 avgCycleLength = avgCycleLength,
@@ -257,19 +261,26 @@ private fun HistoryContent(
             )
         }
 
-        itemsIndexed(cycles, key = { _, it -> it.cycle.id }) { index, cycleWithRecords ->
-            TimelineCycleCard(
-                cycleWithRecords = cycleWithRecords,
-                isExpanded = selectedCycleId == cycleWithRecords.cycle.id,
-                isEditMode = isEditMode,
-                isSelected = selectedCycles.contains(cycleWithRecords.cycle.id),
-                isLatest = index == 0,
-                onClick = { onCycleClick(cycleWithRecords.cycle.id) },
-                onLongClick = { onCycleLongClick(cycleWithRecords.cycle.id) },
-                onRecordEditClick = onRecordEditClick,
-                isDark = isDark,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
+        cyclesByYear.forEach { (year, yearCycles) ->
+            item {
+                YearGroupHeader(
+                    year = year,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+            }
+            items(yearCycles, key = { it.cycle.id }) { cycleWithRecords ->
+                CycleCard(
+                    cycleWithRecords = cycleWithRecords,
+                    isExpanded = selectedCycleId == cycleWithRecords.cycle.id,
+                    isEditMode = isEditMode,
+                    isSelected = selectedCycles.contains(cycleWithRecords.cycle.id),
+                    onClick = { onCycleClick(cycleWithRecords.cycle.id) },
+                    onLongClick = { onCycleLongClick(cycleWithRecords.cycle.id) },
+                    onRecordEditClick = onRecordEditClick,
+                    isDark = isDark,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+            }
         }
     }
 }
