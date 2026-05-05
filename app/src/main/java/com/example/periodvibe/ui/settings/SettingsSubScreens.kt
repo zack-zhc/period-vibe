@@ -19,10 +19,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.PhoneAndroid
+import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -42,6 +46,8 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.ToggleButton
+import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -53,6 +59,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.periodvibe.ui.settings.components.AboutDialog
@@ -377,7 +386,7 @@ fun RemindersScreen(
 }
 
 // ==================== 主题设置页面 ====================
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ThemeScreen(
     onNavigateBack: () -> Unit,
@@ -417,23 +426,28 @@ fun ThemeScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 12.dp)
                 )
-                SingleChoiceSegmentedButtonRow(
-                    modifier = Modifier.fillMaxWidth()
+                val themeOptions = listOf(
+                    Triple(com.example.periodvibe.domain.model.Settings.ThemeMode.LIGHT, "浅色", Icons.Default.LightMode),
+                    Triple(com.example.periodvibe.domain.model.Settings.ThemeMode.DARK, "深色", Icons.Default.DarkMode),
+                    Triple(com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM, "系统", Icons.Default.PhoneAndroid)
+                )
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
                 ) {
-                    val themeOptions = listOf(
-                        com.example.periodvibe.domain.model.Settings.ThemeMode.LIGHT to "浅色",
-                        com.example.periodvibe.domain.model.Settings.ThemeMode.DARK to "深色",
-                        com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM to "系统"
-                    )
-                    themeOptions.forEachIndexed { index, (mode, label) ->
-                        SegmentedButton(
-                            selected = state.themeMode == mode,
-                            onClick = { viewModel.updateThemeMode(mode) },
-                            shape = SegmentedButtonDefaults.itemShape(
-                                index = index,
-                                count = themeOptions.size
-                            )
+                    themeOptions.forEachIndexed { index, (mode, label, icon) ->
+                        ToggleButton(
+                            checked = state.themeMode == mode,
+                            onCheckedChange = { viewModel.updateThemeMode(mode) },
+                            modifier = Modifier.weight(1f).semantics { role = Role.RadioButton },
+                            shapes = when (index) {
+                                0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
+                                themeOptions.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
+                                else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
+                            },
                         ) {
+                            Icon(icon, contentDescription = null)
+                            Spacer(Modifier.size(ToggleButtonDefaults.IconSpacing))
                             Text(label)
                         }
                     }
