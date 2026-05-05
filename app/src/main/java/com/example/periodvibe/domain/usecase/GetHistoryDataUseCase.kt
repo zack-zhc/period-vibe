@@ -116,6 +116,26 @@ data class CycleWithRecords(
             DateTimeFormatter.ofPattern("yyyy年MM月dd日", Locale.CHINA)
         )
 
+    val dateRangeFormatted: String
+        get() {
+            val monthDayFormatter = DateTimeFormatter.ofPattern("M月d日", Locale.CHINA)
+            val yearFormatter = DateTimeFormatter.ofPattern("yyyy年", Locale.CHINA)
+
+            val periodRecords = records.filter { it.isPeriod }.sortedBy { it.date }
+            val startDisplay = periodRecords.firstOrNull()?.date ?: cycle.startDate
+            val endDisplay = if (cycle.endDate != null) {
+                cycle.endDate
+            } else {
+                periodRecords.lastOrNull()?.date ?: cycle.startDate
+            }
+
+            val startMonthDay = startDisplay.format(monthDayFormatter)
+            val endMonthDay = endDisplay.format(monthDayFormatter)
+            val year = startDisplay.format(yearFormatter)
+
+            return "${startMonthDay}-${endMonthDay}，${year}"
+        }
+
     val durationDays: Int
         get() = cycle.duration
 

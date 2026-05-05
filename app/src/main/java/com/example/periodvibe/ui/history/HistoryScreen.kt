@@ -26,6 +26,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.History
@@ -103,9 +104,9 @@ fun HistoryScreen(
                     }
                 },
                 actions = {
-                    if (hasData && !isEditMode) {
+                    if (hasData) {
                         TextButton(onClick = { viewModel.toggleEditMode() }) {
-                            Text("编辑")
+                            Text(if (isEditMode) "取消" else "编辑")
                         }
                     }
                 }
@@ -119,8 +120,7 @@ fun HistoryScreen(
             ) {
                 EditModeBottomBar(
                     selectedCount = selectedCycles.size,
-                    onDeleteClick = { viewModel.deleteSelectedCycles() },
-                    onCancelClick = { viewModel.toggleEditMode() }
+                    onDeleteClick = { viewModel.deleteSelectedCycles() }
                 )
             }
         },
@@ -263,7 +263,7 @@ private fun StatsCards(
         // 总周期数卡片
         Surface(
             modifier = Modifier.weight(1f),
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(20.dp),
             color = MaterialTheme.colorScheme.surfaceContainerHigh,
             tonalElevation = 0.dp
         ) {
@@ -290,7 +290,7 @@ private fun StatsCards(
         // 平均周期卡片
         Surface(
             modifier = Modifier.weight(1f),
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(20.dp),
             color = MaterialTheme.colorScheme.surfaceContainerHigh,
             tonalElevation = 0.dp
         ) {
@@ -349,8 +349,21 @@ private fun TimelineCycleCard(
                     isLatest -> periodColor
                     else -> periodColor.copy(alpha = 0.5f)
                 },
-                modifier = Modifier.size(12.dp)
-            ) {}
+                modifier = Modifier.size(32.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.WaterDrop,
+                        contentDescription = null,
+                        tint = if (isSelected || isLatest) {
+                            MaterialTheme.colorScheme.onPrimary
+                        } else {
+                            MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f)
+                        },
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
             Spacer(modifier = Modifier.weight(1f))
         }
 
@@ -358,7 +371,7 @@ private fun TimelineCycleCard(
             modifier = Modifier
                 .weight(1f)
                 .clickable(onClick = onClick),
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(20.dp),
             color = when {
                 isSelected -> periodColor.copy(alpha = 0.1f)
                 isExpanded -> periodColor.copy(alpha = 0.05f)
@@ -397,7 +410,7 @@ private fun TimelineCycleCard(
                     }
 
                     Text(
-                        text = cycleWithRecords.startDateFormatted,
+                        text = cycleWithRecords.dateRangeFormatted,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,

@@ -13,7 +13,6 @@ import androidx.compose.ui.unit.dp
 fun EditModeBottomBar(
     selectedCount: Int,
     onDeleteClick: () -> Unit,
-    onCancelClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -36,28 +35,20 @@ fun EditModeBottomBar(
                 color = MaterialTheme.colorScheme.onSurface
             )
 
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            Button(
+                onClick = onDeleteClick,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error,
+                    contentColor = MaterialTheme.colorScheme.onError
+                )
             ) {
-                TextButton(onClick = onCancelClick) {
-                    Text("取消")
-                }
-
-                Button(
-                    onClick = onDeleteClick,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error,
-                        contentColor = MaterialTheme.colorScheme.onError
-                    )
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Delete,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("删除")
-                }
+                Icon(
+                    imageVector = Icons.Rounded.Delete,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("删除")
             }
         }
     }
