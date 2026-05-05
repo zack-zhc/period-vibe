@@ -604,6 +604,31 @@ private fun HistoryHeader(
 }
 
 @Composable
+private fun YearGroupHeader(
+    year: Int,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Text(
+            text = year.toString(),
+            style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(
+            modifier = Modifier
+                .height(1.dp)
+                .weight(1f)
+                .background(MaterialTheme.colorScheme.outlineVariant)
+        )
+    }
+}
+
+@Composable
 private fun DeleteConfirmDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
