@@ -38,6 +38,9 @@ class MainActivity : FragmentActivity() {
 
     private val activityScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    // 会话级别的解锁状态 - 最简单直接的方案
+    private val isUnlockedState = mutableStateOf(false)
+
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { _ ->
@@ -82,6 +85,8 @@ class MainActivity : FragmentActivity() {
             PeriodVibeTheme(darkTheme = darkTheme) {
                 PeriodVibeNavHost(
                     mainViewModel = mainViewModel,
+                    isUnlocked = isUnlockedState.value,
+                    onUnlock = { isUnlockedState.value = true },
                     modifier = Modifier.fillMaxSize()
                 )
             }

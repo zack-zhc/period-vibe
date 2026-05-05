@@ -121,11 +121,14 @@ fun rememberPeriodVibeNavState(
 @Composable
 fun PeriodVibeNavHost(
     mainViewModel: MainViewModel,
+    isUnlocked: Boolean,
+    onUnlock: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val showOnboarding by mainViewModel.showOnboarding.collectAsStateWithLifecycle()
+    val settings by mainViewModel.getSettings().collectAsStateWithLifecycle(initialValue = null)
+
     var themeMode by remember { mutableStateOf(Settings.ThemeMode.SYSTEM) }
-    var appLockEnabled by remember { mutableStateOf(false) }
 
     var showPinSetupSheet by remember { mutableStateOf(false) }
     var showLegendDialog by remember { mutableStateOf(false) }
@@ -136,31 +139,44 @@ fun PeriodVibeNavHost(
     // 使用多返回栈导航状态
     val navState = rememberPeriodVibeNavState()
 
-    LaunchedEffect(Unit) {
-        mainViewModel.getSettings().collect { settings ->
-            settings?.let {
-                themeMode = it.themeMode
-                appLockEnabled = it.appLockEnabled
-            }
-        }
-    }
-
     val darkTheme = when (themeMode) {
         Settings.ThemeMode.LIGHT -> false
         Settings.ThemeMode.DARK -> true
         Settings.ThemeMode.SYSTEM -> androidx.compose.foundation.isSystemInDarkTheme()
     }
 
-    // 处理初始导航
-    LaunchedEffect(showOnboarding, appLockEnabled) {
+    // 更新主题模式
+    LaunchedEffect(settings) {
+        settings?.let {
+            themeMode = it.themeMode
+        }
+    }
+
+    // 关键安全修复：导航逻辑 - 修复竞态条件
+    LaunchedEffect(showOnboarding, settings, isUnlocked) {
+        val currentSettings = settings ?: return@LaunchedEffect
         if (showOnboarding != null) {
-            val destination = when {
-                appLockEnabled -> Screen.AppLock
+            val currentDest = navState.backStack.firstOrNull()
+
+            // 计算是否需要 AppLock
+            val needsAppLock = currentSettings.appLockEnabled && !isUnlocked
+
+            // 计算目标页面
+            val targetDestination = when {
+                needsAppLock -> Screen.AppLock
                 showOnboarding == true -> Screen.Onboarding
                 else -> Screen.Home
             }
-            if (navState.backStack.firstOrNull() == Screen.Loading) {
-                navState.replaceWith(destination)
+
+            when {
+                currentDest == Screen.Loading -> {
+                    // 初始加载：直接去目标页面
+                    navState.replaceWith(targetDestination)
+                }
+                needsAppLock && currentDest !is Screen.AppLock -> {
+                    // 需要 AppLock 但不在 AppLock 页面：强制去 AppLock
+                    navState.replaceWith(Screen.AppLock)
+                }
             }
         }
     }
@@ -195,6 +211,7 @@ fun PeriodVibeNavHost(
         entry<Screen.AppLock> {
             AppLockScreen(
                 onUnlock = {
+                    onUnlock()
                     val destination = if (showOnboarding == true) {
                         Screen.Onboarding
                     } else {
