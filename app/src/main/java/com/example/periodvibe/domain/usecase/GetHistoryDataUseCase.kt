@@ -4,6 +4,7 @@ import com.example.periodvibe.data.repository.CycleRepository
 import com.example.periodvibe.domain.model.Cycle
 import com.example.periodvibe.domain.model.DailyRecord
 import com.example.periodvibe.domain.model.FlowLevel
+import com.example.periodvibe.utils.DateUtils
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import java.time.LocalDate
@@ -28,7 +29,7 @@ class GetHistoryDataUseCase @Inject constructor(
                 // 动态计算周期长度：下一个周期的开始日期 - 当前周期的开始日期
                 val calculatedCycleLength = if (index < sortedCycles.size - 1) {
                     val nextCycle = sortedCycles[index + 1]
-                    Period.between(cycle.startDate, nextCycle.startDate).days
+                    DateUtils.daysBetween(cycle.startDate, nextCycle.startDate)
                 } else {
                     null
                 }

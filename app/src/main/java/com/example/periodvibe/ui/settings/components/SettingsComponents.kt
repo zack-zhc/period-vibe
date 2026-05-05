@@ -63,6 +63,7 @@ import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TimePickerState
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.example.periodvibe.utils.AppUtils
 import java.time.LocalTime
 
 // ======================= 基础组件 =======================
@@ -365,6 +366,8 @@ fun AboutSection(
 ) {
     var clickCount by remember { mutableIntStateOf(0) }
     var firstClickTime by remember { mutableLongStateOf(0L) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val versionName = remember { AppUtils.getVersionName(context) }
 
     SettingsGroup(title = "关于") {
         SettingItem(
@@ -378,7 +381,7 @@ fun AboutSection(
         Spacer(modifier = Modifier.height(4.dp))
         SettingItem(
             label = "版本信息",
-            value = "v1.0.0",
+            value = "v$versionName",
             showChevron = false,
             onClick = {
                 val currentTime = System.currentTimeMillis()
@@ -732,6 +735,9 @@ fun ExportResultDialog(
 fun AboutDialog(
     onDismiss: () -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val versionName = remember { AppUtils.getVersionName(context) }
+
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(
@@ -757,7 +763,7 @@ fun AboutDialog(
                 )
 
                 Text(
-                    text = "版本 1.0.0",
+                    text = "版本 $versionName",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

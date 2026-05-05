@@ -64,6 +64,7 @@ import com.example.periodvibe.ui.settings.components.ExportResultDialog
 import com.example.periodvibe.ui.settings.components.ImportConfirmationDialog
 import com.example.periodvibe.ui.settings.components.ImportResultDialog
 import com.example.periodvibe.ui.settings.components.NotificationTimeDialog
+import com.example.periodvibe.utils.AppUtils
 import java.time.LocalDateTime
 
 // ==================== 周期参数设置页面 ====================
@@ -781,6 +782,8 @@ fun AboutScreen(
     var showDialog by remember { mutableStateOf(false) }
     var clickCount by remember { mutableIntStateOf(0) }
     var firstClickTime by remember { mutableLongStateOf(0L) }
+    val context = LocalContext.current
+    val versionName = remember { AppUtils.getVersionName(context) }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -855,7 +858,7 @@ fun AboutScreen(
                     shapes = ListItemDefaults.segmentedShapes(index = 1, count = 2),
                     supportingContent = {
                         Text(
-                            text = "v1.0.0",
+                            text = "v$versionName",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
