@@ -6,8 +6,10 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,7 +32,9 @@ import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.History
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -83,6 +87,7 @@ fun HistoryScreen(
 ) {
     val historyData by viewModel.historyData.collectAsState()
     val selectedCycleId by viewModel.selectedCycleId.collectAsState()
+    val showDeleteDialog by viewModel.showDeleteDialog.collectAsState()
     val showEditDialog by viewModel.showEditDialog.collectAsState()
     val isEditMode by viewModel.isEditMode.collectAsState()
     val selectedCycles by viewModel.selectedCycles.collectAsState()
@@ -153,6 +158,11 @@ fun HistoryScreen(
                                     }
                                 }
                             },
+                            onCycleLongClick = { cycleId ->
+                                if (!isEditMode) {
+                                    viewModel.showDeleteDialog(cycleId)
+                                }
+                            },
                             onRecordEditClick = { record ->
                                 viewModel.showEditDialog(record)
                             },
@@ -172,6 +182,17 @@ fun HistoryScreen(
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
+
+    if (showDeleteDialog != null) {
+        DeleteConfirmDialog(
+            onConfirm = {
+                viewModel.deleteCycle(showDeleteDialog!!)
+            },
+            onDismiss = {
+                viewModel.hideDeleteDialog()
+            }
+        )
+    }
 
     if (showEditDialog != null) {
         ModalBottomSheet(
@@ -211,6 +232,7 @@ private fun HistoryContent(
     isEditMode: Boolean,
     selectedCycles: Set<Long>,
     onCycleClick: (Long) -> Unit,
+    onCycleLongClick: (Long) -> Unit,
     onRecordEditClick: (DailyRecord) -> Unit,
     isDark: Boolean,
     modifier: Modifier = Modifier
@@ -240,6 +262,7 @@ private fun HistoryContent(
                 isSelected = selectedCycles.contains(cycleWithRecords.cycle.id),
                 isLatest = index == 0,
                 onClick = { onCycleClick(cycleWithRecords.cycle.id) },
+                onLongClick = { onCycleLongClick(cycleWithRecords.cycle.id) },
                 onRecordEditClick = onRecordEditClick,
                 isDark = isDark
             )
@@ -316,6 +339,7 @@ private fun StatsCards(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun TimelineCycleCard(
     cycleWithRecords: CycleWithRecords,
@@ -324,6 +348,7 @@ private fun TimelineCycleCard(
     isSelected: Boolean,
     isLatest: Boolean,
     onClick: () -> Unit,
+    onLongClick: () -> Unit,
     onRecordEditClick: (DailyRecord) -> Unit,
     isDark: Boolean,
     modifier: Modifier = Modifier
@@ -370,7 +395,16 @@ private fun TimelineCycleCard(
         Surface(
             modifier = Modifier
                 .weight(1f)
-                .clickable(onClick = onClick),
+                .then(
+                    if (!isEditMode) {
+                        Modifier.combinedClickable(
+                            onClick = onClick,
+                            onLongClick = onLongClick
+                        )
+                    } else {
+                        Modifier.clickable(onClick = onClick)
+                    }
+                ),
             shape = RoundedCornerShape(20.dp),
             color = when {
                 isSelected -> periodColor.copy(alpha = 0.1f)
@@ -535,5 +569,44 @@ private fun EmptyState(
             Text("去记录")
         }
     }
+}
+
+@Composable
+private fun DeleteConfirmDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "确认删除",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Text(
+                text = "确定要删除这个周期记录吗？此操作无法撤销。",
+                style = MaterialTheme.typography.bodyLarge
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error,
+                    contentColor = MaterialTheme.colorScheme.onError
+                )
+            ) {
+                Text("删除")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        }
+    )
 }
 
