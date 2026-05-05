@@ -549,13 +549,13 @@ private fun CycleCard(
                 Surface(
                     shape = CircleShape,
                     color = iconBgColor,
-                    modifier = Modifier.size(48.dp)
+                    modifier = Modifier.size(40.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.WaterDrop,
                         contentDescription = null,
                         tint = iconContentColor,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                 }
 
