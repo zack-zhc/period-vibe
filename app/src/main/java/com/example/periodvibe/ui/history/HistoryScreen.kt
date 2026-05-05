@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -625,6 +626,166 @@ private fun YearGroupHeader(
                 .weight(1f)
                 .background(MaterialTheme.colorScheme.outlineVariant)
         )
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun CycleCard(
+    cycleWithRecords: CycleWithRecords,
+    isExpanded: Boolean,
+    isEditMode: Boolean,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit,
+    onRecordEditClick: (DailyRecord) -> Unit,
+    isDark: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val periodColor = if (isDark) CalendarPeriodDark else CalendarPeriodLight
+    val (iconBgColor, iconContentColor) = when (cycleWithRecords.averageFlowLevel) {
+        FlowLevel.LIGHT -> MaterialTheme.colorScheme.surfaceVariant to MaterialTheme.colorScheme.onSurfaceVariant
+        FlowLevel.MEDIUM -> MaterialTheme.colorScheme.primaryContainer to MaterialTheme.colorScheme.onPrimaryContainer
+        FlowLevel.HEAVY -> MaterialTheme.colorScheme.primary to MaterialTheme.colorScheme.onPrimary
+        null -> MaterialTheme.colorScheme.surfaceVariant to MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    val flowDisplayText = when (cycleWithRecords.averageFlowLevel) {
+        FlowLevel.LIGHT -> "少量"
+        FlowLevel.MEDIUM -> "中等"
+        FlowLevel.HEAVY -> "大量"
+        null -> ""
+    }
+
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .then(
+                if (!isEditMode) {
+                    Modifier.combinedClickable(
+                        onClick = onClick,
+                        onLongClick = onLongClick
+                    )
+                } else {
+                    Modifier.clickable(onClick = onClick)
+                }
+            ),
+        shape = RoundedCornerShape(16.dp),
+        color = when {
+            isSelected -> periodColor.copy(alpha = 0.1f)
+            else -> MaterialTheme.colorScheme.surfaceContainerLowest
+        },
+        tonalElevation = if (isSelected) 2.dp else 0.dp,
+        shadowElevation = 1.dp,
+        border = if (isSelected) BorderStroke(1.dp, periodColor) else null
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                if (isEditMode) {
+                    Surface(
+                        shape = CircleShape,
+                        color = if (isSelected) periodColor else MaterialTheme.colorScheme.surfaceVariant,
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        if (isSelected) {
+                            Icon(
+                                imageVector = Icons.Rounded.Check,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                }
+
+                Surface(
+                    shape = CircleShape,
+                    color = iconBgColor,
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.WaterDrop,
+                        contentDescription = null,
+                        tint = iconContentColor,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = cycleWithRecords.dateRangeWithoutYear,
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = buildString {
+                            append(cycleWithRecords.periodDaysCount)
+                            append("天")
+                            if (flowDisplayText.isNotEmpty()) {
+                                append(" • ")
+                                append(flowDisplayText)
+                            }
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = if (cycleWithRecords.cycleLengthDays != null) "${cycleWithRecords.cycleLengthDays}天" else "--天",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = "周期长度",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                }
+            }
+
+            AnimatedVisibility(
+                visible = isExpanded && !isEditMode,
+                enter = expandVertically(),
+                exit = shrinkVertically()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .padding(bottom = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "每日记录",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    cycleWithRecords.records.forEach { record ->
+                        DailyRecordRow(
+                            record = record,
+                            onEditClick = { onRecordEditClick(record) },
+                            isDark = isDark
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
