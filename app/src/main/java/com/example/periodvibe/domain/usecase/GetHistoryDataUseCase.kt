@@ -149,9 +149,28 @@ data class CycleWithRecords(
         get() = records
             .mapNotNull { it.flowLevel }
             .takeIf { it.isNotEmpty() }
-            ?.map { it.value }
-            ?.average()
-            ?.let { FlowLevel.fromValue(it.toInt()) }
+            ?.groupingBy { it }
+            ?.eachCount()
+            ?.maxByOrNull { it.value }
+            ?.key
+
+    val year: Int
+        get() = cycle.startDate.year
+
+    val dateRangeWithoutYear: String
+        get() {
+            val monthDayFormatter = DateTimeFormatter.ofPattern("M月d日", Locale.CHINA)
+            val periodRecords = records.filter { it.isPeriod }.sortedBy { it.date }
+            val startDisplay = periodRecords.firstOrNull()?.date ?: cycle.startDate
+            val endDisplay = if (cycle.endDate != null) {
+                cycle.endDate
+            } else {
+                periodRecords.lastOrNull()?.date ?: cycle.startDate
+            }
+            val startMonthDay = startDisplay.format(monthDayFormatter)
+            val endMonthDay = endDisplay.format(monthDayFormatter)
+            return "${startMonthDay} - ${endMonthDay}"
+        }
 }
 
 data class CycleDetails(
