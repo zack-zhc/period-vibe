@@ -486,11 +486,11 @@ private fun CycleCard(
     modifier: Modifier = Modifier
 ) {
     val periodColor = if (isDark) CalendarPeriodDark else CalendarPeriodLight
-    val (iconBgColor, iconContentColor) = when (cycleWithRecords.averageFlowLevel) {
-        FlowLevel.LIGHT -> MaterialTheme.colorScheme.surfaceVariant to MaterialTheme.colorScheme.onSurfaceVariant
-        FlowLevel.MEDIUM -> MaterialTheme.colorScheme.primaryContainer to MaterialTheme.colorScheme.onPrimaryContainer
-        FlowLevel.HEAVY -> MaterialTheme.colorScheme.primary to MaterialTheme.colorScheme.onPrimary
-        null -> MaterialTheme.colorScheme.surfaceVariant to MaterialTheme.colorScheme.onSurfaceVariant
+    val iconColor = when (cycleWithRecords.averageFlowLevel) {
+        FlowLevel.LIGHT -> periodColor.copy(alpha = 0.5f)
+        FlowLevel.MEDIUM -> periodColor.copy(alpha = 0.75f)
+        FlowLevel.HEAVY -> periodColor
+        null -> periodColor.copy(alpha = 0.5f)
     }
     val flowDisplayText = when (cycleWithRecords.averageFlowLevel) {
         FlowLevel.LIGHT -> "少量"
@@ -546,18 +546,12 @@ private fun CycleCard(
                     }
                 }
 
-                Surface(
-                    shape = CircleShape,
-                    color = iconBgColor,
-                    modifier = Modifier.size(48.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.WaterDrop,
-                        contentDescription = null,
-                        tint = iconContentColor,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
+                Icon(
+                    imageVector = Icons.Default.WaterDrop,
+                    contentDescription = null,
+                    tint = iconColor,
+                    modifier = Modifier.size(32.dp)
+                )
 
                 Column(
                     modifier = Modifier.weight(1f),
