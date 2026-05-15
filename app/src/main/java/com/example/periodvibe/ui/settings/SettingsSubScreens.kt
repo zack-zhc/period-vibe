@@ -62,6 +62,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.periodvibe.ui.settings.components.AboutDialog
@@ -73,8 +74,10 @@ import com.example.periodvibe.ui.settings.components.ExportResultDialog
 import com.example.periodvibe.ui.settings.components.ImportConfirmationDialog
 import com.example.periodvibe.ui.settings.components.ImportResultDialog
 import com.example.periodvibe.ui.settings.components.NotificationTimeDialog
+import com.example.periodvibe.ui.theme.PeriodVibeTheme
 import com.example.periodvibe.utils.AppUtils
 import java.time.LocalDateTime
+import java.time.LocalTime
 
 // ==================== 周期参数设置页面 ====================
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -86,6 +89,26 @@ fun CycleParametersScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    CycleParametersContent(
+        uiState = uiState,
+        onNavigateBack = onNavigateBack,
+        onToggleAutoCalculateCycle = { viewModel.toggleAutoCalculateCycle(it) },
+        onUpdateCycleLength = { viewModel.updateCycleLength(it) },
+        onUpdatePeriodLength = { viewModel.updatePeriodLength(it) },
+        modifier = modifier
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun CycleParametersContent(
+    uiState: SettingsUiState,
+    onNavigateBack: () -> Unit,
+    onToggleAutoCalculateCycle: (Boolean) -> Unit,
+    onUpdateCycleLength: (Int) -> Unit,
+    onUpdatePeriodLength: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
@@ -110,11 +133,11 @@ fun CycleParametersScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             if (uiState is SettingsUiState.Success) {
-                val state = uiState as SettingsUiState.Success
+                val state = uiState
                 val items = mutableListOf<@Composable () -> Unit>()
                 items.add {
                     SegmentedListItem(
-                        onClick = { viewModel.toggleAutoCalculateCycle(!state.autoCalculateCycle) },
+                        onClick = { onToggleAutoCalculateCycle(!state.autoCalculateCycle) },
                         shapes = if (!state.autoCalculateCycle) {
                             ListItemDefaults.segmentedShapes(index = 0, count = 3)
                         } else {
@@ -130,7 +153,7 @@ fun CycleParametersScreen(
                         trailingContent = {
                             Switch(
                                 checked = state.autoCalculateCycle,
-                                onCheckedChange = { viewModel.toggleAutoCalculateCycle(it) }
+                                onCheckedChange = { onToggleAutoCalculateCycle(it) }
                             )
                         },
                         colors = ListItemDefaults.colors(
@@ -160,7 +183,7 @@ fun CycleParametersScreen(
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Slider(
                                         value = state.cycleLengthDefault.toFloat(),
-                                        onValueChange = { viewModel.updateCycleLength(it.toInt()) },
+                                        onValueChange = { onUpdateCycleLength(it.toInt()) },
                                         valueRange = state.cycleLengthRange.first.toFloat()..state.cycleLengthRange.last.toFloat(),
                                         steps = state.cycleLengthRange.last - state.cycleLengthRange.first - 1
                                     )
@@ -191,7 +214,7 @@ fun CycleParametersScreen(
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Slider(
                                         value = state.periodLengthDefault.toFloat(),
-                                        onValueChange = { viewModel.updatePeriodLength(it.toInt()) },
+                                        onValueChange = { onUpdatePeriodLength(it.toInt()) },
                                         valueRange = state.periodLengthRange.first.toFloat()..state.periodLengthRange.last.toFloat(),
                                         steps = state.periodLengthRange.last - state.periodLengthRange.first - 1
                                     )
@@ -230,6 +253,33 @@ fun RemindersScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val showTimeDialog by viewModel.showTimeDialog.collectAsState()
+
+    RemindersContent(
+        uiState = uiState,
+        showTimeDialog = showTimeDialog,
+        onNavigateBack = onNavigateBack,
+        onToggleNotificationEnabled = { viewModel.toggleNotificationEnabled(it) },
+        onUpdateNotificationDaysBefore = { viewModel.updateNotificationDaysBefore(it) },
+        onShowTimeDialog = { viewModel.showTimeDialog() },
+        onHideTimeDialog = { viewModel.hideTimeDialog() },
+        onUpdateNotificationTime = { viewModel.updateNotificationTime(it) },
+        modifier = modifier
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun RemindersContent(
+    uiState: SettingsUiState,
+    showTimeDialog: Boolean,
+    onNavigateBack: () -> Unit,
+    onToggleNotificationEnabled: (Boolean) -> Unit,
+    onUpdateNotificationDaysBefore: (Int) -> Unit,
+    onShowTimeDialog: () -> Unit,
+    onHideTimeDialog: () -> Unit,
+    onUpdateNotificationTime: (LocalTime) -> Unit,
+    modifier: Modifier = Modifier
+) {
     var expanded by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -256,13 +306,13 @@ fun RemindersScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             if (uiState is SettingsUiState.Success) {
-                val state = uiState as SettingsUiState.Success
+                val state = uiState
 
                 Column(
                     verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)
                 ) {
                     SegmentedListItem(
-                        onClick = { viewModel.toggleNotificationEnabled(!state.notificationEnabled) },
+                        onClick = { onToggleNotificationEnabled(!state.notificationEnabled) },
                         shapes = if (state.notificationEnabled) {
                             ListItemDefaults.segmentedShapes(index = 0, count = 3)
                         } else {
@@ -278,7 +328,7 @@ fun RemindersScreen(
                         trailingContent = {
                             Switch(
                                 checked = state.notificationEnabled,
-                                onCheckedChange = { viewModel.toggleNotificationEnabled(it) }
+                                onCheckedChange = { onToggleNotificationEnabled(it) }
                             )
                         },
                         colors = ListItemDefaults.colors(
@@ -323,7 +373,7 @@ fun RemindersScreen(
                                             DropdownMenuItem(
                                                 text = { Text("$days 天") },
                                                 onClick = {
-                                                    viewModel.updateNotificationDaysBefore(days)
+                                                    onUpdateNotificationDaysBefore(days)
                                                     expanded = false
                                                 }
                                             )
@@ -343,21 +393,24 @@ fun RemindersScreen(
                         }
 
                         SegmentedListItem(
-                            onClick = { viewModel.showTimeDialog() },
+                            onClick = { onShowTimeDialog() },
                             shapes = ListItemDefaults.segmentedShapes(index = 2, count = 3),
-                            supportingContent = {
-                                Text(
-                                    text = "${state.notificationTime.hour.toString().padStart(2, '0')}:${state.notificationTime.minute.toString().padStart(2, '0')}",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            },
                             trailingContent = {
-                                Icon(
-                                    imageVector = Icons.Default.ChevronRight,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Text(
+                                        text = "${state.notificationTime.hour.toString().padStart(2, '0')}:${state.notificationTime.minute.toString().padStart(2, '0')}",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Icon(
+                                        imageVector = Icons.Default.ChevronRight,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             },
                             colors = ListItemDefaults.colors(
                                 containerColor = MaterialTheme.colorScheme.surfaceContainer
@@ -379,8 +432,8 @@ fun RemindersScreen(
         val state = uiState as SettingsUiState.Success
         NotificationTimeDialog(
             time = state.notificationTime,
-            onDismiss = { viewModel.hideTimeDialog() },
-            onConfirm = { time -> viewModel.updateNotificationTime(time) }
+            onDismiss = { onHideTimeDialog() },
+            onConfirm = { time -> onUpdateNotificationTime(time) }
         )
     }
 }
@@ -395,6 +448,22 @@ fun ThemeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    ThemeContent(
+        uiState = uiState,
+        onNavigateBack = onNavigateBack,
+        onUpdateThemeMode = { viewModel.updateThemeMode(it) },
+        modifier = modifier
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class, androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun ThemeContent(
+    uiState: SettingsUiState,
+    onNavigateBack: () -> Unit,
+    onUpdateThemeMode: (com.example.periodvibe.domain.model.Settings.ThemeMode) -> Unit,
+    modifier: Modifier = Modifier
+) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
@@ -419,7 +488,7 @@ fun ThemeScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             if (uiState is SettingsUiState.Success) {
-                val state = uiState as SettingsUiState.Success
+                val state = uiState
                 Text(
                     text = "选择你的偏好",
                     style = MaterialTheme.typography.bodyMedium,
@@ -438,7 +507,7 @@ fun ThemeScreen(
                     themeOptions.forEachIndexed { index, (mode, label, icon) ->
                         ToggleButton(
                             checked = state.themeMode == mode,
-                            onCheckedChange = { viewModel.updateThemeMode(mode) },
+                            onCheckedChange = { onUpdateThemeMode(mode) },
                             modifier = Modifier.weight(1f).semantics { role = Role.RadioButton },
                             shapes = when (index) {
                                 0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
@@ -469,6 +538,32 @@ fun PrivacyScreen(
     val uiState by viewModel.uiState.collectAsState()
     val showDisableAppLockDialog by viewModel.showDisableAppLockDialog.collectAsState()
 
+    PrivacyContent(
+        uiState = uiState,
+        showDisableAppLockDialog = showDisableAppLockDialog,
+        onNavigateBack = onNavigateBack,
+        onNavigateToPinSetup = onNavigateToPinSetup,
+        onTogglePrivacyMode = { viewModel.togglePrivacyMode(it) },
+        onShowDisableAppLockDialog = { viewModel.showDisableAppLockDialog() },
+        onHideDisableAppLockDialog = { viewModel.hideDisableAppLockDialog() },
+        onToggleAppLock = { viewModel.toggleAppLock(it) },
+        modifier = modifier
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun PrivacyContent(
+    uiState: SettingsUiState,
+    showDisableAppLockDialog: Boolean,
+    onNavigateBack: () -> Unit,
+    onNavigateToPinSetup: () -> Unit,
+    onTogglePrivacyMode: (Boolean) -> Unit,
+    onShowDisableAppLockDialog: () -> Unit,
+    onHideDisableAppLockDialog: () -> Unit,
+    onToggleAppLock: (Boolean) -> Unit,
+    modifier: Modifier = Modifier
+) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
@@ -493,14 +588,14 @@ fun PrivacyScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             if (uiState is SettingsUiState.Success) {
-                val state = uiState as SettingsUiState.Success
+                val state = uiState
                 Column(
                     verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)
                 ) {
                     SegmentedListItem(
                         onClick = {
                             if (state.appLockEnabled) {
-                                viewModel.showDisableAppLockDialog()
+                                onShowDisableAppLockDialog()
                             } else {
                                 onNavigateToPinSetup()
                             }
@@ -520,7 +615,7 @@ fun PrivacyScreen(
                                     if (enabled) {
                                         onNavigateToPinSetup()
                                     } else {
-                                        viewModel.showDisableAppLockDialog()
+                                        onShowDisableAppLockDialog()
                                     }
                                 }
                             )
@@ -537,7 +632,7 @@ fun PrivacyScreen(
                     }
 
                     SegmentedListItem(
-                        onClick = { viewModel.togglePrivacyMode(!state.privacyModeEnabled) },
+                        onClick = { onTogglePrivacyMode(!state.privacyModeEnabled) },
                         shapes = ListItemDefaults.segmentedShapes(index = 1, count = 2),
                         supportingContent = {
                             Text(
@@ -549,7 +644,7 @@ fun PrivacyScreen(
                         trailingContent = {
                             Switch(
                                 checked = state.privacyModeEnabled,
-                                onCheckedChange = { viewModel.togglePrivacyMode(it) }
+                                onCheckedChange = { onTogglePrivacyMode(it) }
                             )
                         },
                         colors = ListItemDefaults.colors(
@@ -569,8 +664,8 @@ fun PrivacyScreen(
 
     if (showDisableAppLockDialog) {
         DisableAppLockConfirmationDialog(
-            onDismiss = { viewModel.hideDisableAppLockDialog() },
-            onConfirm = { viewModel.toggleAppLock(false) }
+            onDismiss = { onHideDisableAppLockDialog() },
+            onConfirm = { onToggleAppLock(false) }
         )
     }
 }
@@ -583,41 +678,18 @@ fun DataManagementScreen(
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
-    val context = LocalContext.current
-    val uiState by viewModel.uiState.collectAsState()
-    val showClearDataConfirmationDialog by viewModel.showClearDataConfirmationDialog.collectAsState()
-    val showImportConfirmationDialog by viewModel.showImportConfirmationDialog.collectAsState()
-    val showImportResultDialog by viewModel.showImportResultDialog.collectAsState()
-    val showExportResultDialog by viewModel.showExportResultDialog.collectAsState()
-    val showExportFormatDialog by viewModel.showExportFormatDialog.collectAsState()
-    val importResult by viewModel.importResult.collectAsState()
-    val exportResult by viewModel.exportResult.collectAsState()
+    DataManagementContent(
+        onNavigateBack = onNavigateBack,
+        modifier = modifier
+    )
+}
 
-    val exportFileLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("*/*")
-    ) { uri ->
-        uri?.let {
-            viewModel.exportData(it)
-        }
-    }
-
-    val importFileLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        uri?.let {
-            val takeFlags = android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
-            context.contentResolver.takePersistableUriPermission(it, takeFlags)
-            viewModel.previewImportData(it)
-        }
-    }
-
-    fun generateExportFileName(): String {
-        val formatter = java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")
-        val timestamp = LocalDateTime.now().format(formatter)
-        val extension = viewModel.getSelectedExportFormat().extension
-        return "period_vibe_backup_$timestamp.$extension"
-    }
-
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun DataManagementContent(
+    onNavigateBack: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
@@ -645,7 +717,7 @@ fun DataManagementScreen(
                 verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)
             ) {
                 SegmentedListItem(
-                    onClick = { viewModel.showExportFormatDialog() },
+                    onClick = { },
                     shapes = ListItemDefaults.segmentedShapes(index = 0, count = 3),
                     supportingContent = {
                         Text(
@@ -673,7 +745,7 @@ fun DataManagementScreen(
                 }
 
                 SegmentedListItem(
-                    onClick = { importFileLauncher.launch(arrayOf("*/*")) },
+                    onClick = { },
                     shapes = ListItemDefaults.segmentedShapes(index = 1, count = 3),
                     supportingContent = {
                         Text(
@@ -701,7 +773,7 @@ fun DataManagementScreen(
                 }
 
                 SegmentedListItem(
-                    onClick = { viewModel.showClearDataConfirmationDialog() },
+                    onClick = { },
                     shapes = ListItemDefaults.segmentedShapes(index = 2, count = 3),
                     supportingContent = {
                         Text(
@@ -730,59 +802,6 @@ fun DataManagementScreen(
             }
         }
     }
-
-    if (showClearDataConfirmationDialog) {
-        ClearDataConfirmationDialog(
-            onDismiss = { viewModel.hideClearDataConfirmationDialog() },
-            onConfirm = { viewModel.clearAllData() }
-        )
-    }
-
-    if (showImportConfirmationDialog) {
-        val (cycleCount, recordCount) = viewModel.getPendingImportDataCount()
-        ImportConfirmationDialog(
-            cycleCount = cycleCount,
-            recordCount = recordCount,
-            onDismiss = { viewModel.hideImportConfirmationDialog() },
-            onConfirm = { viewModel.confirmImportData() }
-        )
-    }
-
-    if (showImportResultDialog && importResult != null) {
-        val result = importResult
-        val (success, message) = when (result) {
-            is com.example.periodvibe.data.exportimport.ImportResult.Success ->
-                Pair(true, "成功导入 ${result.cycles.size} 个周期记录和 ${result.dailyRecords.size} 条日常记录")
-            is com.example.periodvibe.data.exportimport.ImportResult.Failure ->
-                Pair(false, result.errorMessage)
-            else -> Pair(false, "未知错误")
-        }
-        ImportResultDialog(
-            success = success,
-            message = message,
-            onDismiss = { viewModel.hideImportResultDialog() }
-        )
-    }
-
-    val exportResultValue = exportResult
-    if (showExportResultDialog && exportResultValue != null) {
-        val (success, message) = exportResultValue
-        ExportResultDialog(
-            success = success,
-            message = message,
-            onDismiss = { viewModel.hideExportResultDialog() }
-        )
-    }
-
-    if (showExportFormatDialog) {
-        ExportFormatDialog(
-            onDismiss = { viewModel.hideExportFormatDialog() },
-            onFormatSelected = { format ->
-                viewModel.setSelectedExportFormat(format)
-                exportFileLauncher.launch(generateExportFileName())
-            }
-        )
-    }
 }
 
 // ==================== 关于页面 ====================
@@ -793,11 +812,21 @@ fun AboutScreen(
     onNavigateToDeveloperOptions: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    AboutContent(
+        onNavigateBack = onNavigateBack,
+        onNavigateToDeveloperOptions = onNavigateToDeveloperOptions,
+        modifier = modifier
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun AboutContent(
+    onNavigateBack: () -> Unit,
+    onNavigateToDeveloperOptions: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     var showDialog by remember { mutableStateOf(false) }
-    var clickCount by remember { mutableIntStateOf(0) }
-    var firstClickTime by remember { mutableLongStateOf(0L) }
-    val context = LocalContext.current
-    val versionName = remember { AppUtils.getVersionName(context) }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -847,32 +876,11 @@ fun AboutScreen(
                 }
 
                 SegmentedListItem(
-                    onClick = {
-                        val currentTime = System.currentTimeMillis()
-
-                        if (firstClickTime == 0L) {
-                            firstClickTime = currentTime
-                            clickCount = 1
-                        } else {
-                            val elapsedTime = currentTime - firstClickTime
-                            if (elapsedTime > 8000) {
-                                clickCount = 1
-                                firstClickTime = currentTime
-                            } else {
-                                clickCount++
-                            }
-                        }
-
-                        if (clickCount >= 10) {
-                            clickCount = 1
-                            firstClickTime = currentTime
-                            onNavigateToDeveloperOptions()
-                        }
-                    },
+                    onClick = { },
                     shapes = ListItemDefaults.segmentedShapes(index = 1, count = 2),
                     supportingContent = {
                         Text(
-                            text = "v$versionName",
+                            text = "v1.0.0",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -894,6 +902,198 @@ fun AboutScreen(
     if (showDialog) {
         AboutDialog(
             onDismiss = { showDialog = false }
+        )
+    }
+}
+
+// ==================== Previews ====================
+
+@Preview(showBackground = true, name = "提醒设置 - 开启")
+@Composable
+private fun RemindersScreenEnabledPreview() {
+    PeriodVibeTheme {
+        RemindersContent(
+            uiState = SettingsUiState.Success(
+                autoCalculateCycle = true,
+                cycleLengthDefault = 28,
+                periodLengthDefault = 5,
+                cycleLengthRange = 21..35,
+                periodLengthRange = 3..7,
+                notificationEnabled = true,
+                notificationDaysBefore = 2,
+                notificationTime = LocalTime.of(9, 0),
+                themeMode = com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM,
+                appLockEnabled = false,
+                privacyModeEnabled = false,
+                language = "zh"
+            ),
+            showTimeDialog = false,
+            onNavigateBack = { },
+            onToggleNotificationEnabled = { },
+            onUpdateNotificationDaysBefore = { },
+            onShowTimeDialog = { },
+            onHideTimeDialog = { },
+            onUpdateNotificationTime = { }
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "提醒设置 - 关闭")
+@Composable
+private fun RemindersScreenDisabledPreview() {
+    PeriodVibeTheme {
+        RemindersContent(
+            uiState = SettingsUiState.Success(
+                autoCalculateCycle = true,
+                cycleLengthDefault = 28,
+                periodLengthDefault = 5,
+                cycleLengthRange = 21..35,
+                periodLengthRange = 3..7,
+                notificationEnabled = false,
+                notificationDaysBefore = 2,
+                notificationTime = LocalTime.of(9, 0),
+                themeMode = com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM,
+                appLockEnabled = false,
+                privacyModeEnabled = false,
+                language = "zh"
+            ),
+            showTimeDialog = false,
+            onNavigateBack = { },
+            onToggleNotificationEnabled = { },
+            onUpdateNotificationDaysBefore = { },
+            onShowTimeDialog = { },
+            onHideTimeDialog = { },
+            onUpdateNotificationTime = { }
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "周期参数 - 自动")
+@Composable
+private fun CycleParametersScreenAutoPreview() {
+    PeriodVibeTheme {
+        CycleParametersContent(
+            uiState = SettingsUiState.Success(
+                autoCalculateCycle = true,
+                cycleLengthDefault = 28,
+                periodLengthDefault = 5,
+                cycleLengthRange = 21..35,
+                periodLengthRange = 3..7,
+                notificationEnabled = true,
+                notificationDaysBefore = 2,
+                notificationTime = LocalTime.of(9, 0),
+                themeMode = com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM,
+                appLockEnabled = false,
+                privacyModeEnabled = false,
+                language = "zh"
+            ),
+            onNavigateBack = { },
+            onToggleAutoCalculateCycle = { },
+            onUpdateCycleLength = { },
+            onUpdatePeriodLength = { }
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "周期参数 - 手动")
+@Composable
+private fun CycleParametersScreenManualPreview() {
+    PeriodVibeTheme {
+        CycleParametersContent(
+            uiState = SettingsUiState.Success(
+                autoCalculateCycle = false,
+                cycleLengthDefault = 30,
+                periodLengthDefault = 6,
+                cycleLengthRange = 21..35,
+                periodLengthRange = 3..7,
+                notificationEnabled = true,
+                notificationDaysBefore = 2,
+                notificationTime = LocalTime.of(9, 0),
+                themeMode = com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM,
+                appLockEnabled = false,
+                privacyModeEnabled = false,
+                language = "zh"
+            ),
+            onNavigateBack = { },
+            onToggleAutoCalculateCycle = { },
+            onUpdateCycleLength = { },
+            onUpdatePeriodLength = { }
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "主题设置")
+@Composable
+private fun ThemeScreenPreview() {
+    PeriodVibeTheme {
+        ThemeContent(
+            uiState = SettingsUiState.Success(
+                autoCalculateCycle = true,
+                cycleLengthDefault = 28,
+                periodLengthDefault = 5,
+                cycleLengthRange = 21..35,
+                periodLengthRange = 3..7,
+                notificationEnabled = true,
+                notificationDaysBefore = 2,
+                notificationTime = LocalTime.of(9, 0),
+                themeMode = com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM,
+                appLockEnabled = false,
+                privacyModeEnabled = false,
+                language = "zh"
+            ),
+            onNavigateBack = { },
+            onUpdateThemeMode = { }
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "隐私设置")
+@Composable
+private fun PrivacyScreenPreview() {
+    PeriodVibeTheme {
+        PrivacyContent(
+            uiState = SettingsUiState.Success(
+                autoCalculateCycle = true,
+                cycleLengthDefault = 28,
+                periodLengthDefault = 5,
+                cycleLengthRange = 21..35,
+                periodLengthRange = 3..7,
+                notificationEnabled = true,
+                notificationDaysBefore = 2,
+                notificationTime = LocalTime.of(9, 0),
+                themeMode = com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM,
+                appLockEnabled = true,
+                privacyModeEnabled = true,
+                language = "zh"
+            ),
+            showDisableAppLockDialog = false,
+            onNavigateBack = { },
+            onNavigateToPinSetup = { },
+            onTogglePrivacyMode = { },
+            onShowDisableAppLockDialog = { },
+            onHideDisableAppLockDialog = { },
+            onToggleAppLock = { }
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "数据管理")
+@Composable
+private fun DataManagementScreenPreview() {
+    PeriodVibeTheme {
+        DataManagementContent(
+            onNavigateBack = { }
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "关于页面")
+@Composable
+private fun AboutScreenPreview() {
+    PeriodVibeTheme {
+        AboutContent(
+            onNavigateBack = { },
+            onNavigateToDeveloperOptions = { }
         )
     }
 }

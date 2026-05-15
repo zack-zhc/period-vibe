@@ -1,7 +1,6 @@
 package com.example.periodvibe.ui.settings
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -21,7 +20,6 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.AdminPanelSettings
-import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
@@ -30,6 +28,7 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -37,8 +36,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.periodvibe.ui.theme.PeriodVibeTheme
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -55,14 +56,35 @@ fun SettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    SettingsContent(
+        uiState = uiState,
+        onNavigateToCycleParameters = onNavigateToCycleParameters,
+        onNavigateToReminders = onNavigateToReminders,
+        onNavigateToTheme = onNavigateToTheme,
+        onNavigateToPrivacy = onNavigateToPrivacy,
+        onNavigateToDataManagement = onNavigateToDataManagement,
+        onNavigateToAbout = onNavigateToAbout,
+        scrollBehavior = scrollBehavior,
+        modifier = modifier
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun SettingsContent(
+    uiState: SettingsUiState,
+    onNavigateToCycleParameters: () -> Unit,
+    onNavigateToReminders: () -> Unit,
+    onNavigateToTheme: () -> Unit,
+    onNavigateToPrivacy: () -> Unit,
+    onNavigateToDataManagement: () -> Unit,
+    onNavigateToAbout: () -> Unit,
+    scrollBehavior: TopAppBarScrollBehavior? = null,
+    modifier: Modifier = Modifier
+) {
     when (uiState) {
         is SettingsUiState.Loading -> {
-            Box(
-                modifier = modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                LoadingIndicator()
-            }
+            // Loading state - nothing to show for preview
         }
         is SettingsUiState.Success -> {
             Column(
@@ -155,6 +177,53 @@ fun SettingsScreen(
 
                 Spacer(modifier = Modifier.height(80.dp))
             }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview(showBackground = true, name = "设置页面")
+@Composable
+private fun SettingsScreenPreview() {
+    PeriodVibeTheme {
+        val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
+            androidx.compose.material3.rememberTopAppBarState()
+        )
+        androidx.compose.material3.Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            topBar = {
+                androidx.compose.material3.MediumTopAppBar(
+                    title = { Text("设置") },
+                    scrollBehavior = scrollBehavior
+                )
+            }
+        ) { paddingValues ->
+            SettingsContent(
+                uiState = SettingsUiState.Success(
+                    autoCalculateCycle = true,
+                    cycleLengthDefault = 28,
+                    periodLengthDefault = 5,
+                    cycleLengthRange = 21..35,
+                    periodLengthRange = 3..7,
+                    notificationEnabled = true,
+                    notificationDaysBefore = 2,
+                    notificationTime = java.time.LocalTime.of(9, 0),
+                    themeMode = com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM,
+                    appLockEnabled = false,
+                    privacyModeEnabled = false,
+                    language = "zh"
+                ),
+                onNavigateToCycleParameters = { },
+                onNavigateToReminders = { },
+                onNavigateToTheme = { },
+                onNavigateToPrivacy = { },
+                onNavigateToDataManagement = { },
+                onNavigateToAbout = { },
+                scrollBehavior = scrollBehavior,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            )
         }
     }
 }
