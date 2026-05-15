@@ -82,10 +82,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import android.content.Context
 import com.example.periodvibe.R
 import com.example.periodvibe.domain.model.CyclePhase
+import com.example.periodvibe.ui.theme.PeriodVibeTheme
 import com.example.periodvibe.ui.home.EmptyStateCard
 import com.example.periodvibe.ui.home.NextPhaseCard
 import com.example.periodvibe.ui.home.PregnancyChanceCard
@@ -892,3 +894,211 @@ private fun getPhaseData(phase: CyclePhase): PhaseData {
         )
     }
 }
+
+// region Preview
+
+@Preview(showBackground = true, name = "首页 - 月经期")
+@Composable
+private fun HomeScreenPreview_Menstruation() {
+    PeriodVibeTheme {
+        androidx.compose.material3.Scaffold(
+            modifier = Modifier.fillMaxSize()
+        ) { paddingValues ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                HomeContent(
+                    cycleDay = 3,
+                    daysUntilPeriod = 0,
+                    phase = CyclePhase.MENSTRATION,
+                    hasCurrentCycle = true,
+                    cycleLength = 28,
+                    daysUntilNextPhase = 4,
+                    nextPhaseName = "卵泡期",
+                    ovulationDate = null
+                )
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    contentAlignment = Alignment.BottomEnd
+                ) {
+                    RecordFAB(
+                        hasCurrentCycle = true,
+                        onClick = {}
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Preview(showBackground = true, name = "首页 - 排卵期")
+@Composable
+private fun HomeScreenPreview_Ovulation() {
+    PeriodVibeTheme {
+        androidx.compose.material3.Scaffold(
+            modifier = Modifier.fillMaxSize()
+        ) { paddingValues ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                HomeContent(
+                    cycleDay = 14,
+                    daysUntilPeriod = 14,
+                    phase = CyclePhase.OVULATION,
+                    hasCurrentCycle = true,
+                    cycleLength = 28,
+                    daysUntilNextPhase = 2,
+                    nextPhaseName = "黄体期",
+                    ovulationDate = null
+                )
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    contentAlignment = Alignment.BottomEnd
+                ) {
+                    RecordFAB(
+                        hasCurrentCycle = true,
+                        onClick = {}
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Preview(showBackground = true, name = "首页 - 卵泡期")
+@Composable
+private fun HomeScreenPreview_Follicular() {
+    PeriodVibeTheme {
+        androidx.compose.material3.Scaffold(
+            modifier = Modifier.fillMaxSize()
+        ) { paddingValues ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                HomeContent(
+                    cycleDay = 8,
+                    daysUntilPeriod = 20,
+                    phase = CyclePhase.FOLLICULAR,
+                    hasCurrentCycle = true,
+                    cycleLength = 28,
+                    daysUntilNextPhase = 6,
+                    nextPhaseName = "排卵期",
+                    ovulationDate = null
+                )
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    contentAlignment = Alignment.BottomEnd
+                ) {
+                    RecordFAB(
+                        hasCurrentCycle = true,
+                        onClick = {}
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Preview(showBackground = true, name = "首页 - 黄体期")
+@Composable
+private fun HomeScreenPreview_Luteal() {
+    PeriodVibeTheme {
+        androidx.compose.material3.Scaffold(
+            modifier = Modifier.fillMaxSize()
+        ) { paddingValues ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                HomeContent(
+                    cycleDay = 22,
+                    daysUntilPeriod = 6,
+                    phase = CyclePhase.LUTEAL,
+                    hasCurrentCycle = true,
+                    cycleLength = 28,
+                    daysUntilNextPhase = 6,
+                    nextPhaseName = "月经期",
+                    ovulationDate = null
+                )
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    contentAlignment = Alignment.BottomEnd
+                ) {
+                    RecordFAB(
+                        hasCurrentCycle = true,
+                        onClick = {}
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Preview(showBackground = true, name = "首页 - 空状态")
+@Composable
+private fun HomeScreenPreview_NoData() {
+    PeriodVibeTheme {
+        androidx.compose.material3.Scaffold(
+            modifier = Modifier.fillMaxSize()
+        ) { paddingValues ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                NoDataState(darkTheme = false)
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    contentAlignment = Alignment.BottomEnd
+                ) {
+                    RecordFAB(
+                        hasCurrentCycle = false,
+                        onClick = {}
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Preview(showBackground = true, name = "首页 - 加载中")
+@Composable
+private fun HomeScreenPreview_Loading() {
+    PeriodVibeTheme {
+        androidx.compose.material3.Scaffold(
+            modifier = Modifier.fillMaxSize()
+        ) { paddingValues ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                LoadingState()
+            }
+        }
+    }
+}
+
+// endregion

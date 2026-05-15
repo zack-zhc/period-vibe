@@ -45,10 +45,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.periodvibe.domain.model.Cycle
+import com.example.periodvibe.domain.model.CyclePhase
+import com.example.periodvibe.domain.model.DailyRecord
+import com.example.periodvibe.domain.model.FlowLevel
+import com.example.periodvibe.domain.usecase.CalendarDay
+import com.example.periodvibe.domain.usecase.CalendarDayType
 import com.example.periodvibe.ui.home.RecordBottomSheetContent
 import com.example.periodvibe.ui.home.RecordMode
+import com.example.periodvibe.ui.theme.PeriodVibeTheme
 import com.example.periodvibe.ui.theme.CalendarFertileDark
 import com.example.periodvibe.ui.theme.CalendarFertileLight
 import com.example.periodvibe.ui.theme.CalendarOvulationDark
@@ -56,6 +64,7 @@ import com.example.periodvibe.ui.theme.CalendarOvulationLight
 import com.example.periodvibe.ui.theme.CalendarPeriodDark
 import com.example.periodvibe.ui.theme.CalendarPeriodLight
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 import java.time.YearMonth
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -381,3 +390,217 @@ private fun LegendItem(color: Color, label: String, isPredicted: Boolean) {
         )
     }
 }
+
+// region Preview
+
+private data class TestDayData(
+    val dayType: CalendarDayType,
+    val record: DailyRecord?,
+    val phase: CyclePhase,
+    val isPredictedPeriod: Boolean,
+    val isPredictedOvulation: Boolean,
+    val isPredictedFertile: Boolean
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview(showBackground = true, name = "日历页面 - 默认状态")
+@Composable
+private fun CalendarScreenPreview_Default() {
+    PeriodVibeTheme {
+        val testYearMonth = YearMonth.now()
+        val testCalendarDays = generateTestCalendarDays(testYearMonth)
+        val selectedDate = LocalDate.now()
+
+        androidx.compose.material3.Scaffold(
+            modifier = Modifier.fillMaxSize()
+        ) { paddingValues ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                CalendarMonthHeader(
+                    yearMonth = testYearMonth,
+                    onPreviousMonth = {},
+                    onNextMonth = {},
+                    onTodayClick = {}
+                )
+
+                CalendarGrid(
+                    yearMonth = testYearMonth,
+                    days = testCalendarDays,
+                    selectedDate = selectedDate,
+                    onDateClick = {}
+                )
+
+                CalendarLegend()
+
+                val selectedDay = testCalendarDays
+                    .filterIsInstance<CalendarDay.Data>()
+                    .find { it.date == selectedDate }
+                if (selectedDay != null) {
+                    SmartActionCard(
+                        day = selectedDay,
+                        activeCycle = generateTestCycle(),
+                        onRecordClick = {},
+                        onEndCycleClick = {},
+                        onNewCycleClick = {},
+                        onEditClick = {}
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview(showBackground = true, name = "日历页面 - 空选择状态")
+@Composable
+private fun CalendarScreenPreview_EmptySelection() {
+    PeriodVibeTheme {
+        val testYearMonth = YearMonth.now()
+        val testCalendarDays = generateTestCalendarDays(testYearMonth)
+
+        androidx.compose.material3.Scaffold(
+            modifier = Modifier.fillMaxSize()
+        ) { paddingValues ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                CalendarMonthHeader(
+                    yearMonth = testYearMonth,
+                    onPreviousMonth = {},
+                    onNextMonth = {},
+                    onTodayClick = {}
+                )
+
+                CalendarGrid(
+                    yearMonth = testYearMonth,
+                    days = testCalendarDays,
+                    selectedDate = null,
+                    onDateClick = {}
+                )
+
+                CalendarLegend()
+
+                EmptySelectionCard()
+            }
+        }
+    }
+}
+
+private fun generateTestCalendarDays(yearMonth: YearMonth): List<CalendarDay> {
+    val days = mutableListOf<CalendarDay>()
+    val monthStart = yearMonth.atDay(1)
+    val monthEnd = yearMonth.atEndOfMonth()
+    val firstDayOfWeek = monthStart.dayOfWeek.value % 7
+    val today = LocalDate.now()
+
+    for (i in 0 until firstDayOfWeek) {
+        days.add(CalendarDay.Empty)
+    }
+
+    for (day in 1..monthEnd.dayOfMonth) {
+        val date = monthStart.withDayOfMonth(day)
+        val dayOfMonth = day
+        val isToday = date == today
+
+        val dayData = when {
+            day in 5..8 -> TestDayData(
+                dayType = CalendarDayType.PERIOD,
+                record = generateTestDailyRecord(date, FlowLevel.MEDIUM),
+                phase = CyclePhase.MENSTRATION,
+                isPredictedPeriod = false,
+                isPredictedOvulation = false,
+                isPredictedFertile = false
+            )
+            day in 18..20 -> TestDayData(
+                dayType = CalendarDayType.FERTILE,
+                record = null,
+                phase = CyclePhase.FERTILE,
+                isPredictedPeriod = false,
+                isPredictedOvulation = false,
+                isPredictedFertile = false
+            )
+            day == 16 -> TestDayData(
+                dayType = CalendarDayType.OVULATION,
+                record = null,
+                phase = CyclePhase.OVULATION,
+                isPredictedPeriod = false,
+                isPredictedOvulation = false,
+                isPredictedFertile = false
+            )
+            day in 25..29 -> TestDayData(
+                dayType = CalendarDayType.PREDICTED_PERIOD,
+                record = null,
+                phase = CyclePhase.MENSTRATION,
+                isPredictedPeriod = true,
+                isPredictedOvulation = false,
+                isPredictedFertile = false
+            )
+            else -> TestDayData(
+                dayType = CalendarDayType.NORMAL,
+                record = null,
+                phase = CyclePhase.SAFE,
+                isPredictedPeriod = false,
+                isPredictedOvulation = false,
+                isPredictedFertile = false
+            )
+        }
+
+        days.add(
+            CalendarDay.Data(
+                date = date,
+                dayOfMonth = dayOfMonth,
+                record = dayData.record,
+                phase = dayData.phase,
+                dayType = dayData.dayType,
+                isToday = isToday,
+                isPredictedPeriod = dayData.isPredictedPeriod,
+                isPredictedOvulation = dayData.isPredictedOvulation,
+                isPredictedFertile = dayData.isPredictedFertile
+            )
+        )
+    }
+
+    val remainingDays = 7 - (days.size % 7)
+    if (remainingDays < 7) {
+        for (i in 0 until remainingDays) {
+            days.add(CalendarDay.Empty)
+        }
+    }
+
+    return days
+}
+
+private fun generateTestDailyRecord(date: LocalDate, flowLevel: FlowLevel): DailyRecord {
+    return DailyRecord(
+        id = 1,
+        date = date,
+        cycleId = 1,
+        isPeriod = true,
+        flowLevel = flowLevel,
+        symptoms = emptyList(),
+        notes = null
+    )
+}
+
+private fun generateTestCycle(): Cycle {
+    return Cycle(
+        id = 1,
+        startDate = LocalDate.now().minusDays(10),
+        endDate = null,
+        cycleLength = null,
+        periodLength = null,
+        averageFlowLevel = FlowLevel.MEDIUM,
+        isCompleted = false
+    )
+}
+
+// endregion
