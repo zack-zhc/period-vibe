@@ -30,6 +30,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.BubbleChart
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChildCare
@@ -333,9 +334,9 @@ private fun MainStatusCard(
         CircularProgressRing(
             progress = progress,
             size = 256.dp,
-            strokeWidth = 8.dp,
+            strokeWidth = 16.dp,
             backgroundColor = MaterialTheme.colorScheme.surfaceVariant,
-            progressColor = MaterialTheme.colorScheme.primaryContainer
+            progressColor = MaterialTheme.colorScheme.primary
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -620,12 +621,12 @@ private fun LoadingState() {
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            LoadingIndicator()
+            LoadingIndicator(modifier = Modifier.size(96.dp))
             Text(
                 text = "加载中...",
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
@@ -743,10 +744,10 @@ private fun NoDataState(darkTheme: Boolean) {
                 modifier = Modifier.weight(1f)
             )
 
-            // 怀孕追踪卡片
+            // 怀孕几率卡片
             EmptyStateCard(
-                icon = Icons.Default.ChildCare,
-                title = "怀孕追踪",
+                icon = Icons.Default.BubbleChart,
+                title = "怀孕几率",
                 subtitle = "未追踪",
                 modifier = Modifier.weight(1f)
             )

@@ -42,15 +42,17 @@ fun InfoCard(
     iconTint: Color,
     title: String,
     modifier: Modifier = Modifier,
+    elevation: androidx.compose.material3.CardElevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    containerColor: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
     content: @Composable ColumnScope.() -> Unit
 ) {
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+            containerColor = containerColor
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        elevation = elevation,
         border = androidx.compose.foundation.BorderStroke(
             width = 1.dp,
             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
@@ -93,7 +95,7 @@ fun NextPhaseCard(
     modifier: Modifier = Modifier
 ) {
     InfoCard(
-        icon = Icons.Default.EventRepeat,
+        icon = Icons.Default.AutoAwesome,
         iconTint = MaterialTheme.colorScheme.primary,
         title = "下一阶段",
         modifier = modifier
@@ -168,59 +170,27 @@ fun EmptyStateCard(
     subtitle: String,
     modifier: Modifier = Modifier
 ) {
-    Card(
+    InfoCard(
+        icon = icon,
+        iconTint = MaterialTheme.colorScheme.primary,
+        title = title,
         modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = androidx.compose.foundation.BorderStroke(
-            width = 1.dp,
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
-        )
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        containerColor = MaterialTheme.colorScheme.surfaceContainer
     ) {
-        Column(
+        Text(
+            text = subtitle,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+            fontStyle = FontStyle.Italic
+        )
+        Spacer(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
-                )
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-            Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    fontStyle = FontStyle.Italic
-                )
-                Spacer(
-                    modifier = Modifier
-                        .height(4.dp)
-                        .width(48.dp)
-                        .clip(RoundedCornerShape(2.dp))
-                        .background(MaterialTheme.colorScheme.primaryContainer)
-                )
-            }
-        }
+                .height(4.dp)
+                .width(48.dp)
+                .clip(RoundedCornerShape(2.dp))
+                .background(MaterialTheme.colorScheme.primaryContainer)
+        )
     }
 }
 
