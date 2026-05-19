@@ -4,7 +4,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -41,8 +40,6 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -280,8 +277,6 @@ private fun RemindersContent(
     onUpdateNotificationTime: (LocalTime) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var expanded by remember { mutableStateOf(false) }
-
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
@@ -344,41 +339,22 @@ private fun RemindersContent(
 
                     if (state.notificationEnabled) {
                         SegmentedListItem(
-                            onClick = { expanded = true },
+                            onClick = { },
                             shapes = ListItemDefaults.segmentedShapes(index = 1, count = 3),
-                            trailingContent = {
-                                Box {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        Text(
-                                            text = "${state.notificationDaysBefore} 天",
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                        Icon(
-                                            imageVector = Icons.Default.ChevronRight,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-
-                                    DropdownMenu(
-                                        expanded = expanded,
-                                        onDismissRequest = { expanded = false },
-                                        shape = MaterialTheme.shapes.extraLarge
-                                    ) {
-                                        (1..7).forEach { days ->
-                                            DropdownMenuItem(
-                                                text = { Text("$days 天") },
-                                                onClick = {
-                                                    onUpdateNotificationDaysBefore(days)
-                                                    expanded = false
-                                                }
-                                            )
-                                        }
-                                    }
+                            supportingContent = {
+                                Column {
+                                    Text(
+                                        text = "${state.notificationDaysBefore} 天",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Slider(
+                                        value = state.notificationDaysBefore.toFloat(),
+                                        onValueChange = { onUpdateNotificationDaysBefore(Math.round(it)) },
+                                        valueRange = 1f..7f,
+                                        steps = 5
+                                    )
                                 }
                             },
                             colors = ListItemDefaults.colors(
@@ -826,7 +802,12 @@ private fun AboutContent(
     onNavigateToDeveloperOptions: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val versionName = remember { com.example.periodvibe.utils.AppUtils.getVersionName(context) }
+
     var showDialog by remember { mutableStateOf(false) }
+    var clickCount by remember { mutableIntStateOf(0) }
+    var firstClickTime by remember { mutableLongStateOf(0L) }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -876,11 +857,32 @@ private fun AboutContent(
                 }
 
                 SegmentedListItem(
-                    onClick = { },
+                    onClick = {
+                        val currentTime = System.currentTimeMillis()
+
+                        if (firstClickTime == 0L) {
+                            firstClickTime = currentTime
+                            clickCount = 1
+                        } else {
+                            val elapsedTime = currentTime - firstClickTime
+                            if (elapsedTime > 8000) {
+                                clickCount = 1
+                                firstClickTime = currentTime
+                            } else {
+                                clickCount++
+                            }
+                        }
+
+                        if (clickCount >= 10) {
+                            clickCount = 1
+                            firstClickTime = currentTime
+                            onNavigateToDeveloperOptions()
+                        }
+                    },
                     shapes = ListItemDefaults.segmentedShapes(index = 1, count = 2),
                     supportingContent = {
                         Text(
-                            text = "v1.0.0",
+                            text = "v$versionName",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

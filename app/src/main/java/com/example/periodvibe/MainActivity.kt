@@ -38,8 +38,18 @@ class MainActivity : FragmentActivity() {
 
     private val activityScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    // 会话级别的解锁状态 - 最简单直接的方案
-    private val isUnlockedState = mutableStateOf(false)
+    // 会话级别的解锁状态 - 使用 savedInstanceState 保存
+    private var isUnlockedState = mutableStateOf(false)
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean("isUnlocked", isUnlockedState.value)
+    }
+
+    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
+        super.onRestoreInstanceState(savedInstanceState)
+        isUnlockedState.value = savedInstanceState.getBoolean("isUnlocked", false)
+    }
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -52,6 +62,8 @@ class MainActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // 恢复解锁状态
+        isUnlockedState.value = savedInstanceState?.getBoolean("isUnlocked", false) ?: false
         enableEdgeToEdge()
 
         // 请求通知权限 (Android 13+)
