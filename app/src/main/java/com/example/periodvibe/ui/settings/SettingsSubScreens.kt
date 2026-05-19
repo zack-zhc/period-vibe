@@ -654,16 +654,110 @@ fun DataManagementScreen(
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
+    val showClearDataConfirmationDialog by viewModel.showClearDataConfirmationDialog.collectAsState()
+    val showImportConfirmationDialog by viewModel.showImportConfirmationDialog.collectAsState()
+    val showImportResultDialog by viewModel.showImportResultDialog.collectAsState()
+    val showExportResultDialog by viewModel.showExportResultDialog.collectAsState()
+    val showExportFormatDialog by viewModel.showExportFormatDialog.collectAsState()
+    val importResult by viewModel.importResult.collectAsState()
+    val exportResult by viewModel.exportResult.collectAsState()
+
+    // 创建导出文件的 launcher
+    val exportFileLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("*/*")
+    ) { uri ->
+        uri?.let {
+            viewModel.exportData(it)
+        }
+    }
+
+    // 选择导入文件的 launcher
+    val importFileLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let {
+            // 获取持久化权限
+            val takeFlags = android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+            context.contentResolver.takePersistableUriPermission(it, takeFlags)
+            viewModel.previewImportData(it)
+        }
+    }
+
+    // 生成导出文件名
+    fun generateExportFileName(): String {
+        val formatter = java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")
+        val timestamp = LocalDateTime.now().format(formatter)
+        val extension = viewModel.getSelectedExportFormat().extension
+        return "period_vibe_backup_$timestamp.$extension"
+    }
+
     DataManagementContent(
         onNavigateBack = onNavigateBack,
+        onExportDataClick = { viewModel.showExportFormatDialog() },
+        onImportDataClick = { importFileLauncher.launch(arrayOf("*/*")) },
+        onClearDataClick = { viewModel.showClearDataConfirmationDialog() },
         modifier = modifier
     )
+
+    if (showClearDataConfirmationDialog) {
+        com.example.periodvibe.ui.settings.components.ClearDataConfirmationDialog(
+            onDismiss = { viewModel.hideClearDataConfirmationDialog() },
+            onConfirm = { viewModel.clearAllData() }
+        )
+    }
+
+    if (showImportConfirmationDialog) {
+        val (cycleCount, recordCount) = viewModel.getPendingImportDataCount()
+        com.example.periodvibe.ui.settings.components.ImportConfirmationDialog(
+            cycleCount = cycleCount,
+            recordCount = recordCount,
+            onDismiss = { viewModel.hideImportConfirmationDialog() },
+            onConfirm = { viewModel.confirmImportData() }
+        )
+    }
+
+    if (showImportResultDialog && importResult != null) {
+        val result = importResult
+        val (success, message) = when (result) {
+            is com.example.periodvibe.data.exportimport.ImportResult.Success -> Pair(true, "成功导入 ${result.cycles.size} 个周期记录和 ${result.dailyRecords.size} 条日常记录")
+            is com.example.periodvibe.data.exportimport.ImportResult.Failure -> Pair(false, result.errorMessage)
+            null -> Pair(false, "未知错误")
+        }
+        com.example.periodvibe.ui.settings.components.ImportResultDialog(
+            success = success,
+            message = message,
+            onDismiss = { viewModel.hideImportResultDialog() }
+        )
+    }
+
+    if (showExportResultDialog && exportResult != null) {
+        val (success, message) = exportResult ?: Pair(false, "未知错误")
+        com.example.periodvibe.ui.settings.components.ExportResultDialog(
+            success = success,
+            message = message,
+            onDismiss = { viewModel.hideExportResultDialog() }
+        )
+    }
+
+    if (showExportFormatDialog) {
+        com.example.periodvibe.ui.settings.components.ExportFormatDialog(
+            onDismiss = { viewModel.hideExportFormatDialog() },
+            onFormatSelected = { format ->
+                viewModel.setSelectedExportFormat(format)
+                exportFileLauncher.launch(generateExportFileName())
+            }
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun DataManagementContent(
     onNavigateBack: () -> Unit,
+    onExportDataClick: () -> Unit,
+    onImportDataClick: () -> Unit,
+    onClearDataClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -693,7 +787,7 @@ private fun DataManagementContent(
                 verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)
             ) {
                 SegmentedListItem(
-                    onClick = { },
+                    onClick = onExportDataClick,
                     shapes = ListItemDefaults.segmentedShapes(index = 0, count = 3),
                     supportingContent = {
                         Text(
@@ -721,7 +815,7 @@ private fun DataManagementContent(
                 }
 
                 SegmentedListItem(
-                    onClick = { },
+                    onClick = onImportDataClick,
                     shapes = ListItemDefaults.segmentedShapes(index = 1, count = 3),
                     supportingContent = {
                         Text(
@@ -749,7 +843,7 @@ private fun DataManagementContent(
                 }
 
                 SegmentedListItem(
-                    onClick = { },
+                    onClick = onClearDataClick,
                     shapes = ListItemDefaults.segmentedShapes(index = 2, count = 3),
                     supportingContent = {
                         Text(
@@ -1084,7 +1178,10 @@ private fun PrivacyScreenPreview() {
 private fun DataManagementScreenPreview() {
     PeriodVibeTheme {
         DataManagementContent(
-            onNavigateBack = { }
+            onNavigateBack = { },
+            onExportDataClick = { },
+            onImportDataClick = { },
+            onClearDataClick = { }
         )
     }
 }
