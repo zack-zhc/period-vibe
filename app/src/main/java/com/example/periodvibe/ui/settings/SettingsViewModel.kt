@@ -57,6 +57,9 @@ class SettingsViewModel @Inject constructor(
     private val _showTimeDialog = MutableStateFlow(false)
     val showTimeDialog: StateFlow<Boolean> = _showTimeDialog.asStateFlow()
 
+    private val _showOvulationDaysDialog = MutableStateFlow(false)
+    val showOvulationDaysDialog: StateFlow<Boolean> = _showOvulationDaysDialog.asStateFlow()
+
     private val _showThemeDialog = MutableStateFlow(false)
     val showThemeDialog: StateFlow<Boolean> = _showThemeDialog.asStateFlow()
 
@@ -118,7 +121,10 @@ class SettingsViewModel @Inject constructor(
                         themeMode = settings.themeMode,
                         appLockEnabled = settings.appLockEnabled,
                         privacyModeEnabled = settings.privacyModeEnabled,
-                        language = settings.language
+                        language = settings.language,
+                        periodNotificationEnabled = settings.periodNotificationEnabled,
+                        ovulationNotificationEnabled = settings.ovulationNotificationEnabled,
+                        ovulationNotificationDaysBefore = settings.ovulationNotificationDaysBefore
                     )
                 } else {
                     // 创建默认设置
@@ -134,7 +140,10 @@ class SettingsViewModel @Inject constructor(
                         themeMode = com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM,
                         appLockEnabled = false,
                         privacyModeEnabled = false,
-                        language = "zh"
+                        language = "zh",
+                        periodNotificationEnabled = true,
+                        ovulationNotificationEnabled = true,
+                        ovulationNotificationDaysBefore = 1
                     )
                     settingsRepository.insertSettings(defaultSettings)
                 }
@@ -180,6 +189,14 @@ class SettingsViewModel @Inject constructor(
 
     fun hideTimeDialog() {
         _showTimeDialog.value = false
+    }
+
+    fun showOvulationDaysDialog() {
+        _showOvulationDaysDialog.value = true
+    }
+
+    fun hideOvulationDaysDialog() {
+        _showOvulationDaysDialog.value = false
     }
 
     fun showThemeDialog() {
@@ -519,7 +536,7 @@ class SettingsViewModel @Inject constructor(
 
     private suspend fun tryRescheduleNotification() {
         try {
-            notificationScheduler.rescheduleNotificationIfNeeded()
+            notificationScheduler.rescheduleAllNotifications()
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -579,7 +596,7 @@ class SettingsViewModel @Inject constructor(
             currentSettings?.let {
                 val updatedSettings = it.updateNotificationSettings(enabled, daysBefore, time)
                 settingsRepository.updateSettings(updatedSettings)
-                notificationScheduler.rescheduleNotificationIfNeeded()
+                notificationScheduler.rescheduleAllNotifications()
             }
             hideNotificationDialog()
         }
@@ -617,7 +634,7 @@ class SettingsViewModel @Inject constructor(
             currentSettings?.let {
                 val updatedSettings = it.copy(privacyModeEnabled = enabled)
                 settingsRepository.updateSettings(updatedSettings)
-                notificationScheduler.rescheduleNotificationIfNeeded()
+                notificationScheduler.rescheduleAllNotifications()
             }
         }
     }
@@ -628,7 +645,7 @@ class SettingsViewModel @Inject constructor(
             currentSettings?.let {
                 val updatedSettings = it.copy(notificationEnabled = enabled)
                 settingsRepository.updateSettings(updatedSettings)
-                notificationScheduler.rescheduleNotificationIfNeeded()
+                notificationScheduler.rescheduleAllNotifications()
             }
         }
     }
@@ -639,7 +656,7 @@ class SettingsViewModel @Inject constructor(
             currentSettings?.let {
                 val updatedSettings = it.copy(notificationDaysBefore = daysBefore)
                 settingsRepository.updateSettings(updatedSettings)
-                notificationScheduler.rescheduleNotificationIfNeeded()
+                notificationScheduler.rescheduleAllNotifications()
             }
             hideDaysBeforeDialog()
         }
@@ -651,9 +668,42 @@ class SettingsViewModel @Inject constructor(
             currentSettings?.let {
                 val updatedSettings = it.copy(notificationTime = time)
                 settingsRepository.updateSettings(updatedSettings)
-                notificationScheduler.rescheduleNotificationIfNeeded()
+                notificationScheduler.rescheduleAllNotifications()
             }
             hideTimeDialog()
+        }
+    }
+
+    fun togglePeriodNotification(enabled: Boolean) {
+        viewModelScope.launch {
+            val currentSettings = settingsRepository.getSettingsSync()
+            currentSettings?.let {
+                val updatedSettings = it.copy(periodNotificationEnabled = enabled)
+                settingsRepository.updateSettings(updatedSettings)
+                notificationScheduler.rescheduleAllNotifications()
+            }
+        }
+    }
+
+    fun toggleOvulationNotification(enabled: Boolean) {
+        viewModelScope.launch {
+            val currentSettings = settingsRepository.getSettingsSync()
+            currentSettings?.let {
+                val updatedSettings = it.copy(ovulationNotificationEnabled = enabled)
+                settingsRepository.updateSettings(updatedSettings)
+                notificationScheduler.rescheduleAllNotifications()
+            }
+        }
+    }
+
+    fun updateOvulationDaysBefore(daysBefore: Int) {
+        viewModelScope.launch {
+            val currentSettings = settingsRepository.getSettingsSync()
+            currentSettings?.let {
+                val updatedSettings = it.copy(ovulationNotificationDaysBefore = daysBefore)
+                settingsRepository.updateSettings(updatedSettings)
+                notificationScheduler.rescheduleAllNotifications()
+            }
         }
     }
 
@@ -664,7 +714,7 @@ class SettingsViewModel @Inject constructor(
             cycleRepository.deleteAllDailyRecords()
             cycleRepository.deleteAllCycles()
             // 取消所有通知
-            alarmScheduler.cancel()
+            alarmScheduler.cancelAll()
         }
     }
 }
@@ -683,6 +733,9 @@ sealed class SettingsUiState {
         val themeMode: com.example.periodvibe.domain.model.Settings.ThemeMode,
         val appLockEnabled: Boolean,
         val privacyModeEnabled: Boolean,
-        val language: String
+        val language: String,
+        val periodNotificationEnabled: Boolean,
+        val ovulationNotificationEnabled: Boolean,
+        val ovulationNotificationDaysBefore: Int
     ) : SettingsUiState()
 }

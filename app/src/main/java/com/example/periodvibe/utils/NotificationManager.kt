@@ -26,11 +26,11 @@ class NotificationManager(private val context: Context) {
         }
     }
 
-    fun showNotification(title: String, message: String) {
+    fun showNotification(title: String, message: String, isPrivacyMode: Boolean = false) {
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle(title)
-            .setContentText(message)
+            .setContentTitle(if (isPrivacyMode) "Reminder" else title)
+            .setContentText(if (isPrivacyMode) "You have a new notification." else message)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
 
         notificationManager.notify(NOTIFICATION_ID, builder.build())

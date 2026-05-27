@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -47,6 +48,16 @@ fun DeveloperOptionsScreen(
             Text("重置欢迎引导页")
         }
 
+        Spacer(modifier = Modifier.height(24.dp))
+        HorizontalDivider()
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Text(
+            text = "通知测试",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(
@@ -59,10 +70,28 @@ fun DeveloperOptionsScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(
+            onClick = { viewModel.sendTestPrivacyNotification() },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("测试隐私模式通知")
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Button(
             onClick = { viewModel.sendTestDelayedNotification(10) },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("测试10秒后通知")
+            Text("测试10秒后经期通知")
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Button(
+            onClick = { viewModel.sendTestOvulationNotification(10) },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("测试10秒后排卵日通知")
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -71,7 +100,35 @@ fun DeveloperOptionsScreen(
             onClick = { viewModel.rescheduleNotification() },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("重新安排周期通知")
+            Text("重新安排所有周期通知")
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+        HorizontalDivider()
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Text(
+            text = "设置快速切换",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Button(
+            onClick = { viewModel.togglePrivacyMode(true) },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("开启隐私模式")
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Button(
+            onClick = { viewModel.togglePrivacyMode(false) },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("关闭隐私模式")
         }
     }
 }

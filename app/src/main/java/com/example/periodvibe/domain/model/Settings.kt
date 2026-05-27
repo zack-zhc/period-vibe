@@ -15,7 +15,10 @@ data class Settings(
     val appLockEnabled: Boolean = false,
     val privacyModeEnabled: Boolean = false,
     val language: String = "zh",
-    val onboardingVersion: Int = 0
+    val onboardingVersion: Int = 0,
+    val periodNotificationEnabled: Boolean = true,
+    val ovulationNotificationEnabled: Boolean = true,
+    val ovulationNotificationDaysBefore: Int = 1
 ) {
     enum class ThemeMode {
         LIGHT, DARK, SYSTEM

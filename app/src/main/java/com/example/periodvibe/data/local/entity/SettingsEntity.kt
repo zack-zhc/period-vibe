@@ -54,6 +54,15 @@ data class SettingsEntity(
     @ColumnInfo(name = "onboarding_version")
     val onboardingVersion: Int,
 
+    @ColumnInfo(name = "period_notification_enabled")
+    val periodNotificationEnabled: Boolean,
+
+    @ColumnInfo(name = "ovulation_notification_enabled")
+    val ovulationNotificationEnabled: Boolean,
+
+    @ColumnInfo(name = "ovulation_notification_days_before")
+    val ovulationNotificationDaysBefore: Int,
+
     @ColumnInfo(name = "updated_at")
     val updatedAt: Long
 )

@@ -45,7 +45,7 @@ object DatabaseModule {
                 )
                 """.trimIndent()
             )
-            
+
             database.execSQL(
                 """
                 INSERT INTO cycles_new (id, start_date, end_date, cycle_length, period_length, average_flow_level, created_at, updated_at)
@@ -53,10 +53,10 @@ object DatabaseModule {
                 FROM cycles
                 """.trimIndent()
             )
-            
+
             database.execSQL("DROP TABLE cycles")
             database.execSQL("ALTER TABLE cycles_new RENAME TO cycles")
-            
+
             database.execSQL("CREATE INDEX IF NOT EXISTS index_cycles_start_date ON cycles(start_date)")
             database.execSQL("CREATE INDEX IF NOT EXISTS index_cycles_end_date ON cycles(end_date)")
         }
@@ -70,6 +70,20 @@ object DatabaseModule {
         }
     }
 
+    private val MIGRATION_4_5 = object : Migration(4, 5) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL(
+                "ALTER TABLE settings ADD COLUMN period_notification_enabled INTEGER NOT NULL DEFAULT 1"
+            )
+            database.execSQL(
+                "ALTER TABLE settings ADD COLUMN ovulation_notification_enabled INTEGER NOT NULL DEFAULT 1"
+            )
+            database.execSQL(
+                "ALTER TABLE settings ADD COLUMN ovulation_notification_days_before INTEGER NOT NULL DEFAULT 1"
+            )
+        }
+    }
+
     @Provides
     @Singleton
     fun provideAppDatabase(
@@ -79,7 +93,7 @@ object DatabaseModule {
             context,
             AppDatabase::class.java,
             "period_vibe_database"
-        ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+        ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
          .build()
     }
 

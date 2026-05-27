@@ -296,6 +296,9 @@ fun RemindersScreen(
         onShowTimeDialog = { viewModel.showTimeDialog() },
         onHideTimeDialog = { viewModel.hideTimeDialog() },
         onUpdateNotificationTime = { viewModel.updateNotificationTime(it) },
+        onTogglePeriodNotification = { viewModel.togglePeriodNotification(it) },
+        onToggleOvulationNotification = { viewModel.toggleOvulationNotification(it) },
+        onUpdateOvulationDaysBefore = { viewModel.updateOvulationDaysBefore(it) },
         modifier = modifier
     )
 }
@@ -311,6 +314,9 @@ private fun RemindersContent(
     onShowTimeDialog: () -> Unit,
     onHideTimeDialog: () -> Unit,
     onUpdateNotificationTime: (LocalTime) -> Unit,
+    onTogglePeriodNotification: (Boolean) -> Unit,
+    onToggleOvulationNotification: (Boolean) -> Unit,
+    onUpdateOvulationDaysBefore: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -345,7 +351,7 @@ private fun RemindersContent(
                     SegmentedListItem(
                         onClick = { onToggleNotificationEnabled(!state.notificationEnabled) },
                         shapes = if (state.notificationEnabled) {
-                            ListItemDefaults.segmentedShapes(index = 0, count = 3)
+                            ListItemDefaults.segmentedShapes(index = 0, count = 6)
                         } else {
                             ListItemDefaults.segmentedShapes(index = 0, count = 1)
                         },
@@ -375,56 +381,166 @@ private fun RemindersContent(
 
                     if (state.notificationEnabled) {
                         SegmentedListItem(
-                            onClick = { },
-                            shapes = ListItemDefaults.segmentedShapes(index = 1, count = 3),
+                            onClick = { onTogglePeriodNotification(!state.periodNotificationEnabled) },
+                            shapes = ListItemDefaults.segmentedShapes(index = 1, count = 6),
                             supportingContent = {
-                                Column {
-                                    Text(
-                                        text = "${state.notificationDaysBefore} 天",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Text(
-                                            text = "1天",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Slider(
-                                            value = state.notificationDaysBefore.toFloat(),
-                                            onValueChange = { onUpdateNotificationDaysBefore(Math.round(it)) },
-                                            valueRange = 1f..7f,
-                                            steps = 5,
-                                            modifier = Modifier.weight(1f)
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(
-                                            text = "7天",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
+                                Text(
+                                    text = "在预计的经期开始前提醒",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            },
+                            trailingContent = {
+                                Switch(
+                                    checked = state.periodNotificationEnabled,
+                                    onCheckedChange = { onTogglePeriodNotification(it) }
+                                )
                             },
                             colors = ListItemDefaults.colors(
                                 containerColor = MaterialTheme.colorScheme.surfaceContainer
                             )
                         ) {
                             Text(
-                                text = "提前天数",
+                                text = "经期开始提醒",
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                         }
 
+                        if (state.periodNotificationEnabled) {
+                            SegmentedListItem(
+                                onClick = { },
+                                shapes = ListItemDefaults.segmentedShapes(index = 2, count = 6),
+                                supportingContent = {
+                                    Column {
+                                        Text(
+                                            text = "${state.notificationDaysBefore} 天",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Text(
+                                                text = "1天",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Slider(
+                                                value = state.notificationDaysBefore.toFloat(),
+                                                onValueChange = { onUpdateNotificationDaysBefore(Math.round(it)) },
+                                                valueRange = 1f..7f,
+                                                steps = 5,
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                text = "7天",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                },
+                                colors = ListItemDefaults.colors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainer
+                                )
+                            ) {
+                                Text(
+                                    text = "提前天数",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+
+                        SegmentedListItem(
+                            onClick = { onToggleOvulationNotification(!state.ovulationNotificationEnabled) },
+                            shapes = if (state.ovulationNotificationEnabled) {
+                                ListItemDefaults.segmentedShapes(index = 3, count = 6)
+                            } else {
+                                ListItemDefaults.segmentedShapes(index = 3, count = if (state.periodNotificationEnabled && state.notificationEnabled) 4 else 3)
+                            },
+                            supportingContent = {
+                                Text(
+                                    text = "在预计的排卵期前提醒",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            },
+                            trailingContent = {
+                                Switch(
+                                    checked = state.ovulationNotificationEnabled,
+                                    onCheckedChange = { onToggleOvulationNotification(it) }
+                                )
+                            },
+                            colors = ListItemDefaults.colors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainer
+                            )
+                        ) {
+                            Text(
+                                text = "排卵日提醒",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+
+                        if (state.ovulationNotificationEnabled) {
+                            SegmentedListItem(
+                                onClick = { },
+                                shapes = ListItemDefaults.segmentedShapes(index = 4, count = 6),
+                                supportingContent = {
+                                    Column {
+                                        Text(
+                                            text = "${state.ovulationNotificationDaysBefore} 天",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Text(
+                                                text = "1天",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Slider(
+                                                value = state.ovulationNotificationDaysBefore.toFloat(),
+                                                onValueChange = { onUpdateOvulationDaysBefore(Math.round(it)) },
+                                                valueRange = 1f..7f,
+                                                steps = 5,
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                text = "7天",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                },
+                                colors = ListItemDefaults.colors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainer
+                                )
+                            ) {
+                                Text(
+                                    text = "提前天数",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+
                         SegmentedListItem(
                             onClick = { onShowTimeDialog() },
-                            shapes = ListItemDefaults.segmentedShapes(index = 2, count = 3),
+                            shapes = ListItemDefaults.segmentedShapes(index = 5, count = 6),
                             trailingContent = {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
@@ -1078,7 +1194,10 @@ private fun RemindersScreenEnabledPreview() {
                 themeMode = com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM,
                 appLockEnabled = false,
                 privacyModeEnabled = false,
-                language = "zh"
+                language = "zh",
+                periodNotificationEnabled = true,
+                ovulationNotificationEnabled = true,
+                ovulationNotificationDaysBefore = 1
             ),
             showTimeDialog = false,
             onNavigateBack = { },
@@ -1086,7 +1205,10 @@ private fun RemindersScreenEnabledPreview() {
             onUpdateNotificationDaysBefore = { },
             onShowTimeDialog = { },
             onHideTimeDialog = { },
-            onUpdateNotificationTime = { }
+            onUpdateNotificationTime = { },
+            onTogglePeriodNotification = { },
+            onToggleOvulationNotification = { },
+            onUpdateOvulationDaysBefore = { }
         )
     }
 }
@@ -1108,7 +1230,10 @@ private fun RemindersScreenDisabledPreview() {
                 themeMode = com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM,
                 appLockEnabled = false,
                 privacyModeEnabled = false,
-                language = "zh"
+                language = "zh",
+                periodNotificationEnabled = true,
+                ovulationNotificationEnabled = true,
+                ovulationNotificationDaysBefore = 1
             ),
             showTimeDialog = false,
             onNavigateBack = { },
@@ -1116,7 +1241,10 @@ private fun RemindersScreenDisabledPreview() {
             onUpdateNotificationDaysBefore = { },
             onShowTimeDialog = { },
             onHideTimeDialog = { },
-            onUpdateNotificationTime = { }
+            onUpdateNotificationTime = { },
+            onTogglePeriodNotification = { },
+            onToggleOvulationNotification = { },
+            onUpdateOvulationDaysBefore = { }
         )
     }
 }
@@ -1138,7 +1266,10 @@ private fun CycleParametersScreenAutoPreview() {
                 themeMode = com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM,
                 appLockEnabled = false,
                 privacyModeEnabled = false,
-                language = "zh"
+                language = "zh",
+                periodNotificationEnabled = true,
+                ovulationNotificationEnabled = true,
+                ovulationNotificationDaysBefore = 1
             ),
             onNavigateBack = { },
             onToggleAutoCalculateCycle = { },
@@ -1165,7 +1296,10 @@ private fun CycleParametersScreenManualPreview() {
                 themeMode = com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM,
                 appLockEnabled = false,
                 privacyModeEnabled = false,
-                language = "zh"
+                language = "zh",
+                periodNotificationEnabled = true,
+                ovulationNotificationEnabled = true,
+                ovulationNotificationDaysBefore = 1
             ),
             onNavigateBack = { },
             onToggleAutoCalculateCycle = { },
@@ -1192,7 +1326,10 @@ private fun ThemeScreenPreview() {
                 themeMode = com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM,
                 appLockEnabled = false,
                 privacyModeEnabled = false,
-                language = "zh"
+                language = "zh",
+                periodNotificationEnabled = true,
+                ovulationNotificationEnabled = true,
+                ovulationNotificationDaysBefore = 1
             ),
             onNavigateBack = { },
             onUpdateThemeMode = { }
@@ -1217,7 +1354,10 @@ private fun PrivacyScreenPreview() {
                 themeMode = com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM,
                 appLockEnabled = true,
                 privacyModeEnabled = true,
-                language = "zh"
+                language = "zh",
+                periodNotificationEnabled = true,
+                ovulationNotificationEnabled = true,
+                ovulationNotificationDaysBefore = 1
             ),
             showDisableAppLockDialog = false,
             onNavigateBack = { },

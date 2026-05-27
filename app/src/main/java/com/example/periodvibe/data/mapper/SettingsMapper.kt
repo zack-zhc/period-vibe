@@ -27,7 +27,10 @@ class SettingsMapper @Inject constructor() {
             appLockEnabled = entity.appLockEnabled,
             privacyModeEnabled = entity.privacyModeEnabled,
             language = entity.language,
-            onboardingVersion = entity.onboardingVersion
+            onboardingVersion = entity.onboardingVersion,
+            periodNotificationEnabled = entity.periodNotificationEnabled,
+            ovulationNotificationEnabled = entity.ovulationNotificationEnabled,
+            ovulationNotificationDaysBefore = entity.ovulationNotificationDaysBefore
         )
     }
 
@@ -49,6 +52,9 @@ class SettingsMapper @Inject constructor() {
             privacyModeEnabled = domain.privacyModeEnabled,
             language = domain.language,
             onboardingVersion = domain.onboardingVersion,
+            periodNotificationEnabled = domain.periodNotificationEnabled,
+            ovulationNotificationEnabled = domain.ovulationNotificationEnabled,
+            ovulationNotificationDaysBefore = domain.ovulationNotificationDaysBefore,
             updatedAt = System.currentTimeMillis()
         )
     }
