@@ -616,27 +616,70 @@ fun ClearDataConfirmationDialog(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ImportConfirmationDialog(
     cycleCount: Int,
     recordCount: Int,
     onDismiss: () -> Unit,
-    onConfirm: () -> Unit
+    onConfirm: (com.example.periodvibe.ui.settings.SettingsViewModel.ImportMode) -> Unit
 ) {
+    var selectedMode by remember {
+        mutableStateOf(com.example.periodvibe.ui.settings.SettingsViewModel.ImportMode.OVERWRITE)
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("确认导入数据") },
         text = {
-            Text(
-                "即将导入：\n" +
-                    "• $cycleCount 个周期记录\n" +
-                    "• $recordCount 条日常记录\n\n" +
-                    "注意：导入将覆盖现有数据，请确保已备份当前数据。"
-            )
+            Column {
+                Text(
+                    "即将导入：\n" +
+                        "• $cycleCount 个周期记录\n" +
+                        "• $recordCount 条日常记录\n"
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    "导入模式",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                SingleChoiceSegmentedButtonRow(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    val modes = listOf(
+                        com.example.periodvibe.ui.settings.SettingsViewModel.ImportMode.OVERWRITE to "覆盖",
+                        com.example.periodvibe.ui.settings.SettingsViewModel.ImportMode.MERGE to "合并"
+                    )
+                    modes.forEachIndexed { index, (mode, label) ->
+                        SegmentedButton(
+                            selected = selectedMode == mode,
+                            onClick = { selectedMode = mode },
+                            shape = SegmentedButtonDefaults.itemShape(
+                                index = index,
+                                count = modes.size
+                            )
+                        ) {
+                            Text(label)
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    when (selectedMode) {
+                        com.example.periodvibe.ui.settings.SettingsViewModel.ImportMode.OVERWRITE ->
+                            "将删除所有现有数据后导入，请确保已备份。"
+                        com.example.periodvibe.ui.settings.SettingsViewModel.ImportMode.MERGE ->
+                            "将跳过已存在的日期，只添加新数据。"
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         },
         confirmButton = {
             TextButton(
-                onClick = onConfirm
+                onClick = { onConfirm(selectedMode) }
             ) {
                 Text("确认导入")
             }

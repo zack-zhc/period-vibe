@@ -60,9 +60,6 @@ class SettingsViewModel @Inject constructor(
     private val _showThemeDialog = MutableStateFlow(false)
     val showThemeDialog: StateFlow<Boolean> = _showThemeDialog.asStateFlow()
 
-    private val _showPrivacyDialog = MutableStateFlow(false)
-    val showPrivacyDialog: StateFlow<Boolean> = _showPrivacyDialog.asStateFlow()
-
     private val _showAboutDialog = MutableStateFlow(false)
     val showAboutDialog: StateFlow<Boolean> = _showAboutDialog.asStateFlow()
 
@@ -92,6 +89,14 @@ class SettingsViewModel @Inject constructor(
 
     // 临时存储待导入的数据
     private var pendingImportData: Pair<List<Cycle>, List<DailyRecord>>? = null
+
+    // 导入模式
+    enum class ImportMode {
+        MERGE,  // 合并模式：跳过已存在的日期
+        OVERWRITE  // 覆盖模式：删除所有现有数据后导入
+    }
+
+    private var pendingImportMode: ImportMode = ImportMode.OVERWRITE
 
     init {
         loadSettings()
@@ -183,14 +188,6 @@ class SettingsViewModel @Inject constructor(
 
     fun hideThemeDialog() {
         _showThemeDialog.value = false
-    }
-
-    fun showPrivacyDialog() {
-        _showPrivacyDialog.value = true
-    }
-
-    fun hidePrivacy_showPrivacyDialog() {
-        _showPrivacyDialog.value = false
     }
 
     fun showAboutDialog() {
@@ -399,6 +396,13 @@ class SettingsViewModel @Inject constructor(
     }
 
     /**
+     * 设置导入模式
+     */
+    fun setImportMode(mode: ImportMode) {
+        pendingImportMode = mode
+    }
+
+    /**
      * 确认导入数据
      */
     fun confirmImportData() {
@@ -410,46 +414,114 @@ class SettingsViewModel @Inject constructor(
                     return@launch
                 }
 
-                // 先清除现有数据
-                cycleRepository.deleteAllDailyRecords()
-                cycleRepository.deleteAllCycles()
-
-                // 导入新数据 - 先插入周期，获取新生成的 ID
-                val insertedCycleIds = cycleRepository.insertAllCycles(cycles)
-                val cyclesWithIds = cycles.zip(insertedCycleIds) { cycle, newId ->
-                    cycle.copy(id = newId)
-                }
-
-                // 更新日常记录的 cycleId 为新生成的 ID
-                val originalStartDateToNewId = cyclesWithIds.associate { it.startDate to it.id }
-                val recordsWithUpdatedCycleIds = dailyRecords.map { record ->
-                    // 重新通过周期的 startDate 查找新的 cycleId
-                    val originalCycle = cycles.find { cycle ->
-                        record.cycleId?.let { cycle.id == it } == true
+                when (pendingImportMode) {
+                    ImportMode.OVERWRITE -> {
+                        importOverwrite(cycles, dailyRecords)
                     }
-                    val newCycleId = originalCycle?.startDate?.let { originalStartDateToNewId[it] }
-                    record.copy(cycleId = newCycleId)
+                    ImportMode.MERGE -> {
+                        importMerge(cycles, dailyRecords)
+                    }
                 }
-
-                // 插入日常记录
-                cycleRepository.insertAllDailyRecords(recordsWithUpdatedCycleIds)
-
-                // 重新安排通知（失败不影响导入结果）
-                try {
-                    notificationScheduler.rescheduleNotificationIfNeeded()
-                } catch (e: Exception) {
-                    // 忽略通知安排错误，不影响导入成功
-                    e.printStackTrace()
-                }
-
-                _importResult.value = ImportResult.Success(cyclesWithIds, recordsWithUpdatedCycleIds)
-                hideImportConfirmationDialog()
-                showImportResultDialog()
             } catch (e: Exception) {
                 _importResult.value = ImportResult.Failure("导入失败: ${e.message}")
                 hideImportConfirmationDialog()
                 showImportResultDialog()
             }
+        }
+    }
+
+    /**
+     * 覆盖模式导入
+     */
+    private suspend fun importOverwrite(cycles: List<Cycle>, dailyRecords: List<DailyRecord>) {
+        // 先清除现有数据
+        cycleRepository.deleteAllDailyRecords()
+        cycleRepository.deleteAllCycles()
+
+        // 导入新数据 - 先插入周期，获取新生成的 ID
+        val insertedCycleIds = cycleRepository.insertAllCycles(cycles)
+        val cyclesWithIds = cycles.zip(insertedCycleIds) { cycle, newId ->
+            cycle.copy(id = newId)
+        }
+
+        // 更新日常记录的 cycleId 为新生成的 ID
+        val originalStartDateToNewId = cyclesWithIds.associate { it.startDate to it.id }
+        val recordsWithUpdatedCycleIds = dailyRecords.map { record ->
+            val originalCycle = cycles.find { cycle ->
+                record.cycleId?.let { cycle.id == it } == true
+            }
+            val newCycleId = originalCycle?.startDate?.let { originalStartDateToNewId[it] }
+            record.copy(cycleId = newCycleId)
+        }
+
+        // 插入日常记录
+        cycleRepository.insertAllDailyRecords(recordsWithUpdatedCycleIds)
+
+        // 重新安排通知
+        tryRescheduleNotification()
+
+        _importResult.value = ImportResult.Success(cyclesWithIds, recordsWithUpdatedCycleIds)
+        hideImportConfirmationDialog()
+        showImportResultDialog()
+    }
+
+    /**
+     * 合并模式导入
+     */
+    private suspend fun importMerge(cycles: List<Cycle>, dailyRecords: List<DailyRecord>) {
+        // 获取现有数据
+        val existingCycles = cycleRepository.getAllCyclesOnce()
+        val existingRecords = cycleRepository.getAllDailyRecordsOnce()
+
+        // 现有数据的日期集合
+        val existingCycleDates = existingCycles.map { it.startDate }.toSet()
+        val existingRecordDates = existingRecords.map { it.date }.toSet()
+
+        // 筛选出新的周期（startDate 不存在的）
+        val newCycles = cycles.filter { it.startDate !in existingCycleDates }
+
+        // 插入新周期
+        val insertedCycleIds = cycleRepository.insertAllCycles(newCycles)
+        val newCyclesWithIds = newCycles.zip(insertedCycleIds) { cycle, newId ->
+            cycle.copy(id = newId)
+        }
+
+        // 构建完整的 startDate -> cycleId 映射（包含旧的和新的）
+        val allCycles = existingCycles + newCyclesWithIds
+        val startDateToCycleId = allCycles.associate { it.startDate to it.id }
+
+        // 筛选出新的日常记录，同时更新它们的 cycleId
+        val newRecords = dailyRecords
+            .filter { it.date !in existingRecordDates }
+            .map { record ->
+                // 找到这条记录对应的原始周期
+                val originalCycle = cycles.find { cycle ->
+                    record.cycleId?.let { cycle.id == it } == true
+                }
+                // 通过原始周期的 startDate 查找新的 cycleId
+                val newCycleId = originalCycle?.startDate?.let { startDateToCycleId[it] }
+                record.copy(cycleId = newCycleId)
+            }
+
+        // 插入新的日常记录
+        cycleRepository.insertAllDailyRecords(newRecords)
+
+        // 重新安排通知
+        tryRescheduleNotification()
+
+        _importResult.value = ImportResult.Success(
+            newCyclesWithIds,
+            newRecords
+        )
+        hideImportConfirmationDialog()
+        showImportResultDialog()
+    }
+
+    private suspend fun tryRescheduleNotification() {
+        try {
+            notificationScheduler.rescheduleNotificationIfNeeded()
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 

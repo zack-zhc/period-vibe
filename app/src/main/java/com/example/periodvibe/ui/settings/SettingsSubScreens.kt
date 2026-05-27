@@ -178,12 +178,30 @@ private fun CycleParametersContent(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                     Spacer(modifier = Modifier.height(8.dp))
-                                    Slider(
-                                        value = state.cycleLengthDefault.toFloat(),
-                                        onValueChange = { onUpdateCycleLength(it.toInt()) },
-                                        valueRange = state.cycleLengthRange.first.toFloat()..state.cycleLengthRange.last.toFloat(),
-                                        steps = state.cycleLengthRange.last - state.cycleLengthRange.first - 1
-                                    )
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(
+                                            text = "${state.cycleLengthRange.first}天",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Slider(
+                                            value = state.cycleLengthDefault.toFloat(),
+                                            onValueChange = { onUpdateCycleLength(it.toInt()) },
+                                            valueRange = state.cycleLengthRange.first.toFloat()..state.cycleLengthRange.last.toFloat(),
+                                            steps = state.cycleLengthRange.last - state.cycleLengthRange.first - 1,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = "${state.cycleLengthRange.last}天",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
                                 }
                             },
                             colors = ListItemDefaults.colors(
@@ -209,12 +227,30 @@ private fun CycleParametersContent(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                     Spacer(modifier = Modifier.height(8.dp))
-                                    Slider(
-                                        value = state.periodLengthDefault.toFloat(),
-                                        onValueChange = { onUpdatePeriodLength(it.toInt()) },
-                                        valueRange = state.periodLengthRange.first.toFloat()..state.periodLengthRange.last.toFloat(),
-                                        steps = state.periodLengthRange.last - state.periodLengthRange.first - 1
-                                    )
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(
+                                            text = "${state.periodLengthRange.first}天",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Slider(
+                                            value = state.periodLengthDefault.toFloat(),
+                                            onValueChange = { onUpdatePeriodLength(it.toInt()) },
+                                            valueRange = state.periodLengthRange.first.toFloat()..state.periodLengthRange.last.toFloat(),
+                                            steps = state.periodLengthRange.last - state.periodLengthRange.first - 1,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = "${state.periodLengthRange.last}天",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
                                 }
                             },
                             colors = ListItemDefaults.colors(
@@ -349,12 +385,30 @@ private fun RemindersContent(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                     Spacer(modifier = Modifier.height(8.dp))
-                                    Slider(
-                                        value = state.notificationDaysBefore.toFloat(),
-                                        onValueChange = { onUpdateNotificationDaysBefore(Math.round(it)) },
-                                        valueRange = 1f..7f,
-                                        steps = 5
-                                    )
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(
+                                            text = "1天",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Slider(
+                                            value = state.notificationDaysBefore.toFloat(),
+                                            onValueChange = { onUpdateNotificationDaysBefore(Math.round(it)) },
+                                            valueRange = 1f..7f,
+                                            steps = 5,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = "7天",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
                                 }
                             },
                             colors = ListItemDefaults.colors(
@@ -612,7 +666,7 @@ private fun PrivacyContent(
                         shapes = ListItemDefaults.segmentedShapes(index = 1, count = 2),
                         supportingContent = {
                             Text(
-                                text = "隐藏通知内容",
+                                text = "隐藏通知内容，不在锁屏显示经期详情",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -713,7 +767,10 @@ fun DataManagementScreen(
             cycleCount = cycleCount,
             recordCount = recordCount,
             onDismiss = { viewModel.hideImportConfirmationDialog() },
-            onConfirm = { viewModel.confirmImportData() }
+            onConfirm = { mode ->
+                viewModel.setImportMode(mode)
+                viewModel.confirmImportData()
+            }
         )
     }
 
