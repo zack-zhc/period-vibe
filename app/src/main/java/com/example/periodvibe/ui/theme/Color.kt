@@ -71,11 +71,11 @@ val OutlineVariantDark = Color(0xFF514345)
 
 // 周期阶段颜色 (Material 3 Expressive 风格)
 val MenstruationColor = Color(0xFFE91E63)
-val OvulationColor = Color(0xFF9C27B0)
+val OvulationColor = Color(0xFFFF6090)
 val FertileColor = Color(0xFFEC407A)
-val SafeColor = Color(0xFF4CAF50)
+val SafeColor = Color(0xFF42A5F5)
 val FollicularColor = Color(0xFF66BB6A)
-val LutealColor = Color(0xFFAB47BC)
+val LutealColor = Color(0xFFFFB74D)
 
 // 日历专用颜色
 // 经期：鲜明的红色，容易识别

@@ -89,11 +89,14 @@ import android.content.Context
 import com.example.periodvibe.R
 import com.example.periodvibe.domain.model.CyclePhase
 import com.example.periodvibe.ui.theme.PeriodVibeTheme
+import com.example.periodvibe.ui.home.CombinedInfoCard
 import com.example.periodvibe.ui.home.EmptyStateCard
+import com.example.periodvibe.ui.home.FeaturePreviewCard
 import com.example.periodvibe.ui.home.NextPhaseCard
 import com.example.periodvibe.ui.home.PregnancyChanceCard
 import com.example.periodvibe.ui.home.getNextPhase
 import com.example.periodvibe.ui.home.getPregnancyChance
+import com.example.periodvibe.ui.home.getTodayTip
 import com.example.periodvibe.ui.theme.FertileColor
 import com.example.periodvibe.ui.theme.FollicularColor
 import com.example.periodvibe.ui.theme.LutealColor
@@ -173,17 +176,16 @@ fun HomeScreen(
                 .padding(16.dp),
             contentAlignment = androidx.compose.ui.Alignment.BottomEnd
         ) {
-            if (hasCurrentCycle) {
-                RecordFAB(
-                    hasCurrentCycle = true,
-                    onClick = { viewModel.showEndCycleMenu() }
-                )
-            } else {
-                RecordFAB(
-                    hasCurrentCycle = false,
-                    onClick = { viewModel.showNewCycleSheet() }
-                )
-            }
+            RecordFAB(
+                hasCurrentCycle = hasCurrentCycle,
+                onClick = {
+                    if (hasCurrentCycle) {
+                        viewModel.showRecordSheet()
+                    } else {
+                        viewModel.showNewCycleSheet()
+                    }
+                }
+            )
         }
     }
 
@@ -265,28 +267,15 @@ private fun HomeContent(
             phase = phase,
             phaseData = phaseData,
             cycleLength = cycleLength,
+            daysUntilPeriod = daysUntilPeriod,
             daysUntilNextPhase = daysUntilNextPhase,
             nextPhaseName = nextPhaseName
         )
 
-        // 信息卡片网格
-        androidx.compose.foundation.layout.Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            NextPhaseCard(
-                phaseName = nextPhase.first,
-                daysUntil = daysUntilPeriod,
-                modifier = Modifier.weight(1f)
-            )
-
-            PregnancyChanceCard(
-                chanceLevel = pregnancyChance.first,
-                chanceLabel = pregnancyChance.second,
-                isFertile = pregnancyChance.third,
-                modifier = Modifier.weight(1f)
-            )
-        }
+        // 合并信息卡片
+        CombinedInfoCard(
+            phase = phase
+        )
 
         Spacer(modifier = Modifier.height(80.dp))
     }
@@ -319,6 +308,7 @@ private fun MainStatusCard(
     phase: CyclePhase,
     phaseData: PhaseData,
     cycleLength: Int,
+    daysUntilPeriod: Int,
     daysUntilNextPhase: Int,
     nextPhaseName: String
 ) {
@@ -335,8 +325,8 @@ private fun MainStatusCard(
             progress = progress,
             size = 256.dp,
             strokeWidth = 16.dp,
-            backgroundColor = MaterialTheme.colorScheme.surfaceVariant,
-            progressColor = MaterialTheme.colorScheme.primary
+            backgroundColor = phaseData.container,
+            progressColor = phaseData.primary
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -351,7 +341,7 @@ private fun MainStatusCard(
                     text = "$cycleDay",
                     style = MaterialTheme.typography.displayLarge,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+                    color = phaseData.primary
                 )
                 Text(
                     text = "天",
@@ -367,19 +357,20 @@ private fun MainStatusCard(
                         text = phase.displayName,
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = phaseData.primary,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
                     )
                 }
             }
         }
 
-        // Days until next phase
+        // Days until next period
         Text(
-            text = if (daysUntilNextPhase == 1) {
-                "距离 $nextPhaseName 还有 1 天"
-            } else {
-                "距离 $nextPhaseName 还有 $daysUntilNextPhase 天"
+            text = when {
+                daysUntilPeriod == 0 -> "月经预计今天来"
+                daysUntilPeriod == 1 -> "距离下次月经还有 1 天"
+                phase == CyclePhase.MENSTRATION -> "本次月经第 $cycleDay 天"
+                else -> "距离下次月经还有 $daysUntilPeriod 天"
             },
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
@@ -607,8 +598,8 @@ private fun RecordFAB(
         onClick = onClick
     ) {
         Icon(
-            imageVector = if (hasCurrentCycle) Icons.Default.Check else Icons.Default.Add,
-            contentDescription = if (hasCurrentCycle) "结束周期" else "开始新周期"
+            imageVector = Icons.Default.Add,
+            contentDescription = if (hasCurrentCycle) "记录今日状态" else "开始新周期"
         )
     }
 }
@@ -731,27 +722,8 @@ private fun NoDataState(darkTheme: Boolean) {
             }
         }
 
-        // 空状态卡片网格
-        androidx.compose.foundation.layout.Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // 下一阶段卡片
-            EmptyStateCard(
-                icon = Icons.Default.AutoAwesome,
-                title = "下一阶段",
-                subtitle = "等待数据中...",
-                modifier = Modifier.weight(1f)
-            )
-
-            // 怀孕几率卡片
-            EmptyStateCard(
-                icon = Icons.Default.BubbleChart,
-                title = "怀孕几率",
-                subtitle = "未追踪",
-                modifier = Modifier.weight(1f)
-            )
-        }
+        // 功能预告卡片
+        FeaturePreviewCard()
 
         Spacer(modifier = Modifier.height(80.dp))
     }
@@ -1054,6 +1026,45 @@ private fun HomeScreenPreview_Luteal() {
     }
 }
 
+@Preview(showBackground = true, name = "首页 - 安全期")
+@Composable
+private fun HomeScreenPreview_Safe() {
+    PeriodVibeTheme {
+        androidx.compose.material3.Scaffold(
+            modifier = Modifier.fillMaxSize()
+        ) { paddingValues ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                HomeContent(
+                    cycleDay = 26,
+                    daysUntilPeriod = 2,
+                    phase = CyclePhase.SAFE,
+                    hasCurrentCycle = true,
+                    cycleLength = 28,
+                    daysUntilNextPhase = 2,
+                    nextPhaseName = "月经期",
+                    ovulationDate = null
+                )
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    contentAlignment = Alignment.BottomEnd
+                ) {
+                    RecordFAB(
+                        hasCurrentCycle = true,
+                        onClick = {}
+                    )
+                }
+            }
+        }
+    }
+}
+
 @Preview(showBackground = true, name = "首页 - 空状态")
 @Composable
 private fun HomeScreenPreview_NoData() {
@@ -1097,6 +1108,96 @@ private fun HomeScreenPreview_Loading() {
                     .padding(paddingValues)
             ) {
                 LoadingState()
+            }
+        }
+    }
+}
+
+// region 新合并卡片 Preview
+
+@Preview(showBackground = true, name = "合并卡片 - 月经期")
+@Composable
+private fun CombinedInfoCardPreview_Menstruation() {
+    PeriodVibeTheme {
+        androidx.compose.foundation.layout.Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+        ) {
+            CombinedInfoCard(
+                phase = CyclePhase.MENSTRATION
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true, name = "合并卡片 - 排卵期")
+@Composable
+private fun CombinedInfoCardPreview_Ovulation() {
+    PeriodVibeTheme {
+        androidx.compose.foundation.layout.Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+        ) {
+            CombinedInfoCard(
+                phase = CyclePhase.OVULATION
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true, name = "首页 - 使用合并卡片（备选方案）")
+@Composable
+private fun HomeScreenPreview_WithCombinedCard() {
+    PeriodVibeTheme {
+        androidx.compose.material3.Scaffold(
+            modifier = Modifier.fillMaxSize()
+        ) { paddingValues ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    GreetingSection()
+
+                    MainStatusCard(
+                        cycleDay = 3,
+                        phase = CyclePhase.MENSTRATION,
+                        phaseData = getPhaseData(CyclePhase.MENSTRATION),
+                        cycleLength = 28,
+                        daysUntilPeriod = 0,
+                        daysUntilNextPhase = 4,
+                        nextPhaseName = "卵泡期"
+                    )
+
+                    // 使用合并卡片
+                    CombinedInfoCard(
+                        phase = CyclePhase.MENSTRATION
+                    )
+
+                    Spacer(modifier = Modifier.height(80.dp))
+                }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    contentAlignment = Alignment.BottomEnd
+                ) {
+                    RecordFAB(
+                        hasCurrentCycle = true,
+                        onClick = {}
+                    )
+                }
             }
         }
     }
