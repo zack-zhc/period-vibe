@@ -313,7 +313,6 @@ fun PeriodVibeNavHost(
                     onNavigateToSettings = { navigateToTopLevel(Screen.Settings) },
                     onDateClick = {},
                     scrollBehavior = scrollBehavior,
-                    onLegendClick = { showLegendDialog = true },
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues)

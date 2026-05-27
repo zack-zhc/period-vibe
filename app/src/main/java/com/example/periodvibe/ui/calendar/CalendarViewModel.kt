@@ -31,14 +31,11 @@ class CalendarViewModel @Inject constructor(
     private val _currentYearMonth = MutableStateFlow(YearMonth.now())
     val currentYearMonth: StateFlow<YearMonth> = _currentYearMonth.asStateFlow()
 
-    private val _selectedDate = MutableStateFlow<LocalDate?>(null)
+    private val _selectedDate = MutableStateFlow<LocalDate?>(LocalDate.now())
     val selectedDate: StateFlow<LocalDate?> = _selectedDate.asStateFlow()
 
     private val _showEndCycleDialog = MutableStateFlow(false)
     val showEndCycleDialog: StateFlow<Boolean> = _showEndCycleDialog.asStateFlow()
-
-    private val _showLegendDialog = MutableStateFlow(false)
-    val showLegendDialog: StateFlow<Boolean> = _showLegendDialog.asStateFlow()
 
     private val _activeCycle = MutableStateFlow<com.example.periodvibe.domain.model.Cycle?>(null)
     val activeCycle: StateFlow<com.example.periodvibe.domain.model.Cycle?> = _activeCycle.asStateFlow()
@@ -127,14 +124,6 @@ class CalendarViewModel @Inject constructor(
 
     fun hideEndCycleDialog() {
         _showEndCycleDialog.value = false
-    }
-
-    fun showLegendDialog() {
-        _showLegendDialog.value = true
-    }
-
-    fun hideLegendDialog() {
-        _showLegendDialog.value = false
     }
 
     fun endCycle(endDate: LocalDate) {

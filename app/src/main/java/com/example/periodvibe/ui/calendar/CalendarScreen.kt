@@ -43,6 +43,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -75,7 +76,6 @@ fun CalendarScreen(
     onNavigateToSettings: () -> Unit,
     onDateClick: (java.time.LocalDate) -> Unit,
     scrollBehavior: TopAppBarScrollBehavior? = null,
-    onLegendClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     viewModel: CalendarViewModel = hiltViewModel()
 ) {
@@ -346,10 +346,21 @@ fun LegendDialog(onDismiss: () -> Unit) {
             Column(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                LegendItem(
+                    color = MaterialTheme.colorScheme.primary,
+                    label = "今天 / 已选中",
+                    isPredicted = false,
+                    isTodayOrSelected = true
+                )
                 LegendItem(color = periodColor, label = "已记录经期", isPredicted = false)
                 LegendItem(color = periodColor, label = "预测经期", isPredicted = true)
                 LegendItem(color = ovulationColor, label = "排卵期", isPredicted = false)
                 LegendItem(color = fertileColor, label = "易孕期", isPredicted = false)
+                Text(
+                    text = "提示：右上角有对勾标记表示该日期有记录",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                )
             }
         },
         confirmButton = {
@@ -361,7 +372,12 @@ fun LegendDialog(onDismiss: () -> Unit) {
 }
 
 @Composable
-private fun LegendItem(color: Color, label: String, isPredicted: Boolean) {
+private fun LegendItem(
+    color: Color,
+    label: String,
+    isPredicted: Boolean,
+    isTodayOrSelected: Boolean = false
+) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -370,7 +386,15 @@ private fun LegendItem(color: Color, label: String, isPredicted: Boolean) {
             modifier = Modifier
                 .size(16.dp)
                 .clip(CircleShape)
-                .background(color.copy(alpha = if (isPredicted) 0.5f else 1f))
+                .then(
+                    if (isTodayOrSelected) {
+                        Modifier
+                            .background(color)
+                            .shadow(elevation = 4.dp, shape = CircleShape)
+                    } else {
+                        Modifier.background(color.copy(alpha = if (isPredicted) 0.5f else 1f))
+                    }
+                )
                 .then(
                     if (isPredicted) {
                         Modifier.border(
