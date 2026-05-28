@@ -1,11 +1,11 @@
 package com.example.periodvibe.ui.history.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -27,6 +27,7 @@ import java.util.Locale
 fun DailyRecordRow(
     record: DailyRecord,
     onEditClick: () -> Unit,
+    onDeleteClick: () -> Unit,
     isDark: Boolean,
     modifier: Modifier = Modifier
 ) {
@@ -52,9 +53,7 @@ fun DailyRecordRow(
                         .background(periodColor)
                 )
             } else {
-                Box(
-                    modifier = Modifier.size(8.dp)
-                )
+                Box(modifier = Modifier.size(8.dp))
             }
             Text(
                 text = record.date.format(formatter),
@@ -101,6 +100,29 @@ fun DailyRecordRow(
                             imageVector = Icons.Rounded.Edit,
                             contentDescription = "编辑",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+            }
+
+            IconButton(
+                onClick = onDeleteClick,
+                modifier = Modifier.size(32.dp)
+            ) {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.errorContainer,
+                    tonalElevation = 0.dp
+                ) {
+                    Box(
+                        modifier = Modifier.size(28.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Delete,
+                            contentDescription = "删除",
+                            tint = MaterialTheme.colorScheme.onErrorContainer,
                             modifier = Modifier.size(16.dp)
                         )
                     }

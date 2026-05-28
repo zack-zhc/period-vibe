@@ -52,7 +52,10 @@ class HistoryViewModel @Inject constructor(
                     cycles = data.cycles,
                     totalCycles = data.totalCycles,
                     hasData = data.hasData,
-                    unassociatedRecords = data.unassociatedRecords
+                    avgCycleLength = data.avgCycleLength,
+                    longestCycle = data.longestCycle,
+                    shortestCycle = data.shortestCycle,
+                    avgPeriodLength = data.avgPeriodLength
                 )
             }
         }
@@ -176,6 +179,9 @@ sealed class HistoryUiState {
         val cycles: List<com.example.periodvibe.domain.usecase.CycleWithRecords>,
         val totalCycles: Int,
         val hasData: Boolean,
-        val unassociatedRecords: List<com.example.periodvibe.domain.model.DailyRecord> = emptyList()
+        val avgCycleLength: Int? = null,
+        val longestCycle: Int? = null,
+        val shortestCycle: Int? = null,
+        val avgPeriodLength: Int? = null
     ) : HistoryUiState()
 }

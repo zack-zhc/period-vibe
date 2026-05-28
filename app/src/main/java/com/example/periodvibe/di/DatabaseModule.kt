@@ -84,6 +84,40 @@ object DatabaseModule {
         }
     }
 
+    private val MIGRATION_5_6 = object : Migration(5, 6) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL(
+                """
+                CREATE TABLE daily_records_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    date TEXT NOT NULL,
+                    cycle_id INTEGER,
+                    is_period INTEGER NOT NULL,
+                    flow_level TEXT,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    FOREIGN KEY(cycle_id) REFERENCES cycles(id) ON DELETE CASCADE
+                )
+                """.trimIndent()
+            )
+
+            database.execSQL(
+                """
+                INSERT INTO daily_records_new (id, date, cycle_id, is_period, flow_level, created_at, updated_at)
+                SELECT id, date, cycle_id, is_period, flow_level, created_at, updated_at
+                FROM daily_records
+                """.trimIndent()
+            )
+
+            database.execSQL("DROP TABLE daily_records")
+            database.execSQL("ALTER TABLE daily_records_new RENAME TO daily_records")
+
+            database.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_daily_records_date ON daily_records(date)")
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_daily_records_cycle_id ON daily_records(cycle_id)")
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_daily_records_is_period ON daily_records(is_period)")
+        }
+    }
+
     @Provides
     @Singleton
     fun provideAppDatabase(
@@ -93,7 +127,7 @@ object DatabaseModule {
             context,
             AppDatabase::class.java,
             "period_vibe_database"
-        ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+        ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
          .build()
     }
 

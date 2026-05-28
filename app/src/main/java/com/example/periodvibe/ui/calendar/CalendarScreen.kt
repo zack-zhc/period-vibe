@@ -609,9 +609,7 @@ private fun generateTestDailyRecord(date: LocalDate, flowLevel: FlowLevel): Dail
         date = date,
         cycleId = 1,
         isPeriod = true,
-        flowLevel = flowLevel,
-        symptoms = emptyList(),
-        notes = null
+        flowLevel = flowLevel
     )
 }
 

@@ -72,12 +72,6 @@ data class DailyRecordDto(
     @SerializedName("flow_level")
     val flowLevel: String? = null,
 
-    @SerializedName("symptoms")
-    val symptoms: List<String> = emptyList(),
-
-    @SerializedName("notes")
-    val notes: String? = null,
-
     @SerializedName("created_at")
     val createdAt: LocalDateTime? = null,
 

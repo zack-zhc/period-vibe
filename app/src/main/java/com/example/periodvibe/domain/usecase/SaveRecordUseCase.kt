@@ -42,8 +42,6 @@ class SaveRecordUseCase @Inject constructor(
                 existingRecord.copy(
                     isPeriod = isPeriod,
                     flowLevel = flowLevel,
-                    symptoms = emptyList(),
-                    notes = null,
                     cycleId = targetCycle?.id ?: existingRecord.cycleId
                 )
             } else {
@@ -51,9 +49,7 @@ class SaveRecordUseCase @Inject constructor(
                     date = date,
                     cycleId = targetCycle?.id,
                     isPeriod = isPeriod,
-                    flowLevel = flowLevel,
-                    symptoms = emptyList(),
-                    notes = null
+                    flowLevel = flowLevel
                 )
             }
 

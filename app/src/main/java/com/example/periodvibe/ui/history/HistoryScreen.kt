@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -33,6 +35,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -45,6 +48,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -59,8 +63,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -72,7 +79,6 @@ import com.example.periodvibe.domain.model.FlowLevel
 import com.example.periodvibe.domain.usecase.CycleWithRecords
 import com.example.periodvibe.ui.history.components.DailyRecordRow
 import com.example.periodvibe.ui.history.components.EditModeBottomBar
-import com.example.periodvibe.ui.history.components.MiniTimeline
 import com.example.periodvibe.ui.home.RecordBottomSheetContent
 import com.example.periodvibe.ui.home.RecordMode
 import com.example.periodvibe.ui.theme.PeriodVibeTheme
@@ -95,6 +101,7 @@ fun HistoryScreen(
     val historyData by viewModel.historyData.collectAsState()
     val selectedCycleId by viewModel.selectedCycleId.collectAsState()
     val showDeleteDialog by viewModel.showDeleteDialog.collectAsState()
+    val showDeleteRecordDialog by viewModel.showDeleteRecordDialog.collectAsState()
     val showEditDialog by viewModel.showEditDialog.collectAsState()
     val isEditMode by viewModel.isEditMode.collectAsState()
     val selectedCycles by viewModel.selectedCycles.collectAsState()
@@ -102,7 +109,7 @@ fun HistoryScreen(
 
     // 检查是否有数据
     val hasData = when (val state = historyData) {
-        is HistoryUiState.Success -> state.hasData || state.unassociatedRecords.isNotEmpty()
+        is HistoryUiState.Success -> state.hasData
         else -> false
     }
 
@@ -148,7 +155,7 @@ fun HistoryScreen(
                     LoadingState(modifier = Modifier.fillMaxSize())
                 }
                 is HistoryUiState.Success -> {
-                    if (state.hasData || state.unassociatedRecords.isNotEmpty()) {
+                    if (state.hasData) {
                         HistoryContent(
                             cycles = state.cycles,
                             selectedCycleId = selectedCycleId,
@@ -173,6 +180,13 @@ fun HistoryScreen(
                             onRecordEditClick = { record ->
                                 viewModel.showEditDialog(record)
                             },
+                            onRecordDeleteClick = { recordId ->
+                                viewModel.showDeleteRecordDialog(recordId)
+                            },
+                            avgCycleLength = state.avgCycleLength,
+                            longestCycle = state.longestCycle,
+                            shortestCycle = state.shortestCycle,
+                            avgPeriodLength = state.avgPeriodLength,
                             isDark = isDark,
                             modifier = Modifier.fillMaxSize()
                         )
@@ -192,11 +206,26 @@ fun HistoryScreen(
 
     if (showDeleteDialog != null) {
         DeleteConfirmDialog(
+            title = "删除周期",
+            message = "确定要删除这个周期记录吗？此操作无法撤销。",
             onConfirm = {
                 viewModel.deleteCycle(showDeleteDialog!!)
             },
             onDismiss = {
                 viewModel.hideDeleteDialog()
+            }
+        )
+    }
+
+    if (showDeleteRecordDialog != null) {
+        DeleteConfirmDialog(
+            title = "删除记录",
+            message = "确定要删除这条记录吗？此操作无法撤销。",
+            onConfirm = {
+                viewModel.deleteDailyRecord(showDeleteRecordDialog!!)
+            },
+            onDismiss = {
+                viewModel.hideDeleteRecordDialog()
             }
         )
     }
@@ -241,15 +270,16 @@ private fun HistoryContent(
     onCycleClick: (Long) -> Unit,
     onCycleLongClick: (Long) -> Unit,
     onRecordEditClick: (DailyRecord) -> Unit,
+    onRecordDeleteClick: (Long) -> Unit,
+    avgCycleLength: Int?,
+    longestCycle: Int?,
+    shortestCycle: Int?,
+    avgPeriodLength: Int?,
     isDark: Boolean,
     modifier: Modifier = Modifier
 ) {
     val cyclesByYear = remember(cycles) {
         cycles.groupBy { it.year }.toSortedMap(reverseOrder())
-    }
-    val avgCycleLength = remember(cycles) {
-        val validCycles = cycles.mapNotNull { it.cycleLengthDays }
-        if (validCycles.isNotEmpty()) validCycles.average().toInt() else null
     }
 
     LazyColumn(
@@ -261,6 +291,9 @@ private fun HistoryContent(
             StatsCards(
                 totalCycles = cycles.size,
                 avgCycleLength = avgCycleLength,
+                longestCycle = longestCycle,
+                shortestCycle = shortestCycle,
+                avgPeriodLength = avgPeriodLength,
                 isDark = isDark,
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
@@ -282,6 +315,7 @@ private fun HistoryContent(
                     onClick = { onCycleClick(cycleWithRecords.cycle.id) },
                     onLongClick = { onCycleLongClick(cycleWithRecords.cycle.id) },
                     onRecordEditClick = onRecordEditClick,
+                    onRecordDeleteClick = onRecordDeleteClick,
                     isDark = isDark
                 )
             }
@@ -293,66 +327,139 @@ private fun HistoryContent(
 private fun StatsCards(
     totalCycles: Int,
     avgCycleLength: Int?,
+    longestCycle: Int?,
+    shortestCycle: Int?,
+    avgPeriodLength: Int?,
     isDark: Boolean,
     modifier: Modifier = Modifier
 ) {
     val periodColor = if (isDark) CalendarPeriodDark else CalendarPeriodLight
 
-    Row(
+    Column(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // 总周期数卡片
-        Surface(
-            modifier = Modifier.weight(1f),
-            shape = RoundedCornerShape(20.dp),
-            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-            tonalElevation = 0.dp
+        // 第一行
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+            // 总周期数卡片
+            Surface(
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                tonalElevation = 0.dp
             ) {
-                Text(
-                    text = "总周期数",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "$totalCycles",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = periodColor
-                )
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "总周期数",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "$totalCycles",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = periodColor
+                    )
+                }
+            }
+
+            // 平均周期卡片
+            Surface(
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                tonalElevation = 0.dp
+            ) {
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "平均周期",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = if (avgCycleLength != null) "$avgCycleLength 天" else "-- 天",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = periodColor
+                    )
+                }
             }
         }
 
-        // 平均周期卡片
-        Surface(
-            modifier = Modifier.weight(1f),
-            shape = RoundedCornerShape(20.dp),
-            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-            tonalElevation = 0.dp
+        // 第二行
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+            // 平均经期卡片
+            Surface(
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                tonalElevation = 0.dp
             ) {
-                Text(
-                    text = "平均周期",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = if (avgCycleLength != null) "$avgCycleLength 天" else "-- 天",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = periodColor
-                )
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "平均经期",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = if (avgPeriodLength != null) "$avgPeriodLength 天" else "-- 天",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = periodColor
+                    )
+                }
+            }
+
+            // 最长/最短周期卡片
+            Surface(
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                tonalElevation = 0.dp
+            ) {
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "最长/最短周期",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = if (longestCycle != null && shortestCycle != null) {
+                            "$longestCycle 天/$shortestCycle 天"
+                        } else {
+                            "-- 天/-- 天"
+                        },
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = periodColor
+                    )
+                }
             }
         }
     }
@@ -486,6 +593,7 @@ private fun CycleCard(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     onRecordEditClick: (DailyRecord) -> Unit,
+    onRecordDeleteClick: (Long) -> Unit,
     isDark: Boolean,
     modifier: Modifier = Modifier
 ) {
@@ -502,6 +610,11 @@ private fun CycleCard(
         FlowLevel.HEAVY -> "大量"
         null -> ""
     }
+    val arrowRotation by animateFloatAsState(
+        targetValue = if (isExpanded) 180f else 0f,
+        animationSpec = tween(durationMillis = 200),
+        label = "arrowRotation"
+    )
 
     Surface(
         modifier = modifier
@@ -590,23 +703,27 @@ private fun CycleCard(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
+                        Text(
+                            text = "·",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.outline
+                        )
+                        Text(
+                            text = if (cycleWithRecords.cycleLengthDays != null) "周期${cycleWithRecords.cycleLengthDays}天" else "周期--天",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
 
-                Column(
-                    horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Text(
-                        text = if (cycleWithRecords.cycleLengthDays != null) "${cycleWithRecords.cycleLengthDays}天" else "--天",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Text(
-                        text = "周期长度",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.outline
+                if (!isEditMode) {
+                    Icon(
+                        imageVector = Icons.Rounded.ExpandMore,
+                        contentDescription = if (isExpanded) "收起" else "展开",
+                        tint = MaterialTheme.colorScheme.outline,
+                        modifier = Modifier
+                            .size(20.dp)
+                            .rotate(arrowRotation)
                     )
                 }
             }
@@ -633,6 +750,7 @@ private fun CycleCard(
                         DailyRecordRow(
                             record = record,
                             onEditClick = { onRecordEditClick(record) },
+                            onDeleteClick = { onRecordDeleteClick(record.id) },
                             isDark = isDark
                         )
                     }
@@ -644,6 +762,8 @@ private fun CycleCard(
 
 @Composable
 private fun DeleteConfirmDialog(
+    title: String = "确认删除",
+    message: String = "确定要删除这个周期记录吗？此操作无法撤销。",
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -651,14 +771,14 @@ private fun DeleteConfirmDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                text = "确认删除",
+                text = title,
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold
             )
         },
         text = {
             Text(
-                text = "确定要删除这个周期记录吗？此操作无法撤销。",
+                text = message,
                 style = MaterialTheme.typography.bodyLarge
             )
         },
@@ -705,6 +825,11 @@ private fun HistoryScreenPreview_WithData() {
                 onCycleClick = { },
                 onCycleLongClick = { },
                 onRecordEditClick = { },
+                onRecordDeleteClick = { },
+                avgCycleLength = 30,
+                longestCycle = 35,
+                shortestCycle = 28,
+                avgPeriodLength = 5,
                 isDark = false,
                 modifier = Modifier
                     .fillMaxSize()
@@ -759,6 +884,11 @@ private fun HistoryScreenPreview_EditMode() {
                 onCycleClick = { },
                 onCycleLongClick = { },
                 onRecordEditClick = { },
+                onRecordDeleteClick = { },
+                avgCycleLength = 30,
+                longestCycle = 35,
+                shortestCycle = 28,
+                avgPeriodLength = 5,
                 isDark = false,
                 modifier = Modifier
                     .fillMaxSize()
@@ -790,54 +920,42 @@ private fun generateTestCycles(): List<CycleWithRecords> {
                     date = now.minusDays(40),
                     cycleId = 1,
                     isPeriod = true,
-                    flowLevel = FlowLevel.MEDIUM,
-                    symptoms = emptyList(),
-                    notes = null
+                    flowLevel = FlowLevel.MEDIUM
                 ),
                 DailyRecord(
                     id = 102,
                     date = now.minusDays(39),
                     cycleId = 1,
                     isPeriod = true,
-                    flowLevel = FlowLevel.HEAVY,
-                    symptoms = emptyList(),
-                    notes = null
+                    flowLevel = FlowLevel.HEAVY
                 ),
                 DailyRecord(
                     id = 103,
                     date = now.minusDays(38),
                     cycleId = 1,
                     isPeriod = true,
-                    flowLevel = FlowLevel.HEAVY,
-                    symptoms = emptyList(),
-                    notes = null
+                    flowLevel = FlowLevel.HEAVY
                 ),
                 DailyRecord(
                     id = 104,
                     date = now.minusDays(37),
                     cycleId = 1,
                     isPeriod = true,
-                    flowLevel = FlowLevel.MEDIUM,
-                    symptoms = emptyList(),
-                    notes = null
+                    flowLevel = FlowLevel.MEDIUM
                 ),
                 DailyRecord(
                     id = 105,
                     date = now.minusDays(36),
                     cycleId = 1,
                     isPeriod = true,
-                    flowLevel = FlowLevel.LIGHT,
-                    symptoms = emptyList(),
-                    notes = null
+                    flowLevel = FlowLevel.LIGHT
                 ),
                 DailyRecord(
                     id = 106,
                     date = now.minusDays(35),
                     cycleId = 1,
                     isPeriod = true,
-                    flowLevel = FlowLevel.LIGHT,
-                    symptoms = emptyList(),
-                    notes = null
+                    flowLevel = FlowLevel.LIGHT
                 )
             ),
             calculatedCycleLength = 30
@@ -860,54 +978,42 @@ private fun generateTestCycles(): List<CycleWithRecords> {
                     date = now.minusDays(70),
                     cycleId = 2,
                     isPeriod = true,
-                    flowLevel = FlowLevel.LIGHT,
-                    symptoms = emptyList(),
-                    notes = null
+                    flowLevel = FlowLevel.LIGHT
                 ),
                 DailyRecord(
                     id = 202,
                     date = now.minusDays(69),
                     cycleId = 2,
                     isPeriod = true,
-                    flowLevel = FlowLevel.MEDIUM,
-                    symptoms = emptyList(),
-                    notes = null
+                    flowLevel = FlowLevel.MEDIUM
                 ),
                 DailyRecord(
                     id = 203,
                     date = now.minusDays(68),
                     cycleId = 2,
                     isPeriod = true,
-                    flowLevel = FlowLevel.MEDIUM,
-                    symptoms = emptyList(),
-                    notes = null
+                    flowLevel = FlowLevel.MEDIUM
                 ),
                 DailyRecord(
                     id = 204,
                     date = now.minusDays(67),
                     cycleId = 2,
                     isPeriod = true,
-                    flowLevel = FlowLevel.LIGHT,
-                    symptoms = emptyList(),
-                    notes = null
+                    flowLevel = FlowLevel.LIGHT
                 ),
                 DailyRecord(
                     id = 205,
                     date = now.minusDays(66),
                     cycleId = 2,
                     isPeriod = true,
-                    flowLevel = FlowLevel.LIGHT,
-                    symptoms = emptyList(),
-                    notes = null
+                    flowLevel = FlowLevel.LIGHT
                 ),
                 DailyRecord(
                     id = 206,
                     date = now.minusDays(65),
                     cycleId = 2,
                     isPeriod = true,
-                    flowLevel = FlowLevel.LIGHT,
-                    symptoms = emptyList(),
-                    notes = null
+                    flowLevel = FlowLevel.LIGHT
                 )
             ),
             calculatedCycleLength = 28
@@ -931,63 +1037,49 @@ private fun generateTestCycles(): List<CycleWithRecords> {
                     date = now.minusDays(400),
                     cycleId = 3,
                     isPeriod = true,
-                    flowLevel = FlowLevel.HEAVY,
-                    symptoms = emptyList(),
-                    notes = null
+                    flowLevel = FlowLevel.HEAVY
                 ),
                 DailyRecord(
                     id = 302,
                     date = now.minusDays(399),
                     cycleId = 3,
                     isPeriod = true,
-                    flowLevel = FlowLevel.HEAVY,
-                    symptoms = emptyList(),
-                    notes = null
+                    flowLevel = FlowLevel.HEAVY
                 ),
                 DailyRecord(
                     id = 303,
                     date = now.minusDays(398),
                     cycleId = 3,
                     isPeriod = true,
-                    flowLevel = FlowLevel.HEAVY,
-                    symptoms = emptyList(),
-                    notes = null
+                    flowLevel = FlowLevel.HEAVY
                 ),
                 DailyRecord(
                     id = 304,
                     date = now.minusDays(397),
                     cycleId = 3,
                     isPeriod = true,
-                    flowLevel = FlowLevel.MEDIUM,
-                    symptoms = emptyList(),
-                    notes = null
+                    flowLevel = FlowLevel.MEDIUM
                 ),
                 DailyRecord(
                     id = 305,
                     date = now.minusDays(396),
                     cycleId = 3,
                     isPeriod = true,
-                    flowLevel = FlowLevel.MEDIUM,
-                    symptoms = emptyList(),
-                    notes = null
+                    flowLevel = FlowLevel.MEDIUM
                 ),
                 DailyRecord(
                     id = 306,
                     date = now.minusDays(395),
                     cycleId = 3,
                     isPeriod = true,
-                    flowLevel = FlowLevel.LIGHT,
-                    symptoms = emptyList(),
-                    notes = null
+                    flowLevel = FlowLevel.LIGHT
                 ),
                 DailyRecord(
                     id = 307,
                     date = now.minusDays(394),
                     cycleId = 3,
                     isPeriod = true,
-                    flowLevel = FlowLevel.LIGHT,
-                    symptoms = emptyList(),
-                    notes = null
+                    flowLevel = FlowLevel.LIGHT
                 )
             ),
             calculatedCycleLength = 29

@@ -9,7 +9,6 @@ import com.example.periodvibe.data.mapper.DailyRecordMapper
 import com.example.periodvibe.domain.model.Cycle
 import com.example.periodvibe.domain.model.DailyRecord
 import com.example.periodvibe.domain.model.FlowLevel
-import com.example.periodvibe.domain.model.Symptom
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonDeserializationContext
@@ -175,8 +174,6 @@ class DataExportImportService @Inject constructor(
             cycleDate = cycleDate,
             isPeriod = record.isPeriod,
             flowLevel = record.flowLevel?.name,
-            symptoms = record.symptoms.map { it.name },
-            notes = record.notes,
             createdAt = record.createdAt,
             updatedAt = record.updatedAt
         )
@@ -208,10 +205,6 @@ class DataExportImportService @Inject constructor(
             cycleId = cycleId,
             isPeriod = dto.isPeriod,
             flowLevel = dto.flowLevel?.let { FlowLevel.valueOf(it) },
-            symptoms = dto.symptoms.mapNotNull { symptomName ->
-                Symptom.values().find { it.name == symptomName }
-            },
-            notes = dto.notes,
             createdAt = dto.createdAt ?: LocalDateTime.now(),
             updatedAt = dto.updatedAt ?: LocalDateTime.now()
         )
@@ -248,15 +241,6 @@ class DataExportImportService @Inject constructor(
                     FlowLevel.valueOf(flowLevelName)
                 } catch (e: IllegalArgumentException) {
                     errors.add("无效的经量值: $flowLevelName (记录日期: ${record.date})")
-                }
-            }
-
-            // 验证 Symptoms
-            record.symptoms.forEach { symptomName ->
-                try {
-                    Symptom.valueOf(symptomName)
-                } catch (e: IllegalArgumentException) {
-                    errors.add("无效的症状值: $symptomName (记录日期: ${record.date})")
                 }
             }
         }

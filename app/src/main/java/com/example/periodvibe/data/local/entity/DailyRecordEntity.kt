@@ -40,12 +40,6 @@ data class DailyRecordEntity(
     @ColumnInfo(name = "flow_level")
     val flowLevel: String?,
 
-    @ColumnInfo(name = "symptoms")
-    val symptoms: String,
-
-    @ColumnInfo(name = "notes")
-    val notes: String?,
-
     @ColumnInfo(name = "created_at")
     val createdAt: LocalDateTime,
 

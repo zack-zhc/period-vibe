@@ -40,14 +40,23 @@ class GetHistoryDataUseCase @Inject constructor(
                 )
             }.sortedByDescending { it.cycle.startDate }
 
-            val unassociatedRecords = records.filter { it.cycleId == null }
-            val hasUnassociatedRecords = unassociatedRecords.isNotEmpty()
+            // 计算统计指标
+            val validCycles = cycleWithRecords.mapNotNull { it.cycleLengthDays }
+            val avgCycleLength = if (validCycles.isNotEmpty()) validCycles.average().toInt() else null
+            val longestCycle = validCycles.maxOrNull()
+            val shortestCycle = validCycles.minOrNull()
+
+            val allPeriodDays = cycleWithRecords.map { it.periodDaysCount }.filter { it > 0 }
+            val avgPeriodLength = if (allPeriodDays.isNotEmpty()) allPeriodDays.average().toInt() else null
 
             HistoryData(
                 cycles = cycleWithRecords,
                 totalCycles = cycles.size,
-                hasData = cycles.isNotEmpty() || hasUnassociatedRecords,
-                unassociatedRecords = unassociatedRecords.sortedBy { it.date }
+                hasData = cycles.isNotEmpty(),
+                avgCycleLength = avgCycleLength,
+                longestCycle = longestCycle,
+                shortestCycle = shortestCycle,
+                avgPeriodLength = avgPeriodLength
             )
         }
     }
@@ -66,21 +75,11 @@ class GetHistoryDataUseCase @Inject constructor(
             ?.average()
             ?.let { FlowLevel.fromValue(it.toInt()) }
 
-        val commonSymptoms = recordsList
-            .flatMap { it.symptoms }
-            .groupingBy { it }
-            .eachCount()
-            .entries
-            .sortedByDescending { it.value }
-            .take(3)
-            .map { it.key }
-
         return CycleDetails(
             cycle = cycle,
             records = recordsList.sortedBy { it.date },
             periodDays = periodDays,
-            averageFlowLevel = averageFlowLevel,
-            commonSymptoms = commonSymptoms
+            averageFlowLevel = averageFlowLevel
         )
     }
 
@@ -103,7 +102,10 @@ data class HistoryData(
     val cycles: List<CycleWithRecords>,
     val totalCycles: Int,
     val hasData: Boolean,
-    val unassociatedRecords: List<DailyRecord> = emptyList()
+    val avgCycleLength: Int? = null,
+    val longestCycle: Int? = null,
+    val shortestCycle: Int? = null,
+    val avgPeriodLength: Int? = null
 )
 
 data class CycleWithRecords(
@@ -177,6 +179,5 @@ data class CycleDetails(
     val cycle: Cycle,
     val records: List<DailyRecord>,
     val periodDays: Int,
-    val averageFlowLevel: FlowLevel?,
-    val commonSymptoms: List<com.example.periodvibe.domain.model.Symptom>
+    val averageFlowLevel: FlowLevel?
 )

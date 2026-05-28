@@ -5,7 +5,6 @@ import android.net.Uri
 import com.example.periodvibe.domain.model.Cycle
 import com.example.periodvibe.domain.model.DailyRecord
 import com.example.periodvibe.domain.model.FlowLevel
-import com.example.periodvibe.domain.model.Symptom
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.time.LocalDate
@@ -41,7 +40,7 @@ class CsvExportImportService @Inject constructor() {
     companion object {
         // CSV 表头
         private const val CYCLE_CSV_HEADER = "id,start_date,end_date,cycle_length,period_length,average_flow_level,is_completed,created_at,updated_at"
-        private const val DAILY_RECORD_CSV_HEADER = "id,date,cycle_start_date,is_period,flow_level,symptoms,notes,created_at,updated_at"
+        private const val DAILY_RECORD_CSV_HEADER = "id,date,cycle_start_date,is_period,flow_level,created_at,updated_at"
     }
 
     /**
@@ -263,8 +262,7 @@ class CsvExportImportService @Inject constructor() {
                                     "DAILY_RECORDS" -> recordsLines.add(line)
                                     null -> {
                                         // 没有标记时，检查是否是周期表头
-                                        if (cyclesLines.isEmpty() && line.contains("start_date")) {
-                                            currentSection = "CYCLES"
+                                        if (cyclesLines.isEmpty() && line.contains("start_date")) {                                            currentSection = "CYCLES"
                                         }
                                         cyclesLines.add(line)
                                     }
@@ -314,8 +312,6 @@ class CsvExportImportService @Inject constructor() {
             cycleStartDate?.format(dateFormatter) ?: "",
             record.isPeriod.toString(),
             record.flowLevel?.name ?: "",
-            record.symptoms.joinToString(";") { it.name },
-            record.notes ?: "",
             record.createdAt.format(dateTimeFormatter),
             record.updatedAt.format(dateTimeFormatter)
         ).joinToString(",") { escapeCsvField(it) }
@@ -374,20 +370,16 @@ class CsvExportImportService @Inject constructor() {
         var cycleStartDateStr: String? = null
         var isPeriodStr = "false"
         var flowLevelStr: String? = null
-        var symptomsStr: String? = null
-        var notesStr: String? = null
         var createdAtStr: String? = null
         var updatedAtStr: String? = null
 
-        if (fields.size >= 9) {
+        if (fields.size >= 7) {
             dateStr = fields[1]
             cycleStartDateStr = fields[2].ifBlank { null }
             isPeriodStr = fields[3]
             flowLevelStr = fields[4].ifBlank { null }
-            symptomsStr = fields[5].ifBlank { null }
-            notesStr = fields[6].ifBlank { null }
-            createdAtStr = fields[7].ifBlank { null }
-            updatedAtStr = fields[8].ifBlank { null }
+            createdAtStr = fields[5].ifBlank { null }
+            updatedAtStr = fields[6].ifBlank { null }
         } else {
             dateStr = fields.firstOrNull { it.isNotBlank() } ?: ""
         }
@@ -401,12 +393,6 @@ class CsvExportImportService @Inject constructor() {
             cycleId = cycle?.id,
             isPeriod = isPeriodStr.toBoolean(),
             flowLevel = flowLevelStr?.takeIf { it.isNotBlank() }?.let { FlowLevel.valueOf(it) },
-            symptoms = symptomsStr?.takeIf { it.isNotBlank() }
-                ?.split(";")
-                ?.mapNotNull { symptomName ->
-                    Symptom.values().find { it.name == symptomName.trim() }
-                } ?: emptyList(),
-            notes = notesStr,
             createdAt = createdAtStr?.let { LocalDateTime.parse(it, dateTimeFormatter) } ?: LocalDateTime.now(),
             updatedAt = updatedAtStr?.let { LocalDateTime.parse(it, dateTimeFormatter) } ?: LocalDateTime.now()
         )
