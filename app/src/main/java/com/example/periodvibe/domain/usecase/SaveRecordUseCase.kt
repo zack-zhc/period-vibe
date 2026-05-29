@@ -15,50 +15,45 @@ class SaveRecordUseCase @Inject constructor(
         flowLevel: FlowLevel?
     ): Result<Unit> {
         return try {
-            val existingRecord = cycleRepository.getDailyRecordByDate(date)
-            val activeCycle = cycleRepository.getActiveCycle()
-
-            val isPeriod = when (mode) {
-                RecordMode.NEW_CYCLE -> true
-                RecordMode.AUTO -> true
-            }
-
-            var targetCycle: com.example.periodvibe.domain.model.Cycle? = null
-
             when (mode) {
-                RecordMode.NEW_CYCLE -> {
-                    targetCycle = cycleRepository.startNewCycle(date)
+                RecordMode.EDIT -> {
+                    val existingRecord = cycleRepository.getDailyRecordByDate(date)
+                        ?: throw IllegalArgumentException("EDIT mode requires existing record for date $date")
+                    val updatedRecord = existingRecord.copy(
+                        flowLevel = flowLevel
+                    )
+                    cycleRepository.updateDailyRecord(updatedRecord)
                 }
-                RecordMode.AUTO -> {
-                    if (activeCycle != null) {
-                        targetCycle = activeCycle
-                    } else {
-                        targetCycle = cycleRepository.startNewCycle(date)
+
+                RecordMode.NEW_CYCLE, RecordMode.AUTO -> {
+                    val activeCycle = cycleRepository.getActiveCycle()
+                    val isPeriod = true // 这两个模式都是记录经期
+
+                    var targetCycle: com.example.periodvibe.domain.model.Cycle? = null
+
+                    when (mode) {
+                        RecordMode.NEW_CYCLE -> {
+                            targetCycle = cycleRepository.startNewCycle(date)
+                        }
+                        RecordMode.AUTO -> {
+                            targetCycle = if (activeCycle != null) {
+                                activeCycle
+                            } else {
+                                cycleRepository.startNewCycle(date)
+                            }
+                        }
+                        else -> {} // 不会走到这里
                     }
+
+                    val record = DailyRecord(
+                        date = date,
+                        cycleId = targetCycle?.id,
+                        isPeriod = isPeriod,
+                        flowLevel = flowLevel
+                    )
+                    cycleRepository.saveDailyRecord(record)
                 }
             }
-
-            val record = if (existingRecord != null) {
-                existingRecord.copy(
-                    isPeriod = isPeriod,
-                    flowLevel = flowLevel,
-                    cycleId = targetCycle?.id ?: existingRecord.cycleId
-                )
-            } else {
-                DailyRecord(
-                    date = date,
-                    cycleId = targetCycle?.id,
-                    isPeriod = isPeriod,
-                    flowLevel = flowLevel
-                )
-            }
-
-            if (existingRecord != null) {
-                cycleRepository.updateDailyRecord(record)
-            } else {
-                cycleRepository.saveDailyRecord(record)
-            }
-
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)

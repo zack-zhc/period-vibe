@@ -17,7 +17,8 @@ import javax.inject.Inject
 
 enum class RecordMode {
     AUTO,
-    NEW_CYCLE
+    NEW_CYCLE,
+    EDIT
 }
 
 @HiltViewModel
@@ -88,9 +89,10 @@ class HomeViewModel @Inject constructor(
 
     fun showRecordSheet(date: LocalDate = LocalDate.now()) {
         _selectedDate.value = date
-        _recordMode.value = RecordMode.AUTO
         viewModelScope.launch {
-            _existingRecord.value = cycleRepository.getDailyRecordByDate(date)
+            val record = cycleRepository.getDailyRecordByDate(date)
+            _existingRecord.value = record
+            _recordMode.value = if (record != null) RecordMode.EDIT else RecordMode.AUTO
         }
         _showRecordSheet.value = true
     }

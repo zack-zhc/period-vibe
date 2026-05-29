@@ -19,13 +19,19 @@ enum class CyclePhase(
         fun fromDate(
             date: LocalDate,
             prediction: Prediction?,
-            currentCycle: Cycle?
+            currentCycle: Cycle?,
+            dailyRecord: DailyRecord? = null
         ): CyclePhase {
+            // 优先看当天是否有经期记录
+            if (dailyRecord?.isPeriod == true) {
+                return MENSTRATION
+            }
+
             if (currentCycle != null && currentCycle.isCurrentCycle) {
                 val cycleDay = Period.between(currentCycle.startDate, date).days
                 val periodLength = currentCycle.periodLength ?: 5
                 val cycleLength = currentCycle.cycleLength ?: 28
-                
+
                 return when {
                     cycleDay < periodLength -> MENSTRATION
                     cycleDay < cycleLength - 14 - 3 -> FOLLICULAR

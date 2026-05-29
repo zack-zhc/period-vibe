@@ -60,7 +60,7 @@ class GetCalendarDataUseCase @Inject constructor(
         for (day in 1..monthEnd.dayOfMonth) {
             val date = monthStart.withDayOfMonth(day)
             val record = records.find { it.date == date }
-            val phase = CyclePhase.fromDate(date, prediction, currentCycle)
+            val phase = CyclePhase.fromDate(date, prediction, currentCycle, record)
             val isToday = date == LocalDate.now()
 
             val dayType = determineDayType(date, record, cycles, prediction)
