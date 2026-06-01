@@ -1,9 +1,11 @@
 package com.example.periodvibe.domain.model
 
+import androidx.compose.runtime.Stable
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.Period
 
+@Stable
 data class Cycle(
     val id: Long = 0,
     val startDate: LocalDate,

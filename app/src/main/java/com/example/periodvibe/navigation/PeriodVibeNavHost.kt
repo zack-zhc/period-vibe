@@ -138,6 +138,10 @@ fun PeriodVibeNavHost(
 
     // 使用多返回栈导航状态
     val navState = rememberPeriodVibeNavState()
+    val navStateUpdated by androidx.compose.runtime.rememberUpdatedState(navState)
+    val showOnboardingUpdated by androidx.compose.runtime.rememberUpdatedState(showOnboarding)
+    val settingsUpdated by androidx.compose.runtime.rememberUpdatedState(settings)
+    val isUnlockedUpdated by androidx.compose.runtime.rememberUpdatedState(isUnlocked)
 
     val darkTheme = when (themeMode) {
         Settings.ThemeMode.LIGHT -> false
@@ -154,28 +158,28 @@ fun PeriodVibeNavHost(
 
     // 关键安全修复：导航逻辑 - 修复竞态条件
     LaunchedEffect(showOnboarding, settings, isUnlocked) {
-        val currentSettings = settings ?: return@LaunchedEffect
-        if (showOnboarding != null) {
-            val currentDest = navState.backStack.firstOrNull()
+        val currentSettings = settingsUpdated ?: return@LaunchedEffect
+        if (showOnboardingUpdated != null) {
+            val currentDest = navStateUpdated.backStack.firstOrNull()
 
             // 计算是否需要 AppLock
-            val needsAppLock = currentSettings.appLockEnabled && !isUnlocked
+            val needsAppLock = currentSettings.appLockEnabled && !isUnlockedUpdated
 
             // 计算目标页面
             val targetDestination = when {
                 needsAppLock -> Screen.AppLock
-                showOnboarding == true -> Screen.Onboarding
+                showOnboardingUpdated == true -> Screen.Onboarding
                 else -> Screen.Home
             }
 
             when {
                 currentDest == Screen.Loading -> {
                     // 初始加载：直接去目标页面
-                    navState.replaceWith(targetDestination)
+                    navStateUpdated.replaceWith(targetDestination)
                 }
                 needsAppLock && currentDest !is Screen.AppLock -> {
                     // 需要 AppLock 但不在 AppLock 页面：强制去 AppLock
-                    navState.replaceWith(Screen.AppLock)
+                    navStateUpdated.replaceWith(Screen.AppLock)
                 }
             }
         }

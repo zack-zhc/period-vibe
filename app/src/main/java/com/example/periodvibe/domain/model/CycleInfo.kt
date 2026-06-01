@@ -1,5 +1,8 @@
 package com.example.periodvibe.domain.model
 
+import androidx.compose.runtime.Stable
+
+@Stable
 data class CycleInfo(
     val cycle: Cycle,
     val phase: CyclePhase,

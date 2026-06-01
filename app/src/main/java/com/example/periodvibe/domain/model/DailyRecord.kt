@@ -1,8 +1,10 @@
 package com.example.periodvibe.domain.model
 
+import androidx.compose.runtime.Stable
 import java.time.LocalDate
 import java.time.LocalDateTime
 
+@Stable
 data class DailyRecord(
     val id: Long = 0,
     val date: LocalDate,

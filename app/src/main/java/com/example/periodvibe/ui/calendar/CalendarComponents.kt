@@ -139,7 +139,7 @@ fun CalendarGrid(
 }
 
 @Composable
-private fun WeekdayHeader() {
+private fun WeekdayHeader(modifier: Modifier = Modifier) {
     val isChinese = LocalLocale.current.platformLocale.language == Locale.CHINESE.language
     val weekdays = if (isChinese) {
         listOf("日", "一", "二", "三", "四", "五", "六")
@@ -148,7 +148,7 @@ private fun WeekdayHeader() {
     }
 
     Row(
-        modifier = Modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth()
     ) {
         weekdays.forEach { weekday ->
             Text(
@@ -167,13 +167,16 @@ private fun WeekdayHeader() {
 private fun CalendarDaysGrid(
     days: List<CalendarDay>,
     selectedDate: java.time.LocalDate?,
-    onDateClick: (java.time.LocalDate) -> Unit
+    onDateClick: (java.time.LocalDate) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        val rows = days.chunked(7)
+        val rows by remember(days) {
+            androidx.compose.runtime.derivedStateOf { days.chunked(7) }
+        }
 
         rows.forEach { rowDays ->
             Row(

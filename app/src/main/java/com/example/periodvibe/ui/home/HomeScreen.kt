@@ -282,10 +282,10 @@ private fun HomeContent(
 }
 
 @Composable
-private fun GreetingSection() {
+private fun GreetingSection(modifier: Modifier = Modifier) {
     val greeting = getGreeting()
     Column(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.Start
     ) {
         Text(
@@ -310,13 +310,14 @@ private fun MainStatusCard(
     cycleLength: Int,
     daysUntilPeriod: Int,
     daysUntilNextPhase: Int,
-    nextPhaseName: String
+    nextPhaseName: String,
+    modifier: Modifier = Modifier
 ) {
     val progress = cycleDay.toFloat() / cycleLength.toFloat()
     val phaseTip = getPhaseTip(phase)
 
     Column(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
@@ -404,9 +405,11 @@ private fun StatItem(
     value: String,
     label: String,
     highlightColor: Color,
-    valueUnit: String = ""
+    valueUnit: String = "",
+    modifier: Modifier = Modifier
 ) {
     Column(
+        modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
@@ -441,10 +444,11 @@ private fun StatItem(
 @Composable
 private fun PhaseDetailCard(
     phase: CyclePhase,
-    phaseData: PhaseData
+    phaseData: PhaseData,
+    modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.secondaryContainer
@@ -499,7 +503,7 @@ private fun PhaseDetailCard(
 }
 
 @Composable
-private fun PhaseTip(phase: CyclePhase) {
+private fun PhaseTip(phase: CyclePhase, modifier: Modifier = Modifier) {
     val tip = when (phase) {
         CyclePhase.MENSTRATION -> "记得多休息，补充铁质，保持温暖"
         CyclePhase.FOLLICULAR -> "这是能量回升的好时机，适合开始新计划"
@@ -510,7 +514,7 @@ private fun PhaseTip(phase: CyclePhase) {
     }
 
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
     ) {
@@ -536,9 +540,9 @@ private fun PhaseTip(phase: CyclePhase) {
 }
 
 @Composable
-private fun StatsCard(totalCycles: Int, hasData: Boolean) {
+private fun StatsCard(totalCycles: Int, hasData: Boolean, modifier: Modifier = Modifier) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
@@ -592,10 +596,12 @@ private fun StatsCard(totalCycles: Int, hasData: Boolean) {
 @Composable
 private fun RecordFAB(
     hasCurrentCycle: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     FloatingActionButton(
-        onClick = onClick
+        onClick = onClick,
+        modifier = modifier
     ) {
         Icon(
             imageVector = Icons.Default.Add,
@@ -605,9 +611,9 @@ private fun RecordFAB(
 }
 
 @Composable
-private fun LoadingState() {
+private fun LoadingState(modifier: Modifier = Modifier) {
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -625,9 +631,9 @@ private fun LoadingState() {
 }
 
 @Composable
-private fun NoDataState(darkTheme: Boolean) {
+private fun NoDataState(darkTheme: Boolean, modifier: Modifier = Modifier) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 16.dp),
@@ -732,7 +738,8 @@ private fun NoDataState(darkTheme: Boolean) {
 @Composable
 private fun EndCycleConfirmationDialog(
     onDismiss: () -> Unit,
-    onConfirm: () -> Unit
+    onConfirm: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -766,14 +773,16 @@ private fun EndCycleConfirmationDialog(
             ) {
                 Text("取消")
             }
-        }
+        },
+        modifier = modifier
     )
 }
 
 @Composable
 private fun NewCycleConfirmationDialog(
     onDismiss: () -> Unit,
-    onConfirm: () -> Unit
+    onConfirm: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -807,7 +816,8 @@ private fun NewCycleConfirmationDialog(
             ) {
                 Text("取消")
             }
-        }
+        },
+        modifier = modifier
     )
 }
 

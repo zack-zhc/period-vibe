@@ -1,8 +1,10 @@
 package com.example.periodvibe.domain.model
 
+import androidx.compose.runtime.Stable
 import java.time.LocalDate
 import java.time.Period
 
+@Stable
 enum class CyclePhase(
     val displayName: String,
     val color: String,
