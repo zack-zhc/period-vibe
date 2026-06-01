@@ -1,14 +1,10 @@
 package com.example.periodvibe.ui.home
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CalendarViewMonth
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.outlined.CalendarViewMonth
-import androidx.compose.material.icons.outlined.History
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.rounded.CalendarViewMonth
+import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -48,11 +44,7 @@ fun PeriodBottomNavigation(
                 onClick = { onNavigate(item.route) },
                 icon = {
                     Icon(
-                        imageVector = if (currentRoute == item.route) {
-                            item.selectedIcon
-                        } else {
-                            item.unselectedIcon
-                        },
+                        imageVector = item.icon,
                         contentDescription = item.label
                     )
                 },
@@ -81,31 +73,26 @@ fun PeriodBottomNavigation(
 sealed class BottomNavItem(
     val route: String,
     val label: String,
-    val unselectedIcon: ImageVector,
-    val selectedIcon: ImageVector
+    val icon: ImageVector
 ) {
     object Home : BottomNavItem(
         route = "home",
         label = "首页",
-        unselectedIcon = Icons.Outlined.Home,
-        selectedIcon = Icons.Filled.Home
+        icon = Icons.Rounded.Home
     )
     object Calendar : BottomNavItem(
         route = "calendar",
         label = "日历",
-        unselectedIcon = Icons.Outlined.CalendarViewMonth,
-        selectedIcon = Icons.Filled.CalendarViewMonth
+        icon = Icons.Rounded.CalendarViewMonth
     )
     object History : BottomNavItem(
         route = "history",
         label = "历史",
-        unselectedIcon = Icons.Outlined.History,
-        selectedIcon = Icons.Filled.History
+        icon = Icons.Rounded.History
     )
     object Settings : BottomNavItem(
         route = "settings",
         label = "设置",
-        unselectedIcon = Icons.Outlined.Settings,
-        selectedIcon = Icons.Filled.Settings
+        icon = Icons.Rounded.Settings
     )
 }

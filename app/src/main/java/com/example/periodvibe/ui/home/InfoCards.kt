@@ -16,11 +16,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.BubbleChart
-import androidx.compose.material.icons.filled.ChildCare
-import androidx.compose.material.icons.filled.EventRepeat
-import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.BubbleChart
+import androidx.compose.material.icons.rounded.ChildCare
+import androidx.compose.material.icons.rounded.EventRepeat
+import androidx.compose.material.icons.rounded.Lightbulb
 import androidx.compose.material.icons.rounded.Insights
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -38,6 +38,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.periodvibe.domain.model.CyclePhase
+import com.example.periodvibe.ui.theme.MenstruationColor
+import com.example.periodvibe.ui.theme.SafeColor
 
 // 通用信息卡片组件
 @Composable
@@ -99,7 +101,7 @@ fun NextPhaseCard(
     modifier: Modifier = Modifier
 ) {
     InfoCard(
-        icon = Icons.Default.AutoAwesome,
+        icon = Icons.Rounded.AutoAwesome,
         iconTint = MaterialTheme.colorScheme.primary,
         title = "下一阶段",
         modifier = modifier
@@ -127,7 +129,7 @@ fun PregnancyChanceCard(
     modifier: Modifier = Modifier
 ) {
     InfoCard(
-        icon = Icons.Default.BubbleChart,
+        icon = Icons.Rounded.BubbleChart,
         iconTint = MaterialTheme.colorScheme.tertiary,
         title = "怀孕几率",
         modifier = modifier
@@ -211,14 +213,16 @@ fun getNextPhase(currentPhase: CyclePhase): Pair<String, Int> {
 }
 
 // 获取怀孕几率信息
-fun getPregnancyChance(currentPhase: CyclePhase): Triple<String, String, Boolean> {
+fun getPregnancyChance(currentPhase: CyclePhase): Quadruple<String, String, Boolean, Int> {
     return when (currentPhase) {
-        CyclePhase.OVULATION, CyclePhase.FERTILE -> Triple("高", "受孕期", true)
-        CyclePhase.FOLLICULAR -> Triple("低", "非受孕期", false)
-        CyclePhase.LUTEAL, CyclePhase.SAFE -> Triple("很低", "非受孕期", false)
-        CyclePhase.MENSTRATION -> Triple("最低", "非受孕期", false)
+        CyclePhase.OVULATION, CyclePhase.FERTILE -> Quadruple("高", "受孕期", true, 5)
+        CyclePhase.FOLLICULAR -> Quadruple("低", "非受孕期", false, 2)
+        CyclePhase.LUTEAL, CyclePhase.SAFE -> Quadruple("很低", "非受孕期", false, 1)
+        CyclePhase.MENSTRATION -> Quadruple("最低", "非受孕期", false, 1)
     }
 }
+
+data class Quadruple<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
 
 // 获取今日贴士
 fun getTodayTip(phase: CyclePhase): String {
@@ -302,7 +306,7 @@ fun CombinedInfoCard(
                     verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
                 ) {
                     Icon(
-                        imageVector = Icons.Default.BubbleChart,
+                        imageVector = Icons.Rounded.BubbleChart,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.tertiary,
                         modifier = Modifier.size(20.dp)
@@ -347,6 +351,28 @@ fun CombinedInfoCard(
                         )
                     }
                 }
+                // 彩色分段指示器
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                ) {
+                    for (i in 1..5) {
+                        val isActive = i <= pregnancyChance.fourth
+                        val dotColor = when {
+                            pregnancyChance.third -> MenstruationColor
+                            else -> SafeColor
+                        }
+                        Box(
+                            modifier = Modifier
+                                .size(12.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    if (isActive) dotColor
+                                    else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+                                )
+                        )
+                    }
+                }
             }
 
             // 分隔线
@@ -364,7 +390,7 @@ fun CombinedInfoCard(
                     verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
                 ) {
                     Icon(
-                        imageVector = Icons.Default.AutoAwesome,
+                        imageVector = Icons.Rounded.AutoAwesome,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(20.dp)
@@ -377,23 +403,12 @@ fun CombinedInfoCard(
                         letterSpacing = 0.5.sp
                     )
                 }
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Insights,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.tertiary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Text(
-                        text = todayTip,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        lineHeight = 20.sp
-                    )
-                }
+                Text(
+                    text = todayTip,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    lineHeight = 20.sp
+                )
             }
         }
     }
@@ -427,7 +442,7 @@ fun FeaturePreviewCard(
                 verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
             ) {
                 Icon(
-                    imageVector = Icons.Default.AutoAwesome,
+                    imageVector = Icons.Rounded.AutoAwesome,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(20.dp)
@@ -443,12 +458,12 @@ fun FeaturePreviewCard(
 
             // 功能列表
             FeatureItem(
-                icon = Icons.Default.EventRepeat,
+                icon = Icons.Rounded.EventRepeat,
                 title = "周期预测",
                 description = "预测下次月经时间"
             )
             FeatureItem(
-                icon = Icons.Default.Lightbulb,
+                icon = Icons.Rounded.Lightbulb,
                 title = "个性化贴士",
                 description = "根据阶段给出建议"
             )

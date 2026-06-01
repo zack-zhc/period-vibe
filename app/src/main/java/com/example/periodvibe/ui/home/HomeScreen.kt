@@ -27,21 +27,21 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.AddCircle
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.BubbleChart
-import androidx.compose.material.icons.filled.CalendarToday
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.ChildCare
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.EditNote
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.WaterDrop
-import androidx.compose.material.icons.filled.EnergySavingsLeaf
-import androidx.compose.material.icons.filled.LocalFireDepartment
-import androidx.compose.material.icons.filled.Nightlight
-import androidx.compose.material.icons.filled.Spa
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.AddCircle
+import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.BubbleChart
+import androidx.compose.material.icons.rounded.CalendarToday
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.ChildCare
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.EditNote
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.WaterDrop
+import androidx.compose.material.icons.rounded.EnergySavingsLeaf
+import androidx.compose.material.icons.rounded.LocalFireDepartment
+import androidx.compose.material.icons.rounded.Nightlight
+import androidx.compose.material.icons.rounded.Spa
 import androidx.compose.material.icons.rounded.AccessTime
 import androidx.compose.material.icons.rounded.Insights
 import androidx.compose.material3.AlertDialog
@@ -290,7 +290,7 @@ private fun GreetingSection(modifier: Modifier = Modifier) {
     ) {
         Text(
             text = greeting,
-            style = MaterialTheme.typography.displaySmall,
+            style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface
         )
@@ -316,11 +316,38 @@ private fun MainStatusCard(
     val progress = cycleDay.toFloat() / cycleLength.toFloat()
     val phaseTip = getPhaseTip(phase)
 
-    Column(
+    Card(
         modifier = modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.Transparent
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = androidx.compose.foundation.BorderStroke(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
+        )
     ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            phaseData.primary.copy(alpha = 0.08f),
+                            MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.4f),
+                            MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.3f)
+                        )
+                    )
+                )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 24.dp, horizontal = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
         // Circular Progress Ring
         CircularProgressRing(
             progress = progress,
@@ -386,6 +413,8 @@ private fun MainStatusCard(
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(horizontal = 32.dp)
         )
+            }
+        }
     }
 }
 
@@ -518,24 +547,13 @@ private fun PhaseTip(phase: CyclePhase, modifier: Modifier = Modifier) {
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Insights,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.tertiary,
-                modifier = Modifier.size(20.dp)
-            )
-            Text(
-                text = tip,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                lineHeight = 20.sp
-            )
-        }
+        Text(
+            text = tip,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            lineHeight = 20.sp,
+            modifier = Modifier.padding(16.dp)
+        )
     }
 }
 
@@ -604,7 +622,7 @@ private fun RecordFAB(
         modifier = modifier
     ) {
         Icon(
-            imageVector = Icons.Default.Add,
+            imageVector = Icons.Rounded.Add,
             contentDescription = if (hasCurrentCycle) "记录今日状态" else "开始新周期"
         )
     }
@@ -843,37 +861,37 @@ private fun getPhaseData(phase: CyclePhase): PhaseData {
             primary = MenstruationColor,
             container = MenstruationColor.copy(alpha = 0.15f),
             onContainer = MenstruationColor,
-            icon = Icons.Default.WaterDrop
+            icon = PhaseIcons.Menstruation
         )
         CyclePhase.OVULATION -> PhaseData(
             primary = OvulationColor,
             container = OvulationColor.copy(alpha = 0.15f),
             onContainer = OvulationColor,
-            icon = Icons.Default.LocalFireDepartment
+            icon = PhaseIcons.Ovulation
         )
         CyclePhase.FERTILE -> PhaseData(
             primary = FertileColor,
             container = FertileColor.copy(alpha = 0.15f),
             onContainer = FertileColor,
-            icon = Icons.Default.Spa
+            icon = PhaseIcons.Fertile
         )
         CyclePhase.SAFE -> PhaseData(
             primary = SafeColor,
             container = SafeColor.copy(alpha = 0.15f),
             onContainer = SafeColor,
-            icon = Icons.Default.Nightlight
+            icon = PhaseIcons.Safe
         )
         CyclePhase.FOLLICULAR -> PhaseData(
             primary = FollicularColor,
             container = FollicularColor.copy(alpha = 0.15f),
             onContainer = FollicularColor,
-            icon = Icons.Default.EnergySavingsLeaf
+            icon = PhaseIcons.Follicular
         )
         CyclePhase.LUTEAL -> PhaseData(
             primary = LutealColor,
             container = LutealColor.copy(alpha = 0.15f),
             onContainer = LutealColor,
-            icon = Icons.Default.Nightlight
+            icon = PhaseIcons.Luteal
         )
     }
 }
