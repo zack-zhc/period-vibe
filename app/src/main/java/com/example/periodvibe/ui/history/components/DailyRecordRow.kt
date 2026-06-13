@@ -1,6 +1,7 @@
 package com.example.periodvibe.ui.history.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -28,10 +29,10 @@ fun DailyRecordRow(
     record: DailyRecord,
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
-    isDark: Boolean,
     modifier: Modifier = Modifier
 ) {
     val formatter = remember { DateTimeFormatter.ofPattern("MM月dd日", Locale.CHINA) }
+    val isDark = isSystemInDarkTheme()
     val periodColor = if (isDark) CalendarPeriodDark else CalendarPeriodLight
 
     Row(
