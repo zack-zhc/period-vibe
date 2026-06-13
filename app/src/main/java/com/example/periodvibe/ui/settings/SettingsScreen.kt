@@ -9,7 +9,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
@@ -27,6 +30,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedListItem
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
@@ -35,6 +39,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -95,12 +100,12 @@ private fun SettingsContent(
                     .padding(16.dp)
             ) {
                 val settingsItems = listOf(
-                    Icons.Default.DateRange to "周期参数",
-                    Icons.Default.Notifications to "提醒设置",
-                    Icons.Default.Palette to "主题设置",
-                    Icons.Default.Lock to "隐私设置",
-                    Icons.Default.Folder to "数据管理",
-                    Icons.Default.Info to "关于"
+                    Triple(Icons.Default.DateRange, "周期参数", MaterialTheme.colorScheme.primary),
+                    Triple(Icons.Default.Notifications, "提醒设置", MaterialTheme.colorScheme.tertiary),
+                    Triple(Icons.Default.Palette, "主题设置", MaterialTheme.colorScheme.secondary),
+                    Triple(Icons.Default.Lock, "隐私设置", MaterialTheme.colorScheme.error),
+                    Triple(Icons.Default.Folder, "数据管理", MaterialTheme.colorScheme.tertiary),
+                    Triple(Icons.Default.Info, "关于", MaterialTheme.colorScheme.primary)
                 )
 
                 val onClicks = listOf(
@@ -123,7 +128,7 @@ private fun SettingsContent(
                                 Icon(
                                     imageVector = item.first,
                                     contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    tint = item.third
                                 )
                             },
                             trailingContent = {
@@ -149,33 +154,50 @@ private fun SettingsContent(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 HorizontalDivider(
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Row(
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerLow,
+                    tonalElevation = 1.dp,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalAlignment = Alignment.Top
+                        .padding(horizontal = 16.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.AdminPanelSettings,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Text(
-                        text = "所有数据都存储在您的设备本地，最大限度保护您的隐私。",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AdminPanelSettings,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .padding(8.dp)
+                            )
+                        }
+                        Text(
+                            text = "所有数据都存储在您的设备本地，最大限度保护您的隐私。",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
 
-                Spacer(modifier = Modifier.height(80.dp))
+                Spacer(modifier = Modifier.height(48.dp))
             }
         }
     }

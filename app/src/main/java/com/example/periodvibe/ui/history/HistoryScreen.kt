@@ -116,16 +116,11 @@ fun HistoryScreen(
             )
         },
         bottomBar = {
-            AnimatedVisibility(
+            EditModeBottomBar(
                 visible = isEditMode,
-                enter = expandVertically(),
-                exit = shrinkVertically()
-            ) {
-                EditModeBottomBar(
-                    selectedCount = selectedCycles.size,
-                    onDeleteClick = { viewModel.deleteSelectedCycles() }
-                )
-            }
+                selectedCount = selectedCycles.size,
+                onDeleteClick = { viewModel.deleteSelectedCycles() }
+            )
         },
         modifier = modifier
     ) { paddingValues ->
