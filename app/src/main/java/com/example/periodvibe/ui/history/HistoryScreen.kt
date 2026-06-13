@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.ExpandMore
+import androidx.compose.material.icons.rounded.History
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -317,21 +318,24 @@ private fun StatsCards(
     modifier: Modifier = Modifier
 ) {
     val periodColor = if (isDark) CalendarPeriodDark else CalendarPeriodLight
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val tertiaryColor = MaterialTheme.colorScheme.tertiary
+    val secondaryColor = MaterialTheme.colorScheme.secondary
 
     Column(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         // 第一行
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             // 总周期数卡片
             Surface(
                 modifier = Modifier.weight(1f),
                 shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                color = MaterialTheme.colorScheme.primaryContainer,
                 tonalElevation = 1.dp
             ) {
                 Column(
@@ -342,14 +346,14 @@ private fun StatsCards(
                     Text(
                         text = "总周期数",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
                         text = "$totalCycles",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = periodColor
+                        style = MaterialTheme.typography.displaySmall,
+                        fontWeight = FontWeight.Black,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                 }
             }
@@ -358,7 +362,7 @@ private fun StatsCards(
             Surface(
                 modifier = Modifier.weight(1f),
                 shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                color = MaterialTheme.colorScheme.tertiaryContainer,
                 tonalElevation = 1.dp
             ) {
                 Column(
@@ -369,14 +373,19 @@ private fun StatsCards(
                     Text(
                         text = "平均周期",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onTertiaryContainer
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = if (avgCycleLength != null) "$avgCycleLength 天" else "-- 天",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = periodColor
+                        text = if (avgCycleLength != null) "$avgCycleLength" else "--",
+                        style = MaterialTheme.typography.displaySmall,
+                        fontWeight = FontWeight.Black,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer
+                    )
+                    Text(
+                        text = "天",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f)
                     )
                 }
             }
@@ -385,13 +394,13 @@ private fun StatsCards(
         // 第二行
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             // 平均经期卡片
             Surface(
                 modifier = Modifier.weight(1f),
                 shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                color = MaterialTheme.colorScheme.secondaryContainer,
                 tonalElevation = 1.dp
             ) {
                 Column(
@@ -402,14 +411,19 @@ private fun StatsCards(
                     Text(
                         text = "平均经期",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = if (avgPeriodLength != null) "$avgPeriodLength 天" else "-- 天",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = periodColor
+                        text = if (avgPeriodLength != null) "$avgPeriodLength" else "--",
+                        style = MaterialTheme.typography.displaySmall,
+                        fontWeight = FontWeight.Black,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                    Text(
+                        text = "天",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
                     )
                 }
             }
@@ -427,20 +441,25 @@ private fun StatsCards(
                     verticalArrangement = Arrangement.Center
                 ) {
                     Text(
-                        text = "最长/最短周期",
+                        text = "周期范围",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
                         text = if (longestCycle != null && shortestCycle != null) {
-                            "$longestCycle 天/$shortestCycle 天"
+                            "$shortestCycle-$longestCycle"
                         } else {
-                            "-- 天/-- 天"
+                            "--"
                         },
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = periodColor
+                        style = MaterialTheme.typography.displaySmall,
+                        fontWeight = FontWeight.Black,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "天",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     )
                 }
             }
@@ -471,12 +490,9 @@ internal fun EmptyState(
         verticalArrangement = Arrangement.Center
     ) {
         Surface(
-            shape = RoundedCornerShape(32.dp),
+            shape = RoundedCornerShape(20.dp),
             color = MaterialTheme.colorScheme.surfaceContainer,
-            border = androidx.compose.foundation.BorderStroke(
-                1.dp,
-                MaterialTheme.colorScheme.surfaceContainerHigh
-            ),
+            tonalElevation = 1.dp,
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
@@ -484,9 +500,27 @@ internal fun EmptyState(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    modifier = Modifier.size(72.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Rounded.History,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(36.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
                 Text(
                     text = "还没有记录",
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
 
@@ -504,7 +538,7 @@ internal fun EmptyState(
 
                 Button(
                     onClick = onNavigateHomeToRecord,
-                    shape = RoundedCornerShape(50),
+                    shape = RoundedCornerShape(12.dp),
                     contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
                 ) {
                     Icon(
@@ -553,9 +587,9 @@ private fun YearGroupHeader(
     ) {
         Text(
             text = year.toString(),
-            style = MaterialTheme.typography.headlineMedium,
+            style = MaterialTheme.typography.headlineLarge,
             color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Black
         )
         Spacer(
             modifier = Modifier
@@ -618,7 +652,7 @@ private fun CycleCard(
             isSelected -> periodColor.copy(alpha = 0.1f)
             else -> MaterialTheme.colorScheme.surfaceContainerLowest
         },
-        tonalElevation = if (isSelected) 2.dp else 0.dp,
+        tonalElevation = if (isSelected) 2.dp else 1.dp,
         shadowElevation = 1.dp,
         border = if (isSelected) BorderStroke(1.dp, periodColor) else null
     ) {
@@ -669,7 +703,7 @@ private fun CycleCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Surface(
-                            shape = RoundedCornerShape(8.dp),
+                            shape = RoundedCornerShape(50),
                             color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
                         ) {
                             Text(
