@@ -24,7 +24,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -247,8 +247,8 @@ private fun GreetingSection(modifier: Modifier = Modifier) {
     ) {
         Text(
             text = greeting,
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.headlineLarge,
+            fontWeight = FontWeight.Black,
             color = MaterialTheme.colorScheme.onSurface
         )
         Text(
@@ -275,14 +275,14 @@ private fun MainStatusCard(
 
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(28.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color.Transparent
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         border = androidx.compose.foundation.BorderStroke(
             width = 1.dp,
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
         )
     ) {
         Box(
@@ -291,9 +291,9 @@ private fun MainStatusCard(
                 .background(
                     brush = Brush.verticalGradient(
                         colors = listOf(
-                            phaseData.primary.copy(alpha = 0.08f),
-                            MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.4f),
-                            MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.3f)
+                            phaseData.primary.copy(alpha = 0.15f),
+                            MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f),
+                            MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.4f)
                         )
                     )
                 )
@@ -336,7 +336,7 @@ private fun MainStatusCard(
                 Surface(
                     color = MaterialTheme.colorScheme.surfaceContainerHigh,
                     shape = RoundedCornerShape(50),
-                    tonalElevation = 0.dp
+                    tonalElevation = 1.dp
                 ) {
                     Text(
                         text = phase.displayName,
@@ -366,7 +366,7 @@ private fun MainStatusCard(
         Text(
             text = phaseTip,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(horizontal = 32.dp)
         )
@@ -392,15 +392,21 @@ private fun RecordFAB(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    FloatingActionButton(
+    ExtendedFloatingActionButton(
         onClick = onClick,
-        modifier = modifier
-    ) {
-        Icon(
-            imageVector = Icons.Rounded.Add,
-            contentDescription = if (hasCurrentCycle) "记录今日状态" else "开始新周期"
-        )
-    }
+        modifier = modifier,
+        icon = {
+            Icon(
+                imageVector = Icons.Rounded.Add,
+                contentDescription = null
+            )
+        },
+        text = {
+            Text(
+                text = if (hasCurrentCycle) "记录" else "开始"
+            )
+        }
+    )
 }
 
 @Composable

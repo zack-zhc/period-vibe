@@ -113,7 +113,7 @@ fun CombinedInfoCard(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         border = androidx.compose.foundation.BorderStroke(
             width = 1.dp,
             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
@@ -309,7 +309,7 @@ fun FeaturePreviewCard(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         border = androidx.compose.foundation.BorderStroke(
             width = 1.dp,
             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
