@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.ChevronLeft
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material3.Icon
@@ -30,6 +31,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -94,8 +96,8 @@ fun CalendarMonthHeader(
         // 中间：月份标题
         Text(
             text = "${yearMonth.year}年${yearMonth.month.getDisplayName(TextStyle.FULL, LocalLocale.current.platformLocale)}",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.headlineLarge,
+            fontWeight = FontWeight.Black,
             color = MaterialTheme.colorScheme.onSurface
         )
 
@@ -159,7 +161,7 @@ private fun WeekdayHeader(modifier: Modifier = Modifier) {
                 text = weekday,
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 modifier = Modifier.weight(1f),
                 textAlign = TextAlign.Center
             )
@@ -285,7 +287,7 @@ private fun DayContent(
             )
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
-                indication = null,
+                indication = androidx.compose.material3.ripple(),
                 onClick = onClick
             ),
         contentAlignment = Alignment.Center
@@ -464,8 +466,8 @@ fun CalendarLegend(modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-        tonalElevation = 0.dp
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        tonalElevation = 1.dp
     ) {
         Row(
             modifier = Modifier
@@ -539,9 +541,11 @@ fun EmptySelectionCard(modifier: Modifier = Modifier) {
                         modifier = Modifier.size(56.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = "📅",
-                            style = MaterialTheme.typography.headlineMedium
+                        Icon(
+                            imageVector = Icons.Rounded.CalendarMonth,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(28.dp)
                         )
                     }
                 }

@@ -57,8 +57,8 @@ fun SmartActionCard(
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
-        tonalElevation = 0.dp
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        tonalElevation = 2.dp
     ) {
         Column(
             modifier = Modifier
@@ -82,7 +82,7 @@ fun SmartActionCard(
 
 @Composable
 private fun DateHeader(day: CalendarDay.Data) {
-    val dateFormatter = remember { DateTimeFormatter.ofPattern("M月d日 EEEE") }
+    val dateFormatter = remember { DateTimeFormatter.ofPattern("M月d日") }
 
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -352,7 +352,7 @@ private fun RecordButton(text: String, onClick: () -> Unit) {
     Button(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary
@@ -378,7 +378,7 @@ private fun EditButton(onClick: () -> Unit) {
     TextButton(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp)
+        shape = RoundedCornerShape(12.dp)
     ) {
         Icon(
             imageVector = Icons.Rounded.Edit,
@@ -399,7 +399,7 @@ private fun EndCycleButton(onClick: () -> Unit) {
     TextButton(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp)
+        shape = RoundedCornerShape(12.dp)
     ) {
         Icon(
             imageVector = Icons.Rounded.Stop,
@@ -420,7 +420,7 @@ private fun NewCycleButton(onClick: () -> Unit) {
     Button(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary
