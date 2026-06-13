@@ -1,49 +1,22 @@
 package com.example.periodvibe.ui.home
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.AddCircle
-import androidx.compose.material.icons.rounded.AutoAwesome
-import androidx.compose.material.icons.rounded.BubbleChart
-import androidx.compose.material.icons.rounded.CalendarToday
-import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.ChildCare
-import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.EditNote
-import androidx.compose.material.icons.rounded.Favorite
-import androidx.compose.material.icons.rounded.WaterDrop
-import androidx.compose.material.icons.rounded.EnergySavingsLeaf
-import androidx.compose.material.icons.rounded.LocalFireDepartment
-import androidx.compose.material.icons.rounded.Nightlight
-import androidx.compose.material.icons.rounded.Spa
-import androidx.compose.material.icons.rounded.AccessTime
-import androidx.compose.material.icons.rounded.Insights
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -55,48 +28,32 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.BlurredEdgeTreatment
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import android.content.Context
 import com.example.periodvibe.R
 import com.example.periodvibe.domain.model.CyclePhase
 import com.example.periodvibe.ui.theme.PeriodVibeTheme
 import com.example.periodvibe.ui.home.CombinedInfoCard
-import com.example.periodvibe.ui.home.EmptyStateCard
 import com.example.periodvibe.ui.home.FeaturePreviewCard
-import com.example.periodvibe.ui.home.NextPhaseCard
-import com.example.periodvibe.ui.home.PregnancyChanceCard
-import com.example.periodvibe.ui.home.getNextPhase
-import com.example.periodvibe.ui.home.getPregnancyChance
-import com.example.periodvibe.ui.home.getTodayTip
 import com.example.periodvibe.ui.theme.FertileColor
 import com.example.periodvibe.ui.theme.FollicularColor
 import com.example.periodvibe.ui.theme.LutealColor
@@ -249,8 +206,6 @@ private fun HomeContent(
     ovulationDate: java.time.LocalDate?
 ) {
     val phaseData = getPhaseData(phase)
-    val nextPhase = getNextPhase(phase)
-    val pregnancyChance = getPregnancyChance(phase)
 
     Column(
         modifier = Modifier
@@ -274,7 +229,9 @@ private fun HomeContent(
 
         // 合并信息卡片
         CombinedInfoCard(
-            phase = phase
+            phase = phase,
+            nextPhaseName = nextPhaseName,
+            daysUntilNextPhase = daysUntilNextPhase
         )
 
         Spacer(modifier = Modifier.height(80.dp))
@@ -426,188 +383,6 @@ private fun getPhaseTip(phase: CyclePhase): String {
         CyclePhase.FERTILE -> "注意身体变化，保持轻松心情"
         CyclePhase.LUTEAL -> "可能会有情绪波动，尝试放松活动"
         CyclePhase.SAFE -> "享受这段平稳的时光"
-    }
-}
-
-@Composable
-private fun StatItem(
-    value: String,
-    label: String,
-    highlightColor: Color,
-    valueUnit: String = "",
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        Row(
-            verticalAlignment = Alignment.Bottom,
-            horizontalArrangement = Arrangement.spacedBy(2.dp)
-        ) {
-            Text(
-                text = value,
-                style = MaterialTheme.typography.displayMedium,
-                fontWeight = FontWeight.Bold,
-                color = highlightColor
-            )
-            if (valueUnit.isNotEmpty()) {
-                Text(
-                    text = valueUnit,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    color = highlightColor.copy(alpha = 0.8f),
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-            }
-        }
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
-@Composable
-private fun PhaseDetailCard(
-    phase: CyclePhase,
-    phaseData: PhaseData,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(phaseData.primary.copy(alpha = 0.15f))
-                ) {
-                    Icon(
-                        imageVector = phaseData.icon,
-                        contentDescription = null,
-                        tint = phaseData.primary,
-                        modifier = Modifier
-                            .size(24.dp)
-                            .align(Alignment.Center)
-                    )
-                }
-                Text(
-                    text = "了解你的身体",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = phase.description,
-                style = MaterialTheme.typography.bodyLarge,
-                lineHeight = 26.sp,
-                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.85f)
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-            PhaseTip(phase = phase)
-        }
-    }
-}
-
-@Composable
-private fun PhaseTip(phase: CyclePhase, modifier: Modifier = Modifier) {
-    val tip = when (phase) {
-        CyclePhase.MENSTRATION -> "记得多休息，补充铁质，保持温暖"
-        CyclePhase.FOLLICULAR -> "这是能量回升的好时机，适合开始新计划"
-        CyclePhase.OVULATION -> "精力最旺盛的时期，把握好状态"
-        CyclePhase.FERTILE -> "注意身体变化，保持轻松心情"
-        CyclePhase.LUTEAL -> "可能会有情绪波动，尝试放松活动"
-        CyclePhase.SAFE -> "享受这段平稳的时光"
-    }
-
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
-    ) {
-        Text(
-            text = tip,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            lineHeight = 20.sp,
-            modifier = Modifier.padding(16.dp)
-        )
-    }
-}
-
-@Composable
-private fun StatsCard(totalCycles: Int, hasData: Boolean, modifier: Modifier = Modifier) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.AccessTime,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier
-                            .size(24.dp)
-                            .align(Alignment.Center)
-                    )
-                }
-                Column {
-                    Text(
-                        text = if (hasData) "已记录 $totalCycles 个周期" else "开始你的记录",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = if (hasData) "坚持记录，让预测更精准" else "点击右下角开始",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        }
     }
 }
 
@@ -851,7 +626,6 @@ private fun getGreeting(): String {
 private data class PhaseData(
     val primary: Color,
     val container: Color,
-    val onContainer: Color,
     val icon: ImageVector
 )
 
@@ -860,37 +634,31 @@ private fun getPhaseData(phase: CyclePhase): PhaseData {
         CyclePhase.MENSTRATION -> PhaseData(
             primary = MenstruationColor,
             container = MenstruationColor.copy(alpha = 0.15f),
-            onContainer = MenstruationColor,
             icon = PhaseIcons.Menstruation
         )
         CyclePhase.OVULATION -> PhaseData(
             primary = OvulationColor,
             container = OvulationColor.copy(alpha = 0.15f),
-            onContainer = OvulationColor,
             icon = PhaseIcons.Ovulation
         )
         CyclePhase.FERTILE -> PhaseData(
             primary = FertileColor,
             container = FertileColor.copy(alpha = 0.15f),
-            onContainer = FertileColor,
             icon = PhaseIcons.Fertile
         )
         CyclePhase.SAFE -> PhaseData(
             primary = SafeColor,
             container = SafeColor.copy(alpha = 0.15f),
-            onContainer = SafeColor,
             icon = PhaseIcons.Safe
         )
         CyclePhase.FOLLICULAR -> PhaseData(
             primary = FollicularColor,
             container = FollicularColor.copy(alpha = 0.15f),
-            onContainer = FollicularColor,
             icon = PhaseIcons.Follicular
         )
         CyclePhase.LUTEAL -> PhaseData(
             primary = LutealColor,
             container = LutealColor.copy(alpha = 0.15f),
-            onContainer = LutealColor,
             icon = PhaseIcons.Luteal
         )
     }

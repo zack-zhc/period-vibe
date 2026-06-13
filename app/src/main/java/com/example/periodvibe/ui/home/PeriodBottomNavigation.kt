@@ -2,7 +2,6 @@ package com.example.periodvibe.ui.home
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CalendarViewMonth
-import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Icon
@@ -84,11 +83,6 @@ sealed class BottomNavItem(
         route = "calendar",
         label = "日历",
         icon = Icons.Rounded.CalendarViewMonth
-    )
-    object History : BottomNavItem(
-        route = "history",
-        label = "历史",
-        icon = Icons.Rounded.History
     )
     object Settings : BottomNavItem(
         route = "settings",

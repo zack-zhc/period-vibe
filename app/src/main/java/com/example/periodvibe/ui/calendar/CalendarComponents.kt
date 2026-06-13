@@ -40,6 +40,8 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.periodvibe.domain.usecase.CalendarDay
 import com.example.periodvibe.domain.usecase.CalendarDayType
@@ -49,6 +51,8 @@ import com.example.periodvibe.ui.theme.CalendarOvulationDark
 import com.example.periodvibe.ui.theme.CalendarOvulationLight
 import com.example.periodvibe.ui.theme.CalendarPeriodDark
 import com.example.periodvibe.ui.theme.CalendarPeriodLight
+import com.example.periodvibe.ui.theme.CalendarPredictedPeriodDark
+import com.example.periodvibe.ui.theme.CalendarPredictedPeriodLight
 import java.time.YearMonth
 import java.time.format.TextStyle
 import java.util.Locale
@@ -226,7 +230,7 @@ private fun DayContent(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val isDark = MaterialTheme.colorScheme.background == androidx.compose.ui.graphics.Color(0xFF1F1A1B)
+    val isDark = isSystemInDarkTheme()
 
     val cellColors = getCellColors(day, isSelected, isDark)
     val scale by animateFloatAsState(
@@ -338,6 +342,7 @@ private fun getCellColors(
     val onSurface = MaterialTheme.colorScheme.onSurface
 
     val periodColor = if (isDark) CalendarPeriodDark else CalendarPeriodLight
+    val predictedPeriodColor = if (isDark) CalendarPredictedPeriodDark else CalendarPredictedPeriodLight
     val ovulationColor = if (isDark) CalendarOvulationDark else CalendarOvulationLight
     val fertileColor = if (isDark) CalendarFertileDark else CalendarFertileLight
 
@@ -354,10 +359,10 @@ private fun getCellColors(
         }
         day.isPredictedPeriod -> {
             CellColors(
-                container = periodColor.copy(alpha = 0.08f),
-                text = onSurface.copy(alpha = 0.7f),
-                border = Color.Transparent,
-                borderWidth = 0.dp,
+                container = predictedPeriodColor.copy(alpha = 0.3f),
+                text = predictedPeriodColor,
+                border = predictedPeriodColor.copy(alpha = 0.4f),
+                borderWidth = 1.dp,
                 hasShadow = false
             )
         }
@@ -450,8 +455,9 @@ private fun getCellColors(
 
 @Composable
 fun CalendarLegend(modifier: Modifier = Modifier) {
-    val isDark = MaterialTheme.colorScheme.background == androidx.compose.ui.graphics.Color(0xFF1F1A1B)
+    val isDark = isSystemInDarkTheme()
     val periodColor = if (isDark) CalendarPeriodDark else CalendarPeriodLight
+    val predictedPeriodColor = if (isDark) CalendarPredictedPeriodDark else CalendarPredictedPeriodLight
     val ovulationColor = if (isDark) CalendarOvulationDark else CalendarOvulationLight
     val fertileColor = if (isDark) CalendarFertileDark else CalendarFertileLight
 
@@ -469,7 +475,7 @@ fun CalendarLegend(modifier: Modifier = Modifier) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             LegendItem(color = periodColor, label = "经期", isPredicted = false)
-            LegendItem(color = periodColor, label = "预测经期", isPredicted = true)
+            LegendItem(color = predictedPeriodColor, label = "预测经期", isPredicted = true)
             LegendItem(color = fertileColor, label = "易孕", isPredicted = false)
             LegendItem(color = ovulationColor, label = "排卵", isPredicted = false)
         }

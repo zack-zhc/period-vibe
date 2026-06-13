@@ -81,6 +81,9 @@ val LutealColor = Color(0xFFFFB74D)
 // 经期：鲜明的红色，容易识别
 val CalendarPeriodLight = Color(0xFFC2185B)
 val CalendarPeriodDark = Color(0xFFFF79A0)
+// 预测经期：柔和的粉色，与实际经期区分
+val CalendarPredictedPeriodLight = Color(0xFFF48FB1)
+val CalendarPredictedPeriodDark = Color(0xFFFFCDD2)
 // 排卵期：紫色
 val CalendarOvulationLight = Color(0xFF7B1FA2)
 val CalendarOvulationDark = Color(0xFFCE93D8)
