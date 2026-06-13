@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Notifications
@@ -1102,9 +1103,10 @@ private fun AboutContent(
             Column(
                 verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)
             ) {
+                // 应用介绍
                 SegmentedListItem(
                     onClick = { showDialog = true },
-                    shapes = ListItemDefaults.segmentedShapes(index = 0, count = 2),
+                    shapes = ListItemDefaults.segmentedShapes(index = 0, count = 5),
                     trailingContent = {
                         Icon(
                             imageVector = Icons.Default.ChevronRight,
@@ -1123,6 +1125,7 @@ private fun AboutContent(
                     )
                 }
 
+                // 版本信息
                 SegmentedListItem(
                     onClick = {
                         val currentTime = System.currentTimeMillis()
@@ -1146,7 +1149,7 @@ private fun AboutContent(
                             onNavigateToDeveloperOptions()
                         }
                     },
-                    shapes = ListItemDefaults.segmentedShapes(index = 1, count = 2),
+                    shapes = ListItemDefaults.segmentedShapes(index = 1, count = 5),
                     supportingContent = {
                         Text(
                             text = "v$versionName",
@@ -1160,6 +1163,72 @@ private fun AboutContent(
                 ) {
                     Text(
                         text = "版本信息",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                // 隐私政策
+                SegmentedListItem(
+                    onClick = { },
+                    shapes = ListItemDefaults.segmentedShapes(index = 2, count = 5),
+                    trailingContent = {
+                        Icon(
+                            imageVector = Icons.Default.ChevronRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
+                    colors = ListItemDefaults.colors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer
+                    )
+                ) {
+                    Text(
+                        text = "隐私政策",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                // 用户协议
+                SegmentedListItem(
+                    onClick = { },
+                    shapes = ListItemDefaults.segmentedShapes(index = 3, count = 5),
+                    trailingContent = {
+                        Icon(
+                            imageVector = Icons.Default.ChevronRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
+                    colors = ListItemDefaults.colors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer
+                    )
+                ) {
+                    Text(
+                        text = "用户协议",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                // 反馈建议
+                SegmentedListItem(
+                    onClick = { },
+                    shapes = ListItemDefaults.segmentedShapes(index = 4, count = 5),
+                    trailingContent = {
+                        Icon(
+                            imageVector = Icons.Default.ChevronRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
+                    colors = ListItemDefaults.colors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer
+                    )
+                ) {
+                    Text(
+                        text = "反馈建议",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
