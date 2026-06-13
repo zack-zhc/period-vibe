@@ -355,6 +355,11 @@ private fun StatsCards(
                         fontWeight = FontWeight.Black,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
+                    Text(
+                        text = "个",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                    )
                 }
             }
 
