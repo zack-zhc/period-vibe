@@ -1,5 +1,11 @@
 package com.example.periodvibe.ui.settings
 
+import android.app.AlarmManager
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -42,8 +48,10 @@ import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.runtime.Composable
@@ -288,6 +296,20 @@ fun RemindersScreen(
     val uiState by viewModel.uiState.collectAsState()
     val showTimeDialog by viewModel.showTimeDialog.collectAsState()
 
+    val context = LocalContext.current
+    val alarmManager = remember {
+        context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+    }
+    val canScheduleExactAlarms = remember {
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()
+    }
+    val exactAlarmLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) {
+        // 用户从系统设置返回后重新安排通知
+        viewModel.rescheduleNotifications()
+    }
+
     RemindersContent(
         uiState = uiState,
         showTimeDialog = showTimeDialog,
@@ -300,6 +322,13 @@ fun RemindersScreen(
         onTogglePeriodNotification = { viewModel.togglePeriodNotification(it) },
         onToggleOvulationNotification = { viewModel.toggleOvulationNotification(it) },
         onUpdateOvulationDaysBefore = { viewModel.updateOvulationDaysBefore(it) },
+        showExactAlarmHint = !canScheduleExactAlarms,
+        onRequestExactAlarmPermission = {
+            val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                data = Uri.parse("package:${context.packageName}")
+            }
+            exactAlarmLauncher.launch(intent)
+        },
         modifier = modifier
     )
 }
@@ -318,6 +347,8 @@ private fun RemindersContent(
     onTogglePeriodNotification: (Boolean) -> Unit,
     onToggleOvulationNotification: (Boolean) -> Unit,
     onUpdateOvulationDaysBefore: (Int) -> Unit,
+    showExactAlarmHint: Boolean = false,
+    onRequestExactAlarmPermission: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -345,6 +376,44 @@ private fun RemindersContent(
         ) {
             if (uiState is SettingsUiState.Success) {
                 val state = uiState
+
+                if (showExactAlarmHint) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 16.dp),
+                        shape = MaterialTheme.shapes.medium,
+                        color = MaterialTheme.colorScheme.errorContainer
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Notifications,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "提醒可能不准时",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = MaterialTheme.colorScheme.onErrorContainer
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "Android 12+ 需要“精确闹钟”权限才能按时提醒。请前往系统设置开启。",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onErrorContainer
+                                )
+                            }
+                            TextButton(onClick = onRequestExactAlarmPermission) {
+                                Text("去开启")
+                            }
+                        }
+                    }
+                }
 
                 Column(
                     verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)

@@ -55,14 +55,27 @@ class NotificationScheduler @Inject constructor(
         try {
             val latestCycle = cycleRepository.getLatestCycle() ?: return
 
-            val cycleLength = latestCycle.cycleLength ?: settings.cycleLengthDefault
-            val nextPeriodDate = latestCycle.startDate.plusDays(cycleLength.toLong())
-            val notificationDateTime = LocalDateTime.of(
+            val cycleLength = (latestCycle.cycleLength ?: settings.cycleLengthDefault).coerceAtLeast(1)
+            // 与 GetHomeDataUseCase 保持一致：已结束的周期以结束日期为基准预测下一次经期
+            val referenceDate = latestCycle.endDate ?: latestCycle.startDate
+            val nextPeriodDate = referenceDate.plusDays(cycleLength.toLong())
+            val now = LocalDateTime.now()
+
+            var notificationDateTime = LocalDateTime.of(
                 nextPeriodDate.minusDays(settings.notificationDaysBefore.toLong()),
                 settings.notificationTime
             )
 
-            if (notificationDateTime.isAfter(LocalDateTime.now())) {
+            // 预测的提醒时间已过（周期推迟/数据较旧）：顺延到下一个预测周期，而不是直接取消
+            if (!notificationDateTime.isAfter(now)) {
+                notificationDateTime = LocalDateTime.of(
+                    nextPeriodDate.plusDays(cycleLength.toLong())
+                        .minusDays(settings.notificationDaysBefore.toLong()),
+                    settings.notificationTime
+                )
+            }
+
+            if (notificationDateTime.isAfter(now)) {
                 val message = if (settings.privacyModeEnabled) {
                     "You have a new notification."
                 } else {
@@ -91,16 +104,29 @@ class NotificationScheduler @Inject constructor(
         try {
             val latestCycle = cycleRepository.getLatestCycle() ?: return
 
-            val cycleLength = latestCycle.cycleLength ?: settings.cycleLengthDefault
-            val nextPeriodDate = latestCycle.startDate.plusDays(cycleLength.toLong())
+            val cycleLength = (latestCycle.cycleLength ?: settings.cycleLengthDefault).coerceAtLeast(1)
+            // 与 GetHomeDataUseCase 保持一致：已结束的周期以结束日期为基准预测下一次经期
+            val referenceDate = latestCycle.endDate ?: latestCycle.startDate
+            val nextPeriodDate = referenceDate.plusDays(cycleLength.toLong())
             // 排卵日通常在下次月经前14天
             val ovulationDate = nextPeriodDate.minusDays(14)
-            val notificationDateTime = LocalDateTime.of(
+            val now = LocalDateTime.now()
+
+            var notificationDateTime = LocalDateTime.of(
                 ovulationDate.minusDays(settings.ovulationNotificationDaysBefore.toLong()),
                 settings.notificationTime
             )
 
-            if (notificationDateTime.isAfter(LocalDateTime.now())) {
+            // 预测的提醒时间已过（周期推迟/数据较旧）：顺延到下一个预测周期，而不是直接取消
+            if (!notificationDateTime.isAfter(now)) {
+                val nextOvulationDate = ovulationDate.plusDays(cycleLength.toLong())
+                notificationDateTime = LocalDateTime.of(
+                    nextOvulationDate.minusDays(settings.ovulationNotificationDaysBefore.toLong()),
+                    settings.notificationTime
+                )
+            }
+
+            if (notificationDateTime.isAfter(now)) {
                 val message = if (settings.privacyModeEnabled) {
                     "You have a new notification."
                 } else {

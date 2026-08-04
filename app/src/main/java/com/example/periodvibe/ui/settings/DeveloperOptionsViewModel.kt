@@ -47,7 +47,7 @@ class DeveloperOptionsViewModel @Inject constructor(
             NotificationType.PERIOD_START,
             seconds,
             "Test Delayed Notification",
-            "This is a delayed test notification from Period Vibe. It was scheduled $seconds seconds ago."
+            "This is a delayed test notification from Period Vibe. It will fire in $seconds seconds."
         )
     }
 

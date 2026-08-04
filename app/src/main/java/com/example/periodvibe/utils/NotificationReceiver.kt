@@ -10,7 +10,8 @@ class NotificationReceiver : BroadcastReceiver() {
         val notificationManager = NotificationManager(context)
         notificationManager.showNotification(
             title = intent.getStringExtra("title") ?: "Period Reminder",
-            message = intent.getStringExtra("message") ?: "Your period is coming soon!"
+            message = intent.getStringExtra("message") ?: "Your period is coming soon!",
+            id = NotificationManager.notificationIdFor(intent.getStringExtra("notification_type"))
         )
     }
 }

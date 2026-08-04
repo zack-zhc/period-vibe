@@ -542,6 +542,12 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun rescheduleNotifications() {
+        viewModelScope.launch {
+            tryRescheduleNotification()
+        }
+    }
+
     fun updateCycleParameters(
         cycleLength: Int,
         periodLength: Int
