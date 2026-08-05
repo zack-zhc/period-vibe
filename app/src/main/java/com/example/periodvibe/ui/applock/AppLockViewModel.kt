@@ -40,6 +40,10 @@ class AppLockViewModel @Inject constructor(
         }
     }
 
+    fun clearError() {
+        _uiState.value = AppLockUiState.Idle
+    }
+
     fun hasPin(): Boolean {
         return securityRepository.hasPin()
     }
@@ -70,6 +74,14 @@ class AppLockViewModel @Inject constructor(
 
                         override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
                             super.onAuthenticationError(errorCode, errString)
+                            // 用户主动取消（如点击"使用 PIN 码"）不算错误
+                            if (errorCode == BiometricPrompt.ERROR_NEGATIVE_BUTTON ||
+                                errorCode == BiometricPrompt.ERROR_USER_CANCELED ||
+                                errorCode == BiometricPrompt.ERROR_CANCELED
+                            ) {
+                                _uiState.value = AppLockUiState.Idle
+                                return
+                            }
                             _uiState.value = AppLockUiState.Error(errString.toString())
                         }
 
