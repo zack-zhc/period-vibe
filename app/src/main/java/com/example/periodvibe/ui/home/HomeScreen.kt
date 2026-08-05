@@ -130,6 +130,7 @@ fun HomeScreen(
                     cycleDay = state.cycleDay,
                     daysUntilPeriod = state.daysUntilPeriod,
                     phase = state.phase,
+                    hasCurrentCycle = state.hasCurrentCycle,
                     cycleLength = state.cycleLength,
                     daysUntilNextPhase = state.daysUntilNextPhase,
                     nextPhaseName = state.nextPhaseName,
@@ -211,6 +212,7 @@ private fun HomeContent(
     cycleDay: Int,
     daysUntilPeriod: Int,
     phase: CyclePhase,
+    hasCurrentCycle: Boolean,
     cycleLength: Int,
     daysUntilNextPhase: Int,
     nextPhaseName: String,
@@ -233,10 +235,12 @@ private fun HomeContent(
             cycleDay = cycleDay,
             phase = phase,
             phaseData = phaseData,
+            hasCurrentCycle = hasCurrentCycle,
             cycleLength = cycleLength,
             daysUntilPeriod = daysUntilPeriod,
             daysUntilNextPhase = daysUntilNextPhase,
-            nextPhaseName = nextPhaseName
+            nextPhaseName = nextPhaseName,
+            ovulationDate = ovulationDate
         )
 
         // 合并信息卡片
@@ -281,14 +285,32 @@ private fun MainStatusCard(
     cycleDay: Int,
     phase: CyclePhase,
     phaseData: PhaseData,
+    hasCurrentCycle: Boolean,
     cycleLength: Int,
     daysUntilPeriod: Int,
     daysUntilNextPhase: Int,
     nextPhaseName: String,
+    ovulationDate: java.time.LocalDate?,
     modifier: Modifier = Modifier
 ) {
-    val progress = cycleDay.toFloat() / cycleLength.toFloat()
     val phaseTip = getPhaseTip(phase)
+    // 有进行中周期：以真实记录天数计算进度
+    // 无进行中周期（预测模式）：以距下次月经的天数反推预测周期内位置
+    val progress = if (hasCurrentCycle) {
+        cycleDay.toFloat() / cycleLength.toFloat()
+    } else {
+        (cycleLength - daysUntilPeriod).toFloat() / cycleLength.toFloat()
+    }
+    // 预测模式且预测日期已过时，不再显示误导性的"第 X 天"
+    val showPredictedCountdown = !hasCurrentCycle && daysUntilPeriod > 0
+    val mainText = when {
+        !hasCurrentCycle && daysUntilPeriod == 0 -> "月经临近，记得记录开始时间"
+        !hasCurrentCycle -> "预计下次月经还有 $daysUntilPeriod 天"
+        daysUntilPeriod == 0 -> "月经预计今天来"
+        daysUntilPeriod == 1 -> "距离下次月经还有 1 天"
+        phase == CyclePhase.MENSTRATION -> "本次月经第 $cycleDay 天"
+        else -> "距离下次月经还有 $daysUntilPeriod 天"
+    }
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -326,28 +348,58 @@ private fun MainStatusCard(
             strokeWidth = 14.dp,
             backgroundColor = phaseData.container,
             progressColor = phaseData.primary,
-            contentDescription = "周期进度，第 $cycleDay 天"
+            contentDescription = if (hasCurrentCycle) {
+                "周期进度，第 $cycleDay 天"
+            } else {
+                "预计下次月经还有 $daysUntilPeriod 天"
+            }
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Text(
-                    text = "第",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = "$cycleDay",
-                    style = MaterialTheme.typography.displayLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = phaseData.primary
-                )
-                Text(
-                    text = "天",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                if (hasCurrentCycle) {
+                    Text(
+                        text = "第",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "$cycleDay",
+                        style = MaterialTheme.typography.displayLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = phaseData.primary
+                    )
+                    Text(
+                        text = "天",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else if (showPredictedCountdown) {
+                    Text(
+                        text = "还有",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "$daysUntilPeriod",
+                        style = MaterialTheme.typography.displayLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = phaseData.primary
+                    )
+                    Text(
+                        text = "天",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    Text(
+                        text = "今天",
+                        style = MaterialTheme.typography.displayLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = phaseData.primary
+                    )
+                }
                 Surface(
                     color = MaterialTheme.colorScheme.surfaceContainerHigh,
                     shape = RoundedCornerShape(50),
@@ -366,16 +418,21 @@ private fun MainStatusCard(
 
         // Days until next period
         Text(
-            text = when {
-                daysUntilPeriod == 0 -> "月经预计今天来"
-                daysUntilPeriod == 1 -> "距离下次月经还有 1 天"
-                phase == CyclePhase.MENSTRATION -> "本次月经第 $cycleDay 天"
-                else -> "距离下次月经还有 $daysUntilPeriod 天"
-            },
+            text = mainText,
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center
         )
+
+        // 预计排卵日
+        if (ovulationDate != null) {
+            Text(
+                text = "预计排卵日 ${ovulationDate.monthValue}月${ovulationDate.dayOfMonth}日",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
 
         // Phase tip
         Text(
@@ -706,6 +763,7 @@ private fun HomeScreenPreview_Menstruation() {
                     daysUntilPeriod = 0,
                     phase = CyclePhase.MENSTRATION,
                     cycleLength = 28,
+                    hasCurrentCycle = true,
                     daysUntilNextPhase = 4,
                     nextPhaseName = "卵泡期",
                     ovulationDate = null
@@ -744,6 +802,7 @@ private fun HomeScreenPreview_Ovulation() {
                     daysUntilPeriod = 14,
                     phase = CyclePhase.OVULATION,
                     cycleLength = 28,
+                    hasCurrentCycle = true,
                     daysUntilNextPhase = 2,
                     nextPhaseName = "黄体期",
                     ovulationDate = null
@@ -782,6 +841,7 @@ private fun HomeScreenPreview_Follicular() {
                     daysUntilPeriod = 20,
                     phase = CyclePhase.FOLLICULAR,
                     cycleLength = 28,
+                    hasCurrentCycle = true,
                     daysUntilNextPhase = 6,
                     nextPhaseName = "排卵期",
                     ovulationDate = null
@@ -820,6 +880,7 @@ private fun HomeScreenPreview_Luteal() {
                     daysUntilPeriod = 6,
                     phase = CyclePhase.LUTEAL,
                     cycleLength = 28,
+                    hasCurrentCycle = true,
                     daysUntilNextPhase = 6,
                     nextPhaseName = "月经期",
                     ovulationDate = null
@@ -858,6 +919,7 @@ private fun HomeScreenPreview_Safe() {
                     daysUntilPeriod = 2,
                     phase = CyclePhase.SAFE,
                     cycleLength = 28,
+                    hasCurrentCycle = true,
                     daysUntilNextPhase = 2,
                     nextPhaseName = "月经期",
                     ovulationDate = null
@@ -987,10 +1049,12 @@ private fun HomeScreenPreview_WithCombinedCard() {
                         cycleDay = 3,
                         phase = CyclePhase.MENSTRATION,
                         phaseData = getPhaseData(CyclePhase.MENSTRATION),
+                        hasCurrentCycle = true,
                         cycleLength = 28,
                         daysUntilPeriod = 0,
                         daysUntilNextPhase = 4,
-                        nextPhaseName = "卵泡期"
+                        nextPhaseName = "卵泡期",
+                        ovulationDate = null
                     )
 
                     // 使用合并卡片
