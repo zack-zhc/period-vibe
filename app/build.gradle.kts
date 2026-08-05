@@ -14,8 +14,8 @@ android {
         applicationId = "com.example.periodvibe"
         minSdk = 31
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0.18"
+        versionCode = 2
+        versionName = "1.0.19"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
