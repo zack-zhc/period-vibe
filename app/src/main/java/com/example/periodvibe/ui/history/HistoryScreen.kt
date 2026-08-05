@@ -44,12 +44,15 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -59,10 +62,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.periodvibe.R
 import com.example.periodvibe.domain.model.DailyRecord
 import com.example.periodvibe.domain.model.FlowLevel
 import com.example.periodvibe.domain.usecase.CycleWithRecords
@@ -79,6 +84,7 @@ import kotlinx.coroutines.launch
 fun HistoryScreen(
     onNavigateBack: () -> Unit,
     onNavigateHomeToRecord: () -> Unit,
+    darkTheme: Boolean = isSystemInDarkTheme(),
     modifier: Modifier = Modifier,
     viewModel: HistoryViewModel = hiltViewModel()
 ) {
@@ -89,7 +95,20 @@ fun HistoryScreen(
     val showEditDialog by viewModel.showEditDialog.collectAsState()
     val isEditMode by viewModel.isEditMode.collectAsState()
     val selectedCycles by viewModel.selectedCycles.collectAsState()
-    val isDark = isSystemInDarkTheme()
+    val showDeleteSelectedDialog by viewModel.showDeleteSelectedDialog.collectAsState()
+    val errorMessageRes by viewModel.errorMessage.collectAsState()
+    val isDark = darkTheme
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    val errorMessageText = errorMessageRes?.let { stringResource(it) }
+
+    // 删除/编辑失败时通过 Snackbar 反馈
+    LaunchedEffect(errorMessageText) {
+        errorMessageText?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            viewModel.consumeError()
+        }
+    }
 
     // 检查是否有数据
     val hasData = when (val state = historyData) {
@@ -100,16 +119,16 @@ fun HistoryScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("历史记录") },
+                title = { Text(stringResource(R.string.history_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Rounded.ArrowBack, contentDescription = "返回")
+                        Icon(Icons.Rounded.ArrowBack, contentDescription = stringResource(R.string.history_back))
                     }
                 },
                 actions = {
                     if (hasData) {
                         TextButton(onClick = { viewModel.toggleEditMode() }) {
-                            Text(if (isEditMode) "取消" else "编辑")
+                            Text(if (isEditMode) stringResource(R.string.history_cancel) else stringResource(R.string.history_edit))
                         }
                     }
                 }
@@ -119,9 +138,10 @@ fun HistoryScreen(
             EditModeBottomBar(
                 visible = isEditMode,
                 selectedCount = selectedCycles.size,
-                onDeleteClick = { viewModel.deleteSelectedCycles() }
+                onDeleteClick = { viewModel.showDeleteSelectedDialog() }
             )
         },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         modifier = modifier
     ) { paddingValues ->
         Box(
@@ -153,7 +173,7 @@ fun HistoryScreen(
                             },
                             onCycleLongClick = { cycleId ->
                                 if (!isEditMode) {
-                                    viewModel.showDeleteDialog(cycleId)
+                                    viewModel.enterEditModeWithSelection(cycleId)
                                 }
                             },
                             onRecordEditClick = { record ->
@@ -185,8 +205,8 @@ fun HistoryScreen(
 
     if (showDeleteDialog != null) {
         DeleteConfirmDialog(
-            title = "删除周期",
-            message = "确定要删除这个周期记录吗？此操作无法撤销。",
+            title = stringResource(R.string.history_delete_cycle_title),
+            message = stringResource(R.string.history_delete_cycle_message),
             onConfirm = {
                 viewModel.deleteCycle(showDeleteDialog!!)
             },
@@ -196,10 +216,19 @@ fun HistoryScreen(
         )
     }
 
+    if (showDeleteSelectedDialog) {
+        DeleteConfirmDialog(
+            title = stringResource(R.string.history_delete_cycle_title),
+            message = stringResource(R.string.history_delete_selected_message, selectedCycles.size),
+            onConfirm = { viewModel.deleteSelectedCycles() },
+            onDismiss = { viewModel.hideDeleteSelectedDialog() }
+        )
+    }
+
     if (showDeleteRecordDialog != null) {
         DeleteConfirmDialog(
-            title = "删除记录",
-            message = "确定要删除这条记录吗？此操作无法撤销。",
+            title = stringResource(R.string.history_delete_record_title),
+            message = stringResource(R.string.history_delete_record_message),
             onConfirm = {
                 viewModel.deleteDailyRecord(showDeleteRecordDialog!!)
             },
@@ -339,7 +368,7 @@ private fun StatsCards(
                     verticalArrangement = Arrangement.Center
                 ) {
                     Text(
-                        text = "总周期数",
+                        text = stringResource(R.string.history_total_cycles),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
@@ -351,7 +380,7 @@ private fun StatsCards(
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                     Text(
-                        text = "个",
+                        text = stringResource(R.string.history_unit_count),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                     )
@@ -371,7 +400,7 @@ private fun StatsCards(
                     verticalArrangement = Arrangement.Center
                 ) {
                     Text(
-                        text = "平均周期",
+                        text = stringResource(R.string.history_avg_cycle),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onTertiaryContainer
                     )
@@ -383,7 +412,7 @@ private fun StatsCards(
                         color = MaterialTheme.colorScheme.onTertiaryContainer
                     )
                     Text(
-                        text = "天",
+                        text = stringResource(R.string.history_unit_days),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f)
                     )
@@ -409,7 +438,7 @@ private fun StatsCards(
                     verticalArrangement = Arrangement.Center
                 ) {
                     Text(
-                        text = "平均经期",
+                        text = stringResource(R.string.history_avg_period),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSecondaryContainer
                     )
@@ -421,7 +450,7 @@ private fun StatsCards(
                         color = MaterialTheme.colorScheme.onSecondaryContainer
                     )
                     Text(
-                        text = "天",
+                        text = stringResource(R.string.history_unit_days),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
                     )
@@ -441,7 +470,7 @@ private fun StatsCards(
                     verticalArrangement = Arrangement.Center
                 ) {
                     Text(
-                        text = "周期范围",
+                        text = stringResource(R.string.history_cycle_range),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -457,7 +486,7 @@ private fun StatsCards(
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "天",
+                        text = stringResource(R.string.history_unit_days),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     )
@@ -518,7 +547,7 @@ internal fun EmptyState(
                 Spacer(modifier = Modifier.height(20.dp))
 
                 Text(
-                    text = "还没有记录",
+                    text = stringResource(R.string.history_empty_title),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -527,7 +556,7 @@ internal fun EmptyState(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "记录你的第一次经期，开始追踪你的旅程并发现你个人的周期规律。",
+                    text = stringResource(R.string.history_empty_message),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -547,31 +576,10 @@ internal fun EmptyState(
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("去记录")
+                    Text(stringResource(R.string.history_go_record))
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun HistoryHeader(
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier.padding(horizontal = 16.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Text(
-            text = "你的旅程",
-            style = MaterialTheme.typography.headlineLarge,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        Text(
-            text = "追踪你的周期，发现规律和洞察",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
     }
 }
 
@@ -622,9 +630,9 @@ private fun CycleCard(
         null -> periodColor.copy(alpha = 0.5f)
     }
     val flowDisplayText = when (cycleWithRecords.averageFlowLevel) {
-        FlowLevel.LIGHT -> "少量"
-        FlowLevel.MEDIUM -> "中等"
-        FlowLevel.HEAVY -> "大量"
+        FlowLevel.LIGHT -> stringResource(R.string.history_flow_light)
+        FlowLevel.MEDIUM -> stringResource(R.string.history_flow_medium)
+        FlowLevel.HEAVY -> stringResource(R.string.history_flow_heavy)
         null -> ""
     }
     val arrowRotation by animateFloatAsState(
@@ -707,7 +715,7 @@ private fun CycleCard(
                             color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
                         ) {
                             Text(
-                                text = "${cycleWithRecords.periodDaysCount}天",
+                                text = stringResource(R.string.history_period_days, cycleWithRecords.periodDaysCount),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -726,7 +734,9 @@ private fun CycleCard(
                             color = MaterialTheme.colorScheme.outline
                         )
                         Text(
-                            text = if (cycleWithRecords.cycleLengthDays != null) "周期${cycleWithRecords.cycleLengthDays}天" else "周期--天",
+                            text = cycleWithRecords.cycleLengthDays?.let { cycleLength ->
+                                stringResource(R.string.history_cycle_length, cycleLength)
+                            } ?: stringResource(R.string.history_cycle_in_progress),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -736,7 +746,9 @@ private fun CycleCard(
                 if (!isEditMode) {
                     Icon(
                         imageVector = Icons.Rounded.ExpandMore,
-                        contentDescription = if (isExpanded) "收起" else "展开",
+                        contentDescription = stringResource(
+                            if (isExpanded) R.string.history_collapse else R.string.history_expand
+                        ),
                         tint = MaterialTheme.colorScheme.outline,
                         modifier = Modifier
                             .size(20.dp)
@@ -758,7 +770,7 @@ private fun CycleCard(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = "每日记录",
+                        text = stringResource(R.string.history_daily_records),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -766,6 +778,7 @@ private fun CycleCard(
                     cycleWithRecords.records.forEach { record ->
                         DailyRecordRow(
                             record = record,
+                            darkTheme = isDark,
                             onEditClick = { onRecordEditClick(record) },
                             onDeleteClick = { onRecordDeleteClick(record.id) }
                         )
@@ -778,8 +791,8 @@ private fun CycleCard(
 
 @Composable
 private fun DeleteConfirmDialog(
-    title: String = "确认删除",
-    message: String = "确定要删除这个周期记录吗？此操作无法撤销。",
+    title: String = stringResource(R.string.history_delete_cycle_title),
+    message: String = stringResource(R.string.history_delete_cycle_message),
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -806,12 +819,12 @@ private fun DeleteConfirmDialog(
                     contentColor = MaterialTheme.colorScheme.onError
                 )
             ) {
-                Text("删除")
+                Text(stringResource(R.string.history_delete))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("取消")
+                Text(stringResource(R.string.history_cancel))
             }
         }
     )

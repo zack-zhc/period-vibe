@@ -21,9 +21,6 @@ class HistoryViewModel @Inject constructor(
     private val _selectedCycleId = MutableStateFlow<Long?>(null)
     val selectedCycleId: StateFlow<Long?> = _selectedCycleId.asStateFlow()
 
-    private val _selectedRecordId = MutableStateFlow<Long?>(null)
-    val selectedRecordId: StateFlow<Long?> = _selectedRecordId.asStateFlow()
-
     private val _showDeleteDialog = MutableStateFlow<Long?>(null)
     val showDeleteDialog: StateFlow<Long?> = _showDeleteDialog.asStateFlow()
 
@@ -40,6 +37,14 @@ class HistoryViewModel @Inject constructor(
     // 多选选中的周期
     private val _selectedCycles = MutableStateFlow<Set<Long>>(emptySet())
     val selectedCycles: StateFlow<Set<Long>> = _selectedCycles.asStateFlow()
+
+    // 批量删除确认弹窗
+    private val _showDeleteSelectedDialog = MutableStateFlow(false)
+    val showDeleteSelectedDialog: StateFlow<Boolean> = _showDeleteSelectedDialog.asStateFlow()
+
+    // 错误消息资源 ID，用于 Snackbar 反馈
+    private val _errorMessage = MutableStateFlow<Int?>(null)
+    val errorMessage: StateFlow<Int?> = _errorMessage.asStateFlow()
 
     init {
         loadHistoryData()
@@ -67,14 +72,6 @@ class HistoryViewModel @Inject constructor(
 
     fun deselectCycle() {
         _selectedCycleId.value = null
-    }
-
-    fun selectRecord(recordId: Long) {
-        _selectedRecordId.value = recordId
-    }
-
-    fun deselectRecord() {
-        _selectedRecordId.value = null
     }
 
     fun showDeleteDialog(cycleId: Long) {
@@ -111,6 +108,7 @@ class HistoryViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
+                _errorMessage.value = com.example.periodvibe.R.string.error_delete_failed
             }
         }
     }
@@ -122,6 +120,7 @@ class HistoryViewModel @Inject constructor(
                 _showDeleteRecordDialog.value = null
             } catch (e: Exception) {
                 e.printStackTrace()
+                _errorMessage.value = com.example.periodvibe.R.string.error_delete_failed
             }
         }
     }
@@ -133,12 +132,13 @@ class HistoryViewModel @Inject constructor(
                 _showEditDialog.value = null
             } catch (e: Exception) {
                 e.printStackTrace()
+                _errorMessage.value = com.example.periodvibe.R.string.error_save_failed
             }
         }
     }
 
-    fun refresh() {
-        loadHistoryData()
+    fun consumeError() {
+        _errorMessage.value = null
     }
 
     fun toggleEditMode() {
@@ -146,6 +146,12 @@ class HistoryViewModel @Inject constructor(
         if (!_isEditMode.value) {
             _selectedCycles.value = emptySet()
         }
+    }
+
+    // 长按周期：进入编辑模式并选中该周期（替代直接弹删除确认，避免误触）
+    fun enterEditModeWithSelection(cycleId: Long) {
+        _isEditMode.value = true
+        _selectedCycles.value = setOf(cycleId)
     }
 
     fun toggleCycleSelection(cycleId: Long) {
@@ -158,13 +164,28 @@ class HistoryViewModel @Inject constructor(
         _selectedCycles.value = current
     }
 
+    fun showDeleteSelectedDialog() {
+        _showDeleteSelectedDialog.value = true
+    }
+
+    fun hideDeleteSelectedDialog() {
+        _showDeleteSelectedDialog.value = false
+    }
+
     fun deleteSelectedCycles() {
         viewModelScope.launch {
-            _selectedCycles.value.forEach { cycleId ->
-                getHistoryDataUseCase.deleteCycle(cycleId)
+            val targets = _selectedCycles.value
+            try {
+                targets.forEach { cycleId ->
+                    getHistoryDataUseCase.deleteCycle(cycleId)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _errorMessage.value = com.example.periodvibe.R.string.error_delete_failed
             }
             _selectedCycles.value = emptySet()
             _isEditMode.value = false
+            _showDeleteSelectedDialog.value = false
         }
     }
 

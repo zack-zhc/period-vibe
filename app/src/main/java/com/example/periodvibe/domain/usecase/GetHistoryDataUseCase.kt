@@ -23,9 +23,10 @@ class GetHistoryDataUseCase @Inject constructor(
             cycleRepository.getAllDailyRecords()
         ) { cycles, records ->
             val sortedCycles = cycles.sortedBy { it.startDate }
+            val recordsByCycle = records.groupBy { it.cycleId }
 
             val cycleWithRecords = sortedCycles.mapIndexed { index, cycle ->
-                val cycleRecords = records.filter { it.cycleId == cycle.id }
+                val cycleRecords = recordsByCycle[cycle.id] ?: emptyList()
                 // 动态计算周期长度：下一个周期的开始日期 - 当前周期的开始日期
                 val calculatedCycleLength = if (index < sortedCycles.size - 1) {
                     val nextCycle = sortedCycles[index + 1]
@@ -61,28 +62,6 @@ class GetHistoryDataUseCase @Inject constructor(
         }
     }
 
-    suspend fun getCycleDetails(cycleId: Long): CycleDetails? {
-        val cycle = cycleRepository.getCycleById(cycleId) ?: return null
-        val records = cycleRepository.getDailyRecordsByCycleId(cycleId)
-        val recordsList = mutableListOf<DailyRecord>()
-        records.collect { recordsList.addAll(it) }
-
-        val periodDays = recordsList.count { it.isPeriod }
-        val averageFlowLevel = recordsList
-            .mapNotNull { it.flowLevel }
-            .takeIf { it.isNotEmpty() }
-            ?.map { it.value }
-            ?.average()
-            ?.let { FlowLevel.fromValue(it.toInt()) }
-
-        return CycleDetails(
-            cycle = cycle,
-            records = recordsList.sortedBy { it.date },
-            periodDays = periodDays,
-            averageFlowLevel = averageFlowLevel
-        )
-    }
-
     suspend fun deleteCycle(cycleId: Long) {
         val cycle = cycleRepository.getCycleById(cycleId) ?: return
         cycleRepository.deleteCycle(cycle)
@@ -94,7 +73,15 @@ class GetHistoryDataUseCase @Inject constructor(
     }
 
     suspend fun updateDailyRecord(record: DailyRecord) {
-        cycleRepository.updateDailyRecord(record)
+        // 编辑时日期可能被修改，需按新日期重新归属周期，避免记录出现在错误的周期中
+        val newCycleId = cycleRepository.getAllCyclesOnce()
+            .firstOrNull { cycle ->
+                !record.date.isBefore(cycle.startDate) &&
+                    (cycle.endDate == null || !record.date.isAfter(cycle.endDate))
+            }
+            ?.id
+            ?: record.cycleId
+        cycleRepository.updateDailyRecord(record.copy(cycleId = newCycleId))
     }
 }
 
@@ -162,6 +149,7 @@ data class CycleWithRecords(
     val dateRangeWithoutYear: String
         get() {
             val monthDayFormatter = DateTimeFormatter.ofPattern("M月d日", Locale.CHINA)
+            val yearFormatter = DateTimeFormatter.ofPattern("yyyy年", Locale.CHINA)
             val periodRecords = records.filter { it.isPeriod }.sortedBy { it.date }
             val startDisplay = periodRecords.firstOrNull()?.date ?: cycle.startDate
             val endDisplay = if (cycle.endDate != null) {
@@ -171,13 +159,12 @@ data class CycleWithRecords(
             }
             val startMonthDay = startDisplay.format(monthDayFormatter)
             val endMonthDay = endDisplay.format(monthDayFormatter)
-            return "${startMonthDay} - ${endMonthDay}"
+            // 跨年周期补充结束年份，避免 "12月30日 - 1月3日" 歧义
+            val endWithYear = if (startDisplay.year != endDisplay.year) {
+                "${endMonthDay}（${endDisplay.format(yearFormatter)}）"
+            } else {
+                endMonthDay
+            }
+            return "${startMonthDay} - ${endWithYear}"
         }
 }
-
-data class CycleDetails(
-    val cycle: Cycle,
-    val records: List<DailyRecord>,
-    val periodDays: Int,
-    val averageFlowLevel: FlowLevel?
-)

@@ -10,7 +10,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.periodvibe.R
 
 @Composable
 fun EditModeBottomBar(
@@ -39,13 +41,14 @@ fun EditModeBottomBar(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "已选择 $selectedCount 个周期",
+                    text = stringResource(R.string.history_selected_count, selectedCount),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Button(
                     onClick = onDeleteClick,
+                    enabled = selectedCount > 0,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.error,
                         contentColor = MaterialTheme.colorScheme.onError
@@ -57,7 +60,7 @@ fun EditModeBottomBar(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("删除")
+                    Text(stringResource(R.string.history_delete))
                 }
             }
         }

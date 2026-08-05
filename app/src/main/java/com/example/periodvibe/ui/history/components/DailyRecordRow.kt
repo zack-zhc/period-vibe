@@ -14,9 +14,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.periodvibe.R
 import com.example.periodvibe.domain.model.DailyRecord
 import com.example.periodvibe.domain.model.FlowLevel
 import com.example.periodvibe.ui.theme.CalendarPeriodDark
@@ -29,11 +30,11 @@ fun DailyRecordRow(
     record: DailyRecord,
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
+    darkTheme: Boolean = isSystemInDarkTheme(),
     modifier: Modifier = Modifier
 ) {
     val formatter = remember { DateTimeFormatter.ofPattern("MM月dd日", Locale.CHINA) }
-    val isDark = isSystemInDarkTheme()
-    val periodColor = if (isDark) CalendarPeriodDark else CalendarPeriodLight
+    val periodColor = if (darkTheme) CalendarPeriodDark else CalendarPeriodLight
 
     Row(
         modifier = modifier
@@ -85,8 +86,7 @@ fun DailyRecordRow(
             }
 
             IconButton(
-                onClick = onEditClick,
-                modifier = Modifier.size(32.dp)
+                onClick = onEditClick
             ) {
                 Surface(
                     shape = CircleShape,
@@ -99,7 +99,7 @@ fun DailyRecordRow(
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.Edit,
-                            contentDescription = "编辑",
+                            contentDescription = stringResource(R.string.history_edit),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(16.dp)
                         )
@@ -108,8 +108,7 @@ fun DailyRecordRow(
             }
 
             IconButton(
-                onClick = onDeleteClick,
-                modifier = Modifier.size(32.dp)
+                onClick = onDeleteClick
             ) {
                 Surface(
                     shape = CircleShape,
@@ -122,7 +121,7 @@ fun DailyRecordRow(
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.Delete,
-                            contentDescription = "删除",
+                            contentDescription = stringResource(R.string.history_delete),
                             tint = MaterialTheme.colorScheme.onErrorContainer,
                             modifier = Modifier.size(16.dp)
                         )

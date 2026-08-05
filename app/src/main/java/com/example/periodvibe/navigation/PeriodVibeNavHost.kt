@@ -374,7 +374,8 @@ fun PeriodVibeNavHost(
                     showRecordSheetOnHome = true
                     // 最简单直接的方案：重置到 Home
                     resetTo(Screen.Home)
-                }
+                },
+                darkTheme = darkTheme
             )
         }
 

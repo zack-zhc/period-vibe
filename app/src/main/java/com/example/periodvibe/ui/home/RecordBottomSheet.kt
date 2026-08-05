@@ -165,6 +165,7 @@ fun RecordBottomSheetContent(
     if (showDatePicker) {
         DatePickerDialog(
             selectedDate = selectedDate,
+            minSelectableDate = existingRecord?.date?.minusYears(2) ?: LocalDate.now().minusMonths(3),
             onDateSelected = { selectedDate = it },
             onDismiss = { showDatePicker = false }
         )
@@ -316,11 +317,12 @@ private fun FlowLevelButton(
 @Composable
 private fun DatePickerDialog(
     selectedDate: LocalDate,
+    minSelectableDate: LocalDate,
     onDateSelected: (LocalDate) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val threeMonthsAgo = java.time.Instant.now()
-        .minus(java.time.Duration.ofDays(90))
+    val minMillis = minSelectableDate.atStartOfDay(ZoneId.systemDefault())
+        .toInstant()
         .toEpochMilli()
 
     val datePickerState = rememberDatePickerState(
@@ -329,7 +331,7 @@ private fun DatePickerDialog(
             .toEpochMilli(),
         selectableDates = object : androidx.compose.material3.SelectableDates {
             override fun isSelectableDate(utcTimeMillis: Long): Boolean {
-                return utcTimeMillis in threeMonthsAgo..System.currentTimeMillis()
+                return utcTimeMillis in minMillis..System.currentTimeMillis()
             }
         }
     )
