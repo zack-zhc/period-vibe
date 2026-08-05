@@ -36,6 +36,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,10 +57,12 @@ import com.example.periodvibe.ui.home.CombinedInfoCard
 import com.example.periodvibe.ui.home.FeaturePreviewCard
 import com.example.periodvibe.ui.theme.FertileColor
 import com.example.periodvibe.ui.theme.FollicularColor
+import com.example.periodvibe.ui.theme.HomeCardShape
 import com.example.periodvibe.ui.theme.LutealColor
 import com.example.periodvibe.ui.theme.MenstruationColor
 import com.example.periodvibe.ui.theme.OvulationColor
 import com.example.periodvibe.ui.theme.SafeColor
+import com.example.periodvibe.ui.theme.cardBorderStroke
 import kotlinx.coroutines.launch
 import java.time.LocalTime
 
@@ -241,6 +244,11 @@ private fun HomeContent(
 @Composable
 private fun GreetingSection(modifier: Modifier = Modifier) {
     val greeting = getGreeting()
+    val dateText = remember {
+        java.time.LocalDate.now().format(
+            java.time.format.DateTimeFormatter.ofPattern("M月d日 · EEEE", java.util.Locale.CHINESE)
+        )
+    }
     Column(
         modifier = modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.Start
@@ -252,7 +260,7 @@ private fun GreetingSection(modifier: Modifier = Modifier) {
             color = MaterialTheme.colorScheme.onSurface
         )
         Text(
-            text = "今天是你的专属时刻",
+            text = dateText,
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -275,15 +283,12 @@ private fun MainStatusCard(
 
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        shape = HomeCardShape,
         colors = CardDefaults.cardColors(
             containerColor = Color.Transparent
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = androidx.compose.foundation.BorderStroke(
-            width = 1.dp,
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
-        )
+        border = cardBorderStroke()
     ) {
         Box(
             modifier = Modifier
@@ -291,7 +296,7 @@ private fun MainStatusCard(
                 .background(
                     brush = Brush.verticalGradient(
                         colors = listOf(
-                            phaseData.primary.copy(alpha = 0.15f),
+                            phaseData.container,
                             MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f),
                             MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.4f)
                         )
@@ -459,11 +464,12 @@ private fun NoDataState(darkTheme: Boolean, modifier: Modifier = Modifier) {
         // 主Hero卡片
         Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(28.dp),
+            shape = HomeCardShape,
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                containerColor = Color.Transparent
             ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            border = cardBorderStroke()
         ) {
             Box(
                 modifier = Modifier
@@ -476,7 +482,7 @@ private fun NoDataState(darkTheme: Boolean, modifier: Modifier = Modifier) {
                         .background(
                             brush = Brush.verticalGradient(
                                 colors = listOf(
-                                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f),
                                     MaterialTheme.colorScheme.surfaceContainerLow
                                 )
                             )
@@ -510,7 +516,7 @@ private fun NoDataState(darkTheme: Boolean, modifier: Modifier = Modifier) {
 
                     // 标题
                     Text(
-                        text = "暂无数据",
+                        text = "一切从今天开始",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface

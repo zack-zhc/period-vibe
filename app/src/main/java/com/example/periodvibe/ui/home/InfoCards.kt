@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.ui.Alignment
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesome
@@ -33,20 +32,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.periodvibe.domain.model.CyclePhase
-import com.example.periodvibe.ui.theme.MenstruationColor
-import com.example.periodvibe.ui.theme.SafeColor
+import com.example.periodvibe.ui.theme.HomeCardShape
+import com.example.periodvibe.ui.theme.cardBorderStroke
 
-// 获取怀孕几率信息
-fun getPregnancyChance(currentPhase: CyclePhase): Quadruple<String, String, Boolean, Int> {
+// 获取怀孕几率信息（中性表述：受孕期/非受孕期）
+data class PregnancyInfo(
+    val isFertile: Boolean,
+    val label: String
+)
+
+fun getPregnancyInfo(currentPhase: CyclePhase): PregnancyInfo {
     return when (currentPhase) {
-        CyclePhase.OVULATION, CyclePhase.FERTILE -> Quadruple("高", "受孕期", true, 5)
-        CyclePhase.FOLLICULAR -> Quadruple("低", "非受孕期", false, 2)
-        CyclePhase.LUTEAL, CyclePhase.SAFE -> Quadruple("很低", "非受孕期", false, 1)
-        CyclePhase.MENSTRATION -> Quadruple("最低", "非受孕期", false, 1)
+        CyclePhase.OVULATION, CyclePhase.FERTILE -> PregnancyInfo(isFertile = true, label = "受孕期")
+        else -> PregnancyInfo(isFertile = false, label = "非受孕期")
     }
 }
-
-data class Quadruple<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
 
 // 获取今日贴士
 fun getTodayTip(phase: CyclePhase): String {
@@ -104,20 +104,17 @@ fun CombinedInfoCard(
     daysUntilNextPhase: Int = 0,
     modifier: Modifier = Modifier
 ) {
-    val pregnancyChance = getPregnancyChance(phase)
+    val pregnancyInfo = getPregnancyInfo(phase)
     val todayTip = getTodayTip(phase)
 
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
+        shape = HomeCardShape,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        border = androidx.compose.foundation.BorderStroke(
-            width = 1.dp,
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
-        )
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = cardBorderStroke()
     ) {
         Column(
             modifier = Modifier
@@ -203,60 +200,16 @@ fun CombinedInfoCard(
                         letterSpacing = 0.5.sp
                     )
                 }
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = pregnancyChance.first,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Surface(
-                        color = if (pregnancyChance.third) {
-                            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.4f)
-                        } else {
-                            MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.2f)
-                        },
-                        contentColor = if (pregnancyChance.third) {
-                            MaterialTheme.colorScheme.tertiary
-                        } else {
-                            MaterialTheme.colorScheme.secondary
-                        },
-                        shape = RoundedCornerShape(50),
-                        tonalElevation = 0.dp
-                    ) {
-                        Text(
-                            text = pregnancyChance.second,
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                        )
+                Text(
+                    text = pregnancyInfo.label,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = if (pregnancyInfo.isFertile) {
+                        MaterialTheme.colorScheme.tertiary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
                     }
-                }
-                // 彩色分段指示器
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-                ) {
-                    for (i in 1..5) {
-                        val isActive = i <= pregnancyChance.fourth
-                        val dotColor = when {
-                            pregnancyChance.third -> MenstruationColor
-                            else -> SafeColor
-                        }
-                        Box(
-                            modifier = Modifier
-                                .size(12.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    if (isActive) dotColor
-                                    else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
-                                )
-                        )
-                    }
-                }
+                )
             }
 
             // 分隔线
@@ -305,15 +258,12 @@ fun FeaturePreviewCard(
 ) {
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
+        shape = HomeCardShape,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        border = androidx.compose.foundation.BorderStroke(
-            width = 1.dp,
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
-        )
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = cardBorderStroke()
     ) {
         Column(
             modifier = Modifier
