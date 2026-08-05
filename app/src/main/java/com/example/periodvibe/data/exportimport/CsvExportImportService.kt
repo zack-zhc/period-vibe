@@ -5,6 +5,8 @@ import android.net.Uri
 import com.example.periodvibe.domain.model.Cycle
 import com.example.periodvibe.domain.model.DailyRecord
 import com.example.periodvibe.domain.model.FlowLevel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.time.LocalDate
@@ -46,32 +48,36 @@ class CsvExportImportService @Inject constructor() {
     /**
      * 导出周期数据为 CSV 字符串
      */
-    fun exportCyclesToCsv(cycles: List<Cycle>): String {
-        val sb = StringBuilder()
-        sb.appendLine(CYCLE_CSV_HEADER)
+    suspend fun exportCyclesToCsv(cycles: List<Cycle>): String {
+        return withContext(Dispatchers.IO) {
+            val sb = StringBuilder()
+            sb.appendLine(CYCLE_CSV_HEADER)
 
-        cycles.forEach { cycle ->
-            sb.appendLine(cycleToCsvLine(cycle))
+            cycles.forEach { cycle ->
+                sb.appendLine(cycleToCsvLine(cycle))
+            }
+
+            sb.toString()
         }
-
-        return sb.toString()
     }
 
     /**
      * 导出日常记录数据为 CSV 字符串
      */
-    fun exportDailyRecordsToCsv(records: List<DailyRecord>, cycles: List<Cycle>): String {
-        val sb = StringBuilder()
-        sb.appendLine(DAILY_RECORD_CSV_HEADER)
+    suspend fun exportDailyRecordsToCsv(records: List<DailyRecord>, cycles: List<Cycle>): String {
+        return withContext(Dispatchers.IO) {
+            val sb = StringBuilder()
+            sb.appendLine(DAILY_RECORD_CSV_HEADER)
 
-        // 创建 cycleId 到 startDate 的映射
-        val cycleIdToStartDate = cycles.associate { it.id to it.startDate }
+            // 创建 cycleId 到 startDate 的映射
+            val cycleIdToStartDate = cycles.associate { it.id to it.startDate }
 
-        records.forEach { record ->
-            sb.appendLine(dailyRecordToCsvLine(record, cycleIdToStartDate))
+            records.forEach { record ->
+                sb.appendLine(dailyRecordToCsvLine(record, cycleIdToStartDate))
+            }
+
+            sb.toString()
         }
-
-        return sb.toString()
     }
 
     /**
@@ -87,104 +93,110 @@ class CsvExportImportService @Inject constructor() {
     /**
      * 检测文件类型
      */
-    fun detectFileType(content: String): FileType {
-        val trimmed = content.trim()
-        return when {
-            trimmed.startsWith("{") -> FileType.JSON
-            trimmed.contains("=== CYCLES ===") -> FileType.COMBINED_CSV
-            trimmed.startsWith(CYCLE_CSV_HEADER) ||
-                trimmed.contains("start_date") -> FileType.CYCLES_CSV
-            else -> FileType.UNKNOWN
+    suspend fun detectFileType(content: String): FileType {
+        return withContext(Dispatchers.IO) {
+            val trimmed = content.trim()
+            when {
+                trimmed.startsWith("{") -> FileType.JSON
+                trimmed.contains("=== CYCLES ===") -> FileType.COMBINED_CSV
+                trimmed.startsWith(CYCLE_CSV_HEADER) ||
+                    trimmed.contains("start_date") -> FileType.CYCLES_CSV
+                else -> FileType.UNKNOWN
+            }
         }
     }
 
     /**
      * 从 CSV 字符串导入周期数据（更宽松的检测）
      */
-    fun importCyclesFromCsv(csvContent: String): CsvImportResult<List<Cycle>> {
-        val lines = csvContent.lines()
-            .map { it.trim() }
-            .filter { it.isNotBlank() }
+    suspend fun importCyclesFromCsv(csvContent: String): CsvImportResult<List<Cycle>> {
+        return withContext(Dispatchers.IO) {
+            val lines = csvContent.lines()
+                .map { it.trim() }
+                .filter { it.isNotBlank() }
 
-        if (lines.isEmpty()) {
-            return CsvImportResult.Failure("CSV 文件为空")
-        }
-
-        // 找到表头行
-        val headerIndex = lines.indexOfFirst { it.contains("start_date") && it.contains("end_date") }
-        val dataLines = if (headerIndex >= 0) {
-            lines.drop(headerIndex + 1)
-        } else {
-            // 如果没有明确的表头，尝试直接解析
-            lines
-        }
-
-        if (dataLines.isEmpty()) {
-            return CsvImportResult.Failure("没有找到数据行")
-        }
-
-        val cycles = mutableListOf<Cycle>()
-        val errors = mutableListOf<String>()
-
-        dataLines.forEachIndexed { index, line ->
-            try {
-                val cycle = parseCycleCsvLine(line)
-                cycles.add(cycle)
-            } catch (e: Exception) {
-                errors.add("第 ${index + 1} 行解析失败: ${e.message}")
+            if (lines.isEmpty()) {
+                return@withContext CsvImportResult.Failure("CSV 文件为空")
             }
-        }
 
-        return if (cycles.isEmpty() && errors.isNotEmpty()) {
-            CsvImportResult.Failure(errors.joinToString("\n"))
-        } else {
-            CsvImportResult.Success(cycles)
+            // 找到表头行
+            val headerIndex = lines.indexOfFirst { it.contains("start_date") && it.contains("end_date") }
+            val dataLines = if (headerIndex >= 0) {
+                lines.drop(headerIndex + 1)
+            } else {
+                // 如果没有明确的表头，尝试直接解析
+                lines
+            }
+
+            if (dataLines.isEmpty()) {
+                return@withContext CsvImportResult.Failure("没有找到数据行")
+            }
+
+            val cycles = mutableListOf<Cycle>()
+            val errors = mutableListOf<String>()
+
+            dataLines.forEachIndexed { index, line ->
+                try {
+                    val cycle = parseCycleCsvLine(line)
+                    cycles.add(cycle)
+                } catch (e: Exception) {
+                    errors.add("第 ${index + 1} 行解析失败: ${e.message}")
+                }
+            }
+
+            if (cycles.isEmpty() && errors.isNotEmpty()) {
+                CsvImportResult.Failure(errors.joinToString("\n"))
+            } else {
+                CsvImportResult.Success(cycles)
+            }
         }
     }
 
     /**
      * 从 CSV 字符串导入日常记录数据
      */
-    fun importDailyRecordsFromCsv(
+    suspend fun importDailyRecordsFromCsv(
         csvContent: String,
         cycles: List<Cycle>
     ): CsvImportResult<List<DailyRecord>> {
-        val lines = csvContent.lines()
-            .map { it.trim() }
-            .filter { it.isNotBlank() }
+        return withContext(Dispatchers.IO) {
+            val lines = csvContent.lines()
+                .map { it.trim() }
+                .filter { it.isNotBlank() }
 
-        if (lines.isEmpty()) {
-            return CsvImportResult.Success(emptyList())
-        }
-
-        // 找到表头行
-        val headerIndex = lines.indexOfFirst { it.contains("date") && it.contains("is_period") }
-        val dataLines = if (headerIndex >= 0) {
-            lines.drop(headerIndex + 1)
-        } else {
-            lines
-        }
-
-        if (dataLines.isEmpty()) {
-            return CsvImportResult.Success(emptyList())
-        }
-
-        // 创建 startDate 到 cycle 的映射
-        val startDateToCycle = cycles.associateBy { it.startDate }
-
-        val records = mutableListOf<DailyRecord>()
-        val errors = mutableListOf<String>()
-
-        dataLines.forEachIndexed { index, line ->
-            try {
-                val record = parseDailyRecordCsvLine(line, startDateToCycle)
-                records.add(record)
-            } catch (e: Exception) {
-                errors.add("第 ${index + 1} 行解析失败: ${e.message}")
+            if (lines.isEmpty()) {
+                return@withContext CsvImportResult.Success(emptyList())
             }
-        }
 
-        return CsvImportResult.Success(records)
+            // 找到表头行
+            val headerIndex = lines.indexOfFirst { it.contains("date") && it.contains("is_period") }
+            val dataLines = if (headerIndex >= 0) {
+                lines.drop(headerIndex + 1)
+            } else {
+                lines
+            }
+
+            if (dataLines.isEmpty()) {
+                return@withContext CsvImportResult.Success(emptyList())
+            }
+
+            // 创建 startDate 到 cycle 的映射
+            val startDateToCycle = cycles.associateBy { it.startDate }
+
+            val records = mutableListOf<DailyRecord>()
+            val errors = mutableListOf<String>()
+
+            dataLines.forEachIndexed { index, line ->
+                try {
+                    val record = parseDailyRecordCsvLine(line, startDateToCycle)
+                    records.add(record)
+                } catch (e: Exception) {
+                    errors.add("第 ${index + 1} 行解析失败: ${e.message}")
+                }
+            }
+
+            CsvImportResult.Success(records)
+        }
     }
 
     /**
@@ -196,22 +208,24 @@ class CsvExportImportService @Inject constructor() {
         cyclesCsv: String,
         recordsCsv: String
     ): Boolean {
-        return try {
-            val combinedContent = buildString {
-                appendLine("=== CYCLES ===")
-                append(cyclesCsv)
-                appendLine()
-                appendLine("=== DAILY_RECORDS ===")
-                append(recordsCsv)
-            }
+        return withContext(Dispatchers.IO) {
+            try {
+                val combinedContent = buildString {
+                    appendLine("=== CYCLES ===")
+                    append(cyclesCsv)
+                    appendLine()
+                    appendLine("=== DAILY_RECORDS ===")
+                    append(recordsCsv)
+                }
 
-            context.contentResolver.openOutputStream(uri)?.use { outputStream ->
-                outputStream.write(combinedContent.toByteArray(Charsets.UTF_8))
+                context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                    outputStream.write(combinedContent.toByteArray(Charsets.UTF_8))
+                }
+                true
+            } catch (e: Exception) {
+                e.printStackTrace()
+                false
             }
-            true
-        } catch (e: Exception) {
-            e.printStackTrace()
-            false
         }
     }
 
@@ -219,19 +233,21 @@ class CsvExportImportService @Inject constructor() {
      * 从文件读取 CSV - 简化版本，直接返回全部内容
      */
     suspend fun readFileContent(context: Context, uri: Uri): String? {
-        return try {
-            val content = StringBuilder()
-            context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                BufferedReader(InputStreamReader(inputStream, Charsets.UTF_8)).use { reader ->
-                    reader.lineSequence().forEach { line ->
-                        content.appendLine(line)
+        return withContext(Dispatchers.IO) {
+            try {
+                val content = StringBuilder()
+                context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                    BufferedReader(InputStreamReader(inputStream, Charsets.UTF_8)).use { reader ->
+                        reader.lineSequence().forEach { line ->
+                            content.appendLine(line)
+                        }
                     }
                 }
+                content.toString()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
             }
-            content.toString()
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
         }
     }
 
@@ -239,51 +255,54 @@ class CsvExportImportService @Inject constructor() {
      * 从文件读取 CSV - 解析为周期和记录两部分
      */
     suspend fun readCsvFromFile(context: Context, uri: Uri): Pair<String?, String?> {
-        return try {
-            var cyclesCsv: String? = null
-            var recordsCsv: String? = null
-            var currentSection: String? = null
-            val cyclesLines = mutableListOf<String>()
-            val recordsLines = mutableListOf<String>()
+        return withContext(Dispatchers.IO) {
+            try {
+                var cyclesCsv: String? = null
+                var recordsCsv: String? = null
+                var currentSection: String? = null
+                val cyclesLines = mutableListOf<String>()
+                val recordsLines = mutableListOf<String>()
 
-            context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                BufferedReader(InputStreamReader(inputStream, Charsets.UTF_8)).use { reader ->
-                    reader.lineSequence().forEach { line ->
-                        when {
-                            line.trim() == "=== CYCLES ===" -> {
-                                currentSection = "CYCLES"
-                            }
-                            line.trim() == "=== DAILY_RECORDS ===" -> {
-                                currentSection = "DAILY_RECORDS"
-                            }
-                            line.isNotBlank() -> {
-                                when (currentSection) {
-                                    "CYCLES" -> cyclesLines.add(line)
-                                    "DAILY_RECORDS" -> recordsLines.add(line)
-                                    null -> {
-                                        // 没有标记时，检查是否是周期表头
-                                        if (cyclesLines.isEmpty() && line.contains("start_date")) {                                            currentSection = "CYCLES"
+                context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                    BufferedReader(InputStreamReader(inputStream, Charsets.UTF_8)).use { reader ->
+                        reader.lineSequence().forEach { line ->
+                            when {
+                                line.trim() == "=== CYCLES ===" -> {
+                                    currentSection = "CYCLES"
+                                }
+                                line.trim() == "=== DAILY_RECORDS ===" -> {
+                                    currentSection = "DAILY_RECORDS"
+                                }
+                                line.isNotBlank() -> {
+                                    when (currentSection) {
+                                        "CYCLES" -> cyclesLines.add(line)
+                                        "DAILY_RECORDS" -> recordsLines.add(line)
+                                        null -> {
+                                            // 没有标记时，检查是否是周期表头
+                                            if (cyclesLines.isEmpty() && line.contains("start_date")) {
+                                                currentSection = "CYCLES"
+                                            }
+                                            cyclesLines.add(line)
                                         }
-                                        cyclesLines.add(line)
                                     }
                                 }
                             }
                         }
                     }
                 }
-            }
 
-            if (cyclesLines.isNotEmpty()) {
-                cyclesCsv = cyclesLines.joinToString("\n")
-            }
-            if (recordsLines.isNotEmpty()) {
-                recordsCsv = recordsLines.joinToString("\n")
-            }
+                if (cyclesLines.isNotEmpty()) {
+                    cyclesCsv = cyclesLines.joinToString("\n")
+                }
+                if (recordsLines.isNotEmpty()) {
+                    recordsCsv = recordsLines.joinToString("\n")
+                }
 
-            Pair(cyclesCsv, recordsCsv)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Pair(null, null)
+                Pair(cyclesCsv, recordsCsv)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Pair(null, null)
+            }
         }
     }
 

@@ -48,6 +48,8 @@ import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -55,8 +57,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -65,12 +69,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.periodvibe.R
 import com.example.periodvibe.ui.settings.components.AboutDialog
 import com.example.periodvibe.ui.settings.components.ClearDataConfirmationDialog
 import com.example.periodvibe.ui.settings.components.CycleParametersDialog
@@ -119,12 +125,12 @@ private fun CycleParametersContent(
         modifier = modifier.fillMaxSize(),
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("周期参数") },
+                title = { Text(stringResource(R.string.set_cycle_parameters)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "返回"
+                            contentDescription = stringResource(R.string.set_back)
                         )
                     }
                 }
@@ -151,7 +157,11 @@ private fun CycleParametersContent(
                         },
                         supportingContent = {
                             Text(
-                                text = if (state.autoCalculateCycle) "根据历史数据自动计算" else "使用手动设置的值",
+                                text = if (state.autoCalculateCycle) {
+                                    stringResource(R.string.set_auto_calculate_description)
+                                } else {
+                                    stringResource(R.string.set_manual_values_description)
+                                },
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -167,7 +177,7 @@ private fun CycleParametersContent(
                         )
                     ) {
                         Text(
-                            text = "自动计算周期",
+                            text = stringResource(R.string.set_auto_calculate_cycle),
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -182,7 +192,7 @@ private fun CycleParametersContent(
                             supportingContent = {
                                 Column {
                                     Text(
-                                        text = "${state.cycleLengthDefault} 天",
+                                        text = stringResource(R.string.set_days_with_space, state.cycleLengthDefault),
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -192,21 +202,25 @@ private fun CycleParametersContent(
                                         modifier = Modifier.fillMaxWidth()
                                     ) {
                                         Text(
-                                            text = "${state.cycleLengthRange.first}天",
+                                            text = stringResource(R.string.set_days, state.cycleLengthRange.first),
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                         Spacer(modifier = Modifier.width(8.dp))
+                                        var cycleLengthValue by remember(state.cycleLengthDefault) {
+                                            mutableFloatStateOf(state.cycleLengthDefault.toFloat())
+                                        }
                                         Slider(
-                                            value = state.cycleLengthDefault.toFloat(),
-                                            onValueChange = { onUpdateCycleLength(it.toInt()) },
+                                            value = cycleLengthValue,
+                                            onValueChange = { cycleLengthValue = it },
+                                            onValueChangeFinished = { onUpdateCycleLength(cycleLengthValue.toInt()) },
                                             valueRange = state.cycleLengthRange.first.toFloat()..state.cycleLengthRange.last.toFloat(),
-                                            steps = state.cycleLengthRange.last - state.cycleLengthRange.first - 1,
+                                            steps = (state.cycleLengthRange.last - state.cycleLengthRange.first - 1).coerceAtLeast(0),
                                             modifier = Modifier.weight(1f)
                                         )
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Text(
-                                            text = "${state.cycleLengthRange.last}天",
+                                            text = stringResource(R.string.set_days, state.cycleLengthRange.last),
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
@@ -218,7 +232,7 @@ private fun CycleParametersContent(
                             )
                         ) {
                             Text(
-                                text = "平均周期天数",
+                                text = stringResource(R.string.set_avg_cycle_days),
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
@@ -231,7 +245,7 @@ private fun CycleParametersContent(
                             supportingContent = {
                                 Column {
                                     Text(
-                                        text = "${state.periodLengthDefault} 天",
+                                        text = stringResource(R.string.set_days_with_space, state.periodLengthDefault),
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -241,21 +255,25 @@ private fun CycleParametersContent(
                                         modifier = Modifier.fillMaxWidth()
                                     ) {
                                         Text(
-                                            text = "${state.periodLengthRange.first}天",
+                                            text = stringResource(R.string.set_days, state.periodLengthRange.first),
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                         Spacer(modifier = Modifier.width(8.dp))
+                                        var periodLengthValue by remember(state.periodLengthDefault) {
+                                            mutableFloatStateOf(state.periodLengthDefault.toFloat())
+                                        }
                                         Slider(
-                                            value = state.periodLengthDefault.toFloat(),
-                                            onValueChange = { onUpdatePeriodLength(it.toInt()) },
+                                            value = periodLengthValue,
+                                            onValueChange = { periodLengthValue = it },
+                                            onValueChangeFinished = { onUpdatePeriodLength(periodLengthValue.toInt()) },
                                             valueRange = state.periodLengthRange.first.toFloat()..state.periodLengthRange.last.toFloat(),
-                                            steps = state.periodLengthRange.last - state.periodLengthRange.first - 1,
+                                            steps = (state.periodLengthRange.last - state.periodLengthRange.first - 1).coerceAtLeast(0),
                                             modifier = Modifier.weight(1f)
                                         )
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Text(
-                                            text = "${state.periodLengthRange.last}天",
+                                            text = stringResource(R.string.set_days, state.periodLengthRange.last),
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
@@ -267,7 +285,7 @@ private fun CycleParametersContent(
                             )
                         ) {
                             Text(
-                                text = "平均经期天数",
+                                text = stringResource(R.string.set_avg_period_days),
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
@@ -301,12 +319,16 @@ fun RemindersScreen(
         context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
     }
     val canScheduleExactAlarms = remember {
-        Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()
+        mutableStateOf(
+            Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()
+        )
     }
     val exactAlarmLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) {
-        // 用户从系统设置返回后重新安排通知
+        // 用户从系统设置返回后重新检查权限并安排通知，避免提示条陈旧
+        canScheduleExactAlarms.value =
+            Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()
         viewModel.rescheduleNotifications()
     }
 
@@ -322,7 +344,7 @@ fun RemindersScreen(
         onTogglePeriodNotification = { viewModel.togglePeriodNotification(it) },
         onToggleOvulationNotification = { viewModel.toggleOvulationNotification(it) },
         onUpdateOvulationDaysBefore = { viewModel.updateOvulationDaysBefore(it) },
-        showExactAlarmHint = !canScheduleExactAlarms,
+        showExactAlarmHint = !canScheduleExactAlarms.value,
         onRequestExactAlarmPermission = {
             val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
                 data = Uri.parse("package:${context.packageName}")
@@ -355,12 +377,12 @@ private fun RemindersContent(
         modifier = modifier.fillMaxSize(),
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("提醒设置") },
+                title = { Text(stringResource(R.string.set_reminders)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "返回"
+                            contentDescription = stringResource(R.string.set_back)
                         )
                     }
                 }
@@ -397,19 +419,19 @@ private fun RemindersContent(
                             )
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "提醒可能不准时",
+                                    text = stringResource(R.string.set_exact_alarm_title),
                                     style = MaterialTheme.typography.titleSmall,
                                     color = MaterialTheme.colorScheme.onErrorContainer
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "Android 12+ 需要“精确闹钟”权限才能按时提醒。请前往系统设置开启。",
+                                    text = stringResource(R.string.set_exact_alarm_message),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onErrorContainer
                                 )
                             }
                             TextButton(onClick = onRequestExactAlarmPermission) {
-                                Text("去开启")
+                                Text(stringResource(R.string.set_exact_alarm_action))
                             }
                         }
                     }
@@ -427,7 +449,11 @@ private fun RemindersContent(
                         },
                         supportingContent = {
                             Text(
-                                text = if (state.notificationEnabled) "在经期前提醒你" else "关闭所有提醒",
+                                text = if (state.notificationEnabled) {
+                                    stringResource(R.string.set_period_reminder_description)
+                                } else {
+                                    stringResource(R.string.set_all_notifications_off)
+                                },
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -443,7 +469,7 @@ private fun RemindersContent(
                         )
                     ) {
                         Text(
-                            text = "经期提醒",
+                            text = stringResource(R.string.set_period_reminder),
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -455,7 +481,7 @@ private fun RemindersContent(
                             shapes = ListItemDefaults.segmentedShapes(index = 1, count = 6),
                             supportingContent = {
                                 Text(
-                                    text = "在预计的经期开始前提醒",
+                                    text = stringResource(R.string.set_period_start_reminder_description),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -471,7 +497,7 @@ private fun RemindersContent(
                             )
                         ) {
                             Text(
-                                text = "经期开始提醒",
+                                text = stringResource(R.string.set_period_start_reminder),
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
@@ -484,7 +510,7 @@ private fun RemindersContent(
                                 supportingContent = {
                                     Column {
                                         Text(
-                                            text = "${state.notificationDaysBefore} 天",
+                                            text = stringResource(R.string.set_days_with_space, state.notificationDaysBefore),
                                             style = MaterialTheme.typography.bodyMedium,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
@@ -494,21 +520,25 @@ private fun RemindersContent(
                                             modifier = Modifier.fillMaxWidth()
                                         ) {
                                             Text(
-                                                text = "1天",
+                                                text = stringResource(R.string.set_days, 1),
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
                                             Spacer(modifier = Modifier.width(8.dp))
+                                            var daysBeforeValue by remember(state.notificationDaysBefore) {
+                                                mutableFloatStateOf(state.notificationDaysBefore.toFloat())
+                                            }
                                             Slider(
-                                                value = state.notificationDaysBefore.toFloat(),
-                                                onValueChange = { onUpdateNotificationDaysBefore(Math.round(it)) },
+                                                value = daysBeforeValue,
+                                                onValueChange = { daysBeforeValue = it },
+                                                onValueChangeFinished = { onUpdateNotificationDaysBefore(daysBeforeValue.toInt()) },
                                                 valueRange = 1f..7f,
                                                 steps = 5,
                                                 modifier = Modifier.weight(1f)
                                             )
                                             Spacer(modifier = Modifier.width(8.dp))
                                             Text(
-                                                text = "7天",
+                                                text = stringResource(R.string.set_days, 7),
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
@@ -520,7 +550,7 @@ private fun RemindersContent(
                                 )
                             ) {
                                 Text(
-                                    text = "提前天数",
+                                    text = stringResource(R.string.set_days_before),
                                     style = MaterialTheme.typography.titleMedium,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
@@ -536,7 +566,7 @@ private fun RemindersContent(
                             },
                             supportingContent = {
                                 Text(
-                                    text = "在预计的排卵期前提醒",
+                                    text = stringResource(R.string.set_ovulation_reminder_description),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -552,7 +582,7 @@ private fun RemindersContent(
                             )
                         ) {
                             Text(
-                                text = "排卵日提醒",
+                                text = stringResource(R.string.set_ovulation_reminder),
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
@@ -565,7 +595,7 @@ private fun RemindersContent(
                                 supportingContent = {
                                     Column {
                                         Text(
-                                            text = "${state.ovulationNotificationDaysBefore} 天",
+                                            text = stringResource(R.string.set_days_with_space, state.ovulationNotificationDaysBefore),
                                             style = MaterialTheme.typography.bodyMedium,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
@@ -575,21 +605,25 @@ private fun RemindersContent(
                                             modifier = Modifier.fillMaxWidth()
                                         ) {
                                             Text(
-                                                text = "1天",
+                                                text = stringResource(R.string.set_days, 1),
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
                                             Spacer(modifier = Modifier.width(8.dp))
+                                            var ovulationDaysValue by remember(state.ovulationNotificationDaysBefore) {
+                                                mutableFloatStateOf(state.ovulationNotificationDaysBefore.toFloat())
+                                            }
                                             Slider(
-                                                value = state.ovulationNotificationDaysBefore.toFloat(),
-                                                onValueChange = { onUpdateOvulationDaysBefore(Math.round(it)) },
+                                                value = ovulationDaysValue,
+                                                onValueChange = { ovulationDaysValue = it },
+                                                onValueChangeFinished = { onUpdateOvulationDaysBefore(ovulationDaysValue.toInt()) },
                                                 valueRange = 1f..7f,
                                                 steps = 5,
                                                 modifier = Modifier.weight(1f)
                                             )
                                             Spacer(modifier = Modifier.width(8.dp))
                                             Text(
-                                                text = "7天",
+                                                text = stringResource(R.string.set_days, 7),
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
@@ -601,7 +635,7 @@ private fun RemindersContent(
                                 )
                             ) {
                                 Text(
-                                    text = "提前天数",
+                                    text = stringResource(R.string.set_days_before),
                                     style = MaterialTheme.typography.titleMedium,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
@@ -633,7 +667,7 @@ private fun RemindersContent(
                             )
                         ) {
                             Text(
-                                text = "提醒时间",
+                                text = stringResource(R.string.set_reminder_time),
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
@@ -644,8 +678,8 @@ private fun RemindersContent(
         }
     }
 
-    if (showTimeDialog && uiState is SettingsUiState.Success) {
-        val state = uiState as SettingsUiState.Success
+    val state = uiState
+    if (showTimeDialog && state is SettingsUiState.Success) {
         NotificationTimeDialog(
             time = state.notificationTime,
             onDismiss = { onHideTimeDialog() },
@@ -684,12 +718,12 @@ private fun ThemeContent(
         modifier = modifier.fillMaxSize(),
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("主题设置") },
+                title = { Text(stringResource(R.string.set_theme)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "返回"
+                            contentDescription = stringResource(R.string.set_back)
                         )
                     }
                 }
@@ -706,15 +740,15 @@ private fun ThemeContent(
             if (uiState is SettingsUiState.Success) {
                 val state = uiState
                 Text(
-                    text = "选择你的偏好",
+                    text = stringResource(R.string.set_theme_preference_hint),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 12.dp)
                 )
                 val themeOptions = listOf(
-                    Triple(com.example.periodvibe.domain.model.Settings.ThemeMode.LIGHT, "浅色", Icons.Default.LightMode),
-                    Triple(com.example.periodvibe.domain.model.Settings.ThemeMode.DARK, "深色", Icons.Default.DarkMode),
-                    Triple(com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM, "系统", Icons.Default.PhoneAndroid)
+                    Triple(com.example.periodvibe.domain.model.Settings.ThemeMode.LIGHT, stringResource(R.string.set_theme_light), Icons.Default.LightMode),
+                    Triple(com.example.periodvibe.domain.model.Settings.ThemeMode.DARK, stringResource(R.string.set_theme_dark), Icons.Default.DarkMode),
+                    Triple(com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM, stringResource(R.string.set_theme_system), Icons.Default.PhoneAndroid)
                 )
                 Row(
                     Modifier.fillMaxWidth(),
@@ -784,12 +818,12 @@ private fun PrivacyContent(
         modifier = modifier.fillMaxSize(),
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("隐私设置") },
+                title = { Text(stringResource(R.string.set_privacy)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "返回"
+                            contentDescription = stringResource(R.string.set_back)
                         )
                     }
                 }
@@ -819,7 +853,7 @@ private fun PrivacyContent(
                         shapes = ListItemDefaults.segmentedShapes(index = 0, count = 2),
                         supportingContent = {
                             Text(
-                                text = "使用指纹或密码保护应用",
+                                text = stringResource(R.string.set_app_lock_description),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -841,7 +875,7 @@ private fun PrivacyContent(
                         )
                     ) {
                         Text(
-                            text = "应用锁",
+                            text = stringResource(R.string.set_app_lock),
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -852,7 +886,7 @@ private fun PrivacyContent(
                         shapes = ListItemDefaults.segmentedShapes(index = 1, count = 2),
                         supportingContent = {
                             Text(
-                                text = "隐藏通知内容，不在锁屏显示经期详情",
+                                text = stringResource(R.string.set_privacy_mode_description),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -868,7 +902,7 @@ private fun PrivacyContent(
                         )
                     ) {
                         Text(
-                            text = "隐私模式",
+                            text = stringResource(R.string.set_privacy_mode),
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -902,6 +936,18 @@ fun DataManagementScreen(
     val showExportFormatDialog by viewModel.showExportFormatDialog.collectAsState()
     val importResult by viewModel.importResult.collectAsState()
     val exportResult by viewModel.exportResult.collectAsState()
+    val errorMessageRes by viewModel.errorMessage.collectAsState()
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    val errorMessageText = errorMessageRes?.let { stringResource(it) }
+
+    // 清除数据失败等操作通过 Snackbar 反馈
+    LaunchedEffect(errorMessageText) {
+        errorMessageText?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            viewModel.consumeError()
+        }
+    }
 
     // 创建导出文件的 launcher
     val exportFileLauncher = rememberLauncherForActivityResult(
@@ -917,9 +963,13 @@ fun DataManagementScreen(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
         uri?.let {
-            // 获取持久化权限
-            val takeFlags = android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
-            context.contentResolver.takePersistableUriPermission(it, takeFlags)
+            // 获取持久化权限（部分 provider 不支持时忽略，仅影响下次直接读取）
+            try {
+                val takeFlags = android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                context.contentResolver.takePersistableUriPermission(it, takeFlags)
+            } catch (e: SecurityException) {
+                e.printStackTrace()
+            }
             viewModel.previewImportData(it)
         }
     }
@@ -937,6 +987,7 @@ fun DataManagementScreen(
         onExportDataClick = { viewModel.showExportFormatDialog() },
         onImportDataClick = { importFileLauncher.launch(arrayOf("*/*")) },
         onClearDataClick = { viewModel.showClearDataConfirmationDialog() },
+        snackbarHostState = snackbarHostState,
         modifier = modifier
     )
 
@@ -963,9 +1014,9 @@ fun DataManagementScreen(
     if (showImportResultDialog && importResult != null) {
         val result = importResult
         val (success, message) = when (result) {
-            is com.example.periodvibe.data.exportimport.ImportResult.Success -> Pair(true, "成功导入 ${result.cycles.size} 个周期记录和 ${result.dailyRecords.size} 条日常记录")
+            is com.example.periodvibe.data.exportimport.ImportResult.Success -> Pair(true, stringResource(R.string.dlg_import_success_message, result.cycles.size, result.dailyRecords.size))
             is com.example.periodvibe.data.exportimport.ImportResult.Failure -> Pair(false, result.errorMessage)
-            null -> Pair(false, "未知错误")
+            null -> Pair(false, stringResource(R.string.dlg_unknown_error))
         }
         com.example.periodvibe.ui.settings.components.ImportResultDialog(
             success = success,
@@ -975,7 +1026,7 @@ fun DataManagementScreen(
     }
 
     if (showExportResultDialog && exportResult != null) {
-        val (success, message) = exportResult ?: Pair(false, "未知错误")
+        val (success, message) = exportResult ?: Pair(false, stringResource(R.string.dlg_unknown_error))
         com.example.periodvibe.ui.settings.components.ExportResultDialog(
             success = success,
             message = message,
@@ -1001,18 +1052,20 @@ private fun DataManagementContent(
     onExportDataClick: () -> Unit,
     onImportDataClick: () -> Unit,
     onClearDataClick: () -> Unit,
+    snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("数据管理") },
+                title = { Text(stringResource(R.string.set_data_management)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "返回"
+                            contentDescription = stringResource(R.string.set_back)
                         )
                     }
                 }
@@ -1034,7 +1087,7 @@ private fun DataManagementContent(
                     shapes = ListItemDefaults.segmentedShapes(index = 0, count = 3),
                     supportingContent = {
                         Text(
-                            text = "选择格式",
+                            text = stringResource(R.string.set_export_format_hint),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -1051,7 +1104,7 @@ private fun DataManagementContent(
                     )
                 ) {
                     Text(
-                        text = "导出数据",
+                        text = stringResource(R.string.set_export_data),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -1062,7 +1115,7 @@ private fun DataManagementContent(
                     shapes = ListItemDefaults.segmentedShapes(index = 1, count = 3),
                     supportingContent = {
                         Text(
-                            text = "从备份恢复",
+                            text = stringResource(R.string.set_import_description),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -1079,7 +1132,7 @@ private fun DataManagementContent(
                     )
                 ) {
                     Text(
-                        text = "导入数据",
+                        text = stringResource(R.string.set_import_data),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -1090,7 +1143,7 @@ private fun DataManagementContent(
                     shapes = ListItemDefaults.segmentedShapes(index = 2, count = 3),
                     supportingContent = {
                         Text(
-                            text = "删除所有记录",
+                            text = stringResource(R.string.set_clear_data_description),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -1107,7 +1160,7 @@ private fun DataManagementContent(
                     )
                 ) {
                     Text(
-                        text = "清除数据",
+                        text = stringResource(R.string.set_clear_data),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -1150,12 +1203,12 @@ private fun AboutContent(
         modifier = modifier.fillMaxSize(),
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("关于") },
+                title = { Text(stringResource(R.string.set_about)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "返回"
+                            contentDescription = stringResource(R.string.set_back)
                         )
                     }
                 }
@@ -1175,7 +1228,7 @@ private fun AboutContent(
                 // 应用介绍
                 SegmentedListItem(
                     onClick = { showDialog = true },
-                    shapes = ListItemDefaults.segmentedShapes(index = 0, count = 5),
+                    shapes = ListItemDefaults.segmentedShapes(index = 0, count = 2),
                     trailingContent = {
                         Icon(
                             imageVector = Icons.Default.ChevronRight,
@@ -1188,7 +1241,7 @@ private fun AboutContent(
                     )
                 ) {
                     Text(
-                        text = "应用介绍",
+                        text = stringResource(R.string.set_app_intro),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -1218,10 +1271,10 @@ private fun AboutContent(
                             onNavigateToDeveloperOptions()
                         }
                     },
-                    shapes = ListItemDefaults.segmentedShapes(index = 1, count = 5),
+                    shapes = ListItemDefaults.segmentedShapes(index = 1, count = 2),
                     supportingContent = {
                         Text(
-                            text = "v$versionName",
+                            text = stringResource(R.string.set_version_prefix, versionName),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -1231,77 +1284,12 @@ private fun AboutContent(
                     )
                 ) {
                     Text(
-                        text = "版本信息",
+                        text = stringResource(R.string.set_version_info),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                 }
 
-                // 隐私政策
-                SegmentedListItem(
-                    onClick = { },
-                    shapes = ListItemDefaults.segmentedShapes(index = 2, count = 5),
-                    trailingContent = {
-                        Icon(
-                            imageVector = Icons.Default.ChevronRight,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    },
-                    colors = ListItemDefaults.colors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainer
-                    )
-                ) {
-                    Text(
-                        text = "隐私政策",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-
-                // 用户协议
-                SegmentedListItem(
-                    onClick = { },
-                    shapes = ListItemDefaults.segmentedShapes(index = 3, count = 5),
-                    trailingContent = {
-                        Icon(
-                            imageVector = Icons.Default.ChevronRight,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    },
-                    colors = ListItemDefaults.colors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainer
-                    )
-                ) {
-                    Text(
-                        text = "用户协议",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-
-                // 反馈建议
-                SegmentedListItem(
-                    onClick = { },
-                    shapes = ListItemDefaults.segmentedShapes(index = 4, count = 5),
-                    trailingContent = {
-                        Icon(
-                            imageVector = Icons.Default.ChevronRight,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    },
-                    colors = ListItemDefaults.colors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainer
-                    )
-                ) {
-                    Text(
-                        text = "反馈建议",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
             }
         }
     }
@@ -1332,7 +1320,7 @@ private fun RemindersScreenEnabledPreview() {
                 themeMode = com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM,
                 appLockEnabled = false,
                 privacyModeEnabled = false,
-                language = "zh",
+
                 periodNotificationEnabled = true,
                 ovulationNotificationEnabled = true,
                 ovulationNotificationDaysBefore = 1
@@ -1368,7 +1356,7 @@ private fun RemindersScreenDisabledPreview() {
                 themeMode = com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM,
                 appLockEnabled = false,
                 privacyModeEnabled = false,
-                language = "zh",
+
                 periodNotificationEnabled = true,
                 ovulationNotificationEnabled = true,
                 ovulationNotificationDaysBefore = 1
@@ -1404,7 +1392,7 @@ private fun CycleParametersScreenAutoPreview() {
                 themeMode = com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM,
                 appLockEnabled = false,
                 privacyModeEnabled = false,
-                language = "zh",
+
                 periodNotificationEnabled = true,
                 ovulationNotificationEnabled = true,
                 ovulationNotificationDaysBefore = 1
@@ -1434,7 +1422,7 @@ private fun CycleParametersScreenManualPreview() {
                 themeMode = com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM,
                 appLockEnabled = false,
                 privacyModeEnabled = false,
-                language = "zh",
+
                 periodNotificationEnabled = true,
                 ovulationNotificationEnabled = true,
                 ovulationNotificationDaysBefore = 1
@@ -1464,7 +1452,7 @@ private fun ThemeScreenPreview() {
                 themeMode = com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM,
                 appLockEnabled = false,
                 privacyModeEnabled = false,
-                language = "zh",
+
                 periodNotificationEnabled = true,
                 ovulationNotificationEnabled = true,
                 ovulationNotificationDaysBefore = 1
@@ -1492,7 +1480,7 @@ private fun PrivacyScreenPreview() {
                 themeMode = com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM,
                 appLockEnabled = true,
                 privacyModeEnabled = true,
-                language = "zh",
+
                 periodNotificationEnabled = true,
                 ovulationNotificationEnabled = true,
                 ovulationNotificationDaysBefore = 1
@@ -1516,7 +1504,8 @@ private fun DataManagementScreenPreview() {
             onNavigateBack = { },
             onExportDataClick = { },
             onImportDataClick = { },
-            onClearDataClick = { }
+            onClearDataClick = { },
+            snackbarHostState = remember { SnackbarHostState() }
         )
     }
 }

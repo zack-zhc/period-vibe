@@ -233,7 +233,7 @@ private fun SettingsScreenPreview() {
                     themeMode = com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM,
                     appLockEnabled = false,
                     privacyModeEnabled = false,
-                    language = "zh",
+    
                     periodNotificationEnabled = true,
                     ovulationNotificationEnabled = true,
                     ovulationNotificationDaysBefore = 1

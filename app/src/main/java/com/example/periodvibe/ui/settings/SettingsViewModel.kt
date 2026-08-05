@@ -9,6 +9,7 @@ import com.example.periodvibe.data.exportimport.CsvImportResult
 import com.example.periodvibe.data.exportimport.DataExportImportService
 import com.example.periodvibe.data.exportimport.ExportFormat
 import com.example.periodvibe.data.exportimport.ImportResult
+import com.example.periodvibe.data.local.AppDatabase
 import com.example.periodvibe.data.repository.CycleRepository
 import com.example.periodvibe.data.repository.SecurityRepository
 import com.example.periodvibe.data.repository.SettingsRepository
@@ -16,6 +17,7 @@ import com.example.periodvibe.domain.model.Cycle
 import com.example.periodvibe.domain.model.DailyRecord
 import com.example.periodvibe.utils.AlarmScheduler
 import com.example.periodvibe.utils.NotificationScheduler
+import androidx.room.withTransaction
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,6 +31,7 @@ import javax.inject.Inject
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
+    private val database: AppDatabase,
     private val settingsRepository: SettingsRepository,
     private val cycleRepository: CycleRepository,
     private val securityRepository: SecurityRepository,
@@ -42,29 +45,11 @@ class SettingsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<SettingsUiState>(SettingsUiState.Loading)
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
-    private val _showCycleDialog = MutableStateFlow(false)
-    val showCycleDialog: StateFlow<Boolean> = _showCycleDialog.asStateFlow()
-
     private val _showDisableAppLockDialog = MutableStateFlow(false)
     val showDisableAppLockDialog: StateFlow<Boolean> = _showDisableAppLockDialog.asStateFlow()
 
-    private val _showNotificationDialog = MutableStateFlow(false)
-    val showNotificationDialog: StateFlow<Boolean> = _showNotificationDialog.asStateFlow()
-
-    private val _showDaysBeforeDialog = MutableStateFlow(false)
-    val showDaysBeforeDialog: StateFlow<Boolean> = _showDaysBeforeDialog.asStateFlow()
-
     private val _showTimeDialog = MutableStateFlow(false)
     val showTimeDialog: StateFlow<Boolean> = _showTimeDialog.asStateFlow()
-
-    private val _showOvulationDaysDialog = MutableStateFlow(false)
-    val showOvulationDaysDialog: StateFlow<Boolean> = _showOvulationDaysDialog.asStateFlow()
-
-    private val _showThemeDialog = MutableStateFlow(false)
-    val showThemeDialog: StateFlow<Boolean> = _showThemeDialog.asStateFlow()
-
-    private val _showAboutDialog = MutableStateFlow(false)
-    val showAboutDialog: StateFlow<Boolean> = _showAboutDialog.asStateFlow()
 
     private val _showClearDataConfirmationDialog = MutableStateFlow(false)
     val showClearDataConfirmationDialog: StateFlow<Boolean> = _showClearDataConfirmationDialog.asStateFlow()
@@ -87,17 +72,15 @@ class SettingsViewModel @Inject constructor(
     private val _showExportFormatDialog = MutableStateFlow(false)
     val showExportFormatDialog: StateFlow<Boolean> = _showExportFormatDialog.asStateFlow()
 
+    // 错误消息资源 ID，用于 Snackbar 反馈
+    private val _errorMessage = MutableStateFlow<Int?>(null)
+    val errorMessage: StateFlow<Int?> = _errorMessage.asStateFlow()
+
     // 当前选择的导出格式
     private var selectedExportFormat: ExportFormat = ExportFormat.JSON
 
     // 临时存储待导入的数据
     private var pendingImportData: Pair<List<Cycle>, List<DailyRecord>>? = null
-
-    // 导入模式
-    enum class ImportMode {
-        MERGE,  // 合并模式：跳过已存在的日期
-        OVERWRITE  // 覆盖模式：删除所有现有数据后导入
-    }
 
     private var pendingImportMode: ImportMode = ImportMode.OVERWRITE
 
@@ -121,7 +104,6 @@ class SettingsViewModel @Inject constructor(
                         themeMode = settings.themeMode,
                         appLockEnabled = settings.appLockEnabled,
                         privacyModeEnabled = settings.privacyModeEnabled,
-                        language = settings.language,
                         periodNotificationEnabled = settings.periodNotificationEnabled,
                         ovulationNotificationEnabled = settings.ovulationNotificationEnabled,
                         ovulationNotificationDaysBefore = settings.ovulationNotificationDaysBefore
@@ -140,7 +122,6 @@ class SettingsViewModel @Inject constructor(
                         themeMode = com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM,
                         appLockEnabled = false,
                         privacyModeEnabled = false,
-                        language = "zh",
                         periodNotificationEnabled = true,
                         ovulationNotificationEnabled = true,
                         ovulationNotificationDaysBefore = 1
@@ -151,14 +132,6 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun showCycleDialog() {
-        _showCycleDialog.value = true
-    }
-
-    fun hideCycleDialog() {
-        _showCycleDialog.value = false
-    }
-
     fun showDisableAppLockDialog() {
         _showDisableAppLockDialog.value = true
     }
@@ -167,52 +140,12 @@ class SettingsViewModel @Inject constructor(
         _showDisableAppLockDialog.value = false
     }
 
-    fun showNotificationDialog() {
-        _showNotificationDialog.value = true
-    }
-
-    fun hideNotificationDialog() {
-        _showNotificationDialog.value = false
-    }
-
-    fun showDaysBeforeDialog() {
-        _showDaysBeforeDialog.value = true
-    }
-
-    fun hideDaysBeforeDialog() {
-        _showDaysBeforeDialog.value = false
-    }
-
     fun showTimeDialog() {
         _showTimeDialog.value = true
     }
 
     fun hideTimeDialog() {
         _showTimeDialog.value = false
-    }
-
-    fun showOvulationDaysDialog() {
-        _showOvulationDaysDialog.value = true
-    }
-
-    fun hideOvulationDaysDialog() {
-        _showOvulationDaysDialog.value = false
-    }
-
-    fun showThemeDialog() {
-        _showThemeDialog.value = true
-    }
-
-    fun hideThemeDialog() {
-        _showThemeDialog.value = false
-    }
-
-    fun showAboutDialog() {
-        _showAboutDialog.value = true
-    }
-
-    fun hideAboutDialog() {
-        _showAboutDialog.value = false
     }
 
     fun showClearDataConfirmationDialog() {
@@ -286,12 +219,12 @@ class SettingsViewModel @Inject constructor(
                 }
 
                 if (success) {
-                    _exportResult.value = Pair(true, "成功导出 ${cycles.size} 个周期记录和 ${dailyRecords.size} 条日常记录 (${selectedExportFormat.displayName} 格式)")
+                    _exportResult.value = Pair(true, context.getString(com.example.periodvibe.R.string.set_export_success, cycles.size, dailyRecords.size, selectedExportFormat.displayName))
                 } else {
-                    _exportResult.value = Pair(false, "写入文件失败")
+                    _exportResult.value = Pair(false, context.getString(com.example.periodvibe.R.string.set_write_file_failed))
                 }
             } catch (e: Exception) {
-                _exportResult.value = Pair(false, "导出失败: ${e.message}")
+                _exportResult.value = Pair(false, context.getString(com.example.periodvibe.R.string.set_export_failed_with_reason, e.message))
             }
             showExportResultDialog()
         }
@@ -309,7 +242,7 @@ class SettingsViewModel @Inject constructor(
                 // 读取文件全部内容
                 val fileContent = csvExportImportService.readFileContent(context, uri)
                     ?: run {
-                        _importResult.value = ImportResult.Failure("无法读取文件")
+                        _importResult.value = ImportResult.Failure(context.getString(com.example.periodvibe.R.string.set_read_file_failed))
                         showImportResultDialog()
                         return@launch
                     }
@@ -338,7 +271,7 @@ class SettingsViewModel @Inject constructor(
                                     if (isCsvByExtension || fileType != CsvExportImportService.FileType.UNKNOWN) {
                                         // 继续尝试 CSV
                                     } else {
-                                        _importResult.value = ImportResult.Failure("JSON 格式解析失败: ${result.errorMessage}")
+                                        _importResult.value = ImportResult.Failure(context.getString(com.example.periodvibe.R.string.set_json_parse_failed, result.errorMessage))
                                         showImportResultDialog()
                                         return@launch
                                     }
@@ -376,7 +309,7 @@ class SettingsViewModel @Inject constructor(
                                         return@launch
                                     }
                                     is CsvImportResult.Failure -> {
-                                        _importResult.value = ImportResult.Failure("CSV 格式解析失败: ${cyclesResult.errorMessage}")
+                                        _importResult.value = ImportResult.Failure(context.getString(com.example.periodvibe.R.string.set_csv_parse_failed, cyclesResult.errorMessage))
                                         showImportResultDialog()
                                         return@launch
                                     }
@@ -390,14 +323,15 @@ class SettingsViewModel @Inject constructor(
 
                 // 所有方法都失败了
                 _importResult.value = ImportResult.Failure(
-                    "无法识别文件格式\n" +
-                            "请确保使用 JSON 或 CSV 格式的备份文件\n" +
-                            "检测到的扩展名: ${fileExtension ?: "未知"}\n" +
-                            "文件大小: ${fileContent.length} 字符"
+                    context.getString(
+                        com.example.periodvibe.R.string.set_unrecognized_format,
+                        fileExtension ?: context.getString(com.example.periodvibe.R.string.set_unknown),
+                        fileContent.length
+                    )
                 )
                 showImportResultDialog()
             } catch (e: Exception) {
-                _importResult.value = ImportResult.Failure("导入失败: ${e.javaClass.simpleName} - ${e.message}")
+                _importResult.value = ImportResult.Failure(context.getString(com.example.periodvibe.R.string.set_import_failed_with_reason, e.javaClass.simpleName, e.message))
                 showImportResultDialog()
             }
         }
@@ -426,7 +360,7 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val (cycles, dailyRecords) = pendingImportData ?: run {
-                    _importResult.value = ImportResult.Failure("没有待导入的数据")
+                    _importResult.value = ImportResult.Failure(context.getString(com.example.periodvibe.R.string.set_no_pending_import))
                     showImportResultDialog()
                     return@launch
                 }
@@ -440,7 +374,7 @@ class SettingsViewModel @Inject constructor(
                     }
                 }
             } catch (e: Exception) {
-                _importResult.value = ImportResult.Failure("导入失败: ${e.message}")
+                _importResult.value = ImportResult.Failure(context.getString(com.example.periodvibe.R.string.set_import_failed_simple, e.message))
                 hideImportConfirmationDialog()
                 showImportResultDialog()
             }
@@ -451,33 +385,37 @@ class SettingsViewModel @Inject constructor(
      * 覆盖模式导入
      */
     private suspend fun importOverwrite(cycles: List<Cycle>, dailyRecords: List<DailyRecord>) {
-        // 先清除现有数据
-        cycleRepository.deleteAllDailyRecords()
-        cycleRepository.deleteAllCycles()
+        // 整个"清空+写入"在单事务中执行，中途失败自动回滚，避免旧数据全部丢失
+        database.withTransaction {
+            // 先清除现有数据
+            cycleRepository.deleteAllDailyRecords()
+            cycleRepository.deleteAllCycles()
 
-        // 导入新数据 - 先插入周期，获取新生成的 ID
-        val insertedCycleIds = cycleRepository.insertAllCycles(cycles)
-        val cyclesWithIds = cycles.zip(insertedCycleIds) { cycle, newId ->
-            cycle.copy(id = newId)
-        }
-
-        // 更新日常记录的 cycleId 为新生成的 ID
-        val originalStartDateToNewId = cyclesWithIds.associate { it.startDate to it.id }
-        val recordsWithUpdatedCycleIds = dailyRecords.map { record ->
-            val originalCycle = cycles.find { cycle ->
-                record.cycleId?.let { cycle.id == it } == true
+            // 导入新数据 - 先插入周期，获取新生成的 ID
+            val insertedCycleIds = cycleRepository.insertAllCycles(cycles)
+            val cyclesWithIds = cycles.zip(insertedCycleIds) { cycle, newId ->
+                cycle.copy(id = newId)
             }
-            val newCycleId = originalCycle?.startDate?.let { originalStartDateToNewId[it] }
-            record.copy(cycleId = newCycleId)
-        }
 
-        // 插入日常记录
-        cycleRepository.insertAllDailyRecords(recordsWithUpdatedCycleIds)
+            // 更新日常记录的 cycleId 为新生成的 ID
+            val originalStartDateToNewId = cyclesWithIds.associate { it.startDate to it.id }
+            val recordsWithUpdatedCycleIds = dailyRecords.map { record ->
+                val originalCycle = cycles.find { cycle ->
+                    record.cycleId?.let { cycle.id == it } == true
+                }
+                val newCycleId = originalCycle?.startDate?.let { originalStartDateToNewId[it] }
+                record.copy(cycleId = newCycleId)
+            }
+
+            // 插入日常记录
+            cycleRepository.insertAllDailyRecords(recordsWithUpdatedCycleIds)
+        }
 
         // 重新安排通知
         tryRescheduleNotification()
 
-        _importResult.value = ImportResult.Success(cyclesWithIds, recordsWithUpdatedCycleIds)
+        // 结果仅用于展示数量统计
+        _importResult.value = ImportResult.Success(cycles, dailyRecords)
         hideImportConfirmationDialog()
         showImportResultDialog()
     }
@@ -497,38 +435,41 @@ class SettingsViewModel @Inject constructor(
         // 筛选出新的周期（startDate 不存在的）
         val newCycles = cycles.filter { it.startDate !in existingCycleDates }
 
-        // 插入新周期
-        val insertedCycleIds = cycleRepository.insertAllCycles(newCycles)
-        val newCyclesWithIds = newCycles.zip(insertedCycleIds) { cycle, newId ->
-            cycle.copy(id = newId)
-        }
-
-        // 构建完整的 startDate -> cycleId 映射（包含旧的和新的）
-        val allCycles = existingCycles + newCyclesWithIds
-        val startDateToCycleId = allCycles.associate { it.startDate to it.id }
-
-        // 筛选出新的日常记录，同时更新它们的 cycleId
-        val newRecords = dailyRecords
-            .filter { it.date !in existingRecordDates }
-            .map { record ->
-                // 找到这条记录对应的原始周期
-                val originalCycle = cycles.find { cycle ->
-                    record.cycleId?.let { cycle.id == it } == true
-                }
-                // 通过原始周期的 startDate 查找新的 cycleId
-                val newCycleId = originalCycle?.startDate?.let { startDateToCycleId[it] }
-                record.copy(cycleId = newCycleId)
+        val newCyclesWithIds = database.withTransaction {
+            // 插入新周期
+            val insertedCycleIds = cycleRepository.insertAllCycles(newCycles)
+            val withIds = newCycles.zip(insertedCycleIds) { cycle, newId ->
+                cycle.copy(id = newId)
             }
 
-        // 插入新的日常记录
-        cycleRepository.insertAllDailyRecords(newRecords)
+            // 构建完整的 startDate -> cycleId 映射（包含旧的和新的）
+            val allCycles = existingCycles + withIds
+            val startDateToCycleId = allCycles.associate { it.startDate to it.id }
+
+            // 筛选出新的日常记录，同时更新它们的 cycleId
+            val newRecords = dailyRecords
+                .filter { it.date !in existingRecordDates }
+                .map { record ->
+                    // 找到这条记录对应的原始周期
+                    val originalCycle = cycles.find { cycle ->
+                        record.cycleId?.let { cycle.id == it } == true
+                    }
+                    // 通过原始周期的 startDate 查找新的 cycleId
+                    val newCycleId = originalCycle?.startDate?.let { startDateToCycleId[it] }
+                    record.copy(cycleId = newCycleId)
+                }
+
+            // 插入新的日常记录
+            cycleRepository.insertAllDailyRecords(newRecords)
+            Pair(withIds, newRecords)
+        }
 
         // 重新安排通知
         tryRescheduleNotification()
 
         _importResult.value = ImportResult.Success(
-            newCyclesWithIds,
-            newRecords
+            newCyclesWithIds.first,
+            newCyclesWithIds.second
         )
         hideImportConfirmationDialog()
         showImportResultDialog()
@@ -545,20 +486,6 @@ class SettingsViewModel @Inject constructor(
     fun rescheduleNotifications() {
         viewModelScope.launch {
             tryRescheduleNotification()
-        }
-    }
-
-    fun updateCycleParameters(
-        cycleLength: Int,
-        periodLength: Int
-    ) {
-        viewModelScope.launch {
-            val currentSettings = settingsRepository.getSettingsSync()
-            currentSettings?.let {
-                val updatedSettings = it.updateCycleParameters(cycleLength, periodLength)
-                settingsRepository.updateSettings(updatedSettings)
-            }
-            hideCycleDialog()
         }
     }
 
@@ -589,22 +516,6 @@ class SettingsViewModel @Inject constructor(
                 val updatedSettings = it.copy(autoCalculateCycle = enabled)
                 settingsRepository.updateSettings(updatedSettings)
             }
-        }
-    }
-
-    fun updateNotificationSettings(
-        enabled: Boolean,
-        daysBefore: Int,
-        time: LocalTime
-    ) {
-        viewModelScope.launch {
-            val currentSettings = settingsRepository.getSettingsSync()
-            currentSettings?.let {
-                val updatedSettings = it.updateNotificationSettings(enabled, daysBefore, time)
-                settingsRepository.updateSettings(updatedSettings)
-                notificationScheduler.rescheduleAllNotifications()
-            }
-            hideNotificationDialog()
         }
     }
 
@@ -664,7 +575,6 @@ class SettingsViewModel @Inject constructor(
                 settingsRepository.updateSettings(updatedSettings)
                 notificationScheduler.rescheduleAllNotifications()
             }
-            hideDaysBeforeDialog()
         }
     }
 
@@ -716,12 +626,21 @@ class SettingsViewModel @Inject constructor(
     fun clearAllData() {
         viewModelScope.launch {
             hideClearDataConfirmationDialog()
-            // 删除所有周期和日常记录数据
-            cycleRepository.deleteAllDailyRecords()
-            cycleRepository.deleteAllCycles()
-            // 取消所有通知
-            alarmScheduler.cancelAll()
+            try {
+                // 删除所有周期和日常记录数据
+                cycleRepository.deleteAllDailyRecords()
+                cycleRepository.deleteAllCycles()
+                // 取消所有通知
+                alarmScheduler.cancelAll()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _errorMessage.value = com.example.periodvibe.R.string.error_clear_data_failed
+            }
         }
+    }
+
+    fun consumeError() {
+        _errorMessage.value = null
     }
 }
 
@@ -739,7 +658,6 @@ sealed class SettingsUiState {
         val themeMode: com.example.periodvibe.domain.model.Settings.ThemeMode,
         val appLockEnabled: Boolean,
         val privacyModeEnabled: Boolean,
-        val language: String,
         val periodNotificationEnabled: Boolean,
         val ovulationNotificationEnabled: Boolean,
         val ovulationNotificationDaysBefore: Int

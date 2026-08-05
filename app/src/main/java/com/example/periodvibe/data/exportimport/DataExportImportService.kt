@@ -17,6 +17,8 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonPrimitive
 import com.google.gson.JsonSerializationContext
 import com.google.gson.JsonSerializer
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.lang.reflect.Type
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -84,38 +86,42 @@ class DataExportImportService @Inject constructor(
     /**
      * 将周期和日常记录数据导出为 JSON 字符串
      */
-    fun exportToJson(cycles: List<Cycle>, dailyRecords: List<DailyRecord>): String {
-        val cycleDtos = cycles.map { cycleToDto(it) }
-        val recordDtos = dailyRecords.map { dailyRecordToDto(it, cycles) }
+    suspend fun exportToJson(cycles: List<Cycle>, dailyRecords: List<DailyRecord>): String {
+        return withContext(Dispatchers.IO) {
+            val cycleDtos = cycles.map { cycleToDto(it) }
+            val recordDtos = dailyRecords.map { dailyRecordToDto(it, cycles) }
 
-        val data = ExportImportData(
-            cycles = cycleDtos,
-            dailyRecords = recordDtos
-        )
+            val data = ExportImportData(
+                cycles = cycleDtos,
+                dailyRecords = recordDtos
+            )
 
-        return gson.toJson(data)
+            gson.toJson(data)
+        }
     }
 
     /**
      * 从 JSON 字符串导入数据
      */
-    fun importFromJson(jsonString: String): ImportResult {
-        return try {
-            val data = gson.fromJson(jsonString, ExportImportData::class.java)
+    suspend fun importFromJson(jsonString: String): ImportResult {
+        return withContext(Dispatchers.IO) {
+            try {
+                val data = gson.fromJson(jsonString, ExportImportData::class.java)
 
-            // 验证数据
-            val validationErrors = validateData(data)
-            if (validationErrors.isNotEmpty()) {
-                return ImportResult.Failure(validationErrors.joinToString("\n"))
+                // 验证数据
+                val validationErrors = validateData(data)
+                if (validationErrors.isNotEmpty()) {
+                    return@withContext ImportResult.Failure(validationErrors.joinToString("\n"))
+                }
+
+                // 转换为实体
+                val cycles = data.cycles.map { dtoToCycle(it) }
+                val dailyRecords = data.dailyRecords.map { dtoToDailyRecord(it, cycles) }
+
+                ImportResult.Success(cycles, dailyRecords)
+            } catch (e: Exception) {
+                ImportResult.Failure("数据解析失败: ${e.message}")
             }
-
-            // 转换为实体
-            val cycles = data.cycles.map { dtoToCycle(it) }
-            val dailyRecords = data.dailyRecords.map { dtoToDailyRecord(it, cycles) }
-
-            ImportResult.Success(cycles, dailyRecords)
-        } catch (e: Exception) {
-            ImportResult.Failure("数据解析失败: ${e.message}")
         }
     }
 
@@ -123,14 +129,16 @@ class DataExportImportService @Inject constructor(
      * 将数据写入文件
      */
     suspend fun writeToFile(context: Context, uri: Uri, content: String): Boolean {
-        return try {
-            context.contentResolver.openOutputStream(uri)?.use { outputStream ->
-                outputStream.write(content.toByteArray(Charsets.UTF_8))
+        return withContext(Dispatchers.IO) {
+            try {
+                context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                    outputStream.write(content.toByteArray(Charsets.UTF_8))
+                }
+                true
+            } catch (e: Exception) {
+                e.printStackTrace()
+                false
             }
-            true
-        } catch (e: Exception) {
-            e.printStackTrace()
-            false
         }
     }
 
@@ -138,13 +146,15 @@ class DataExportImportService @Inject constructor(
      * 从文件读取数据
      */
     suspend fun readFromFile(context: Context, uri: Uri): String? {
-        return try {
-            context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                inputStream.bufferedReader(Charsets.UTF_8).readText()
+        return withContext(Dispatchers.IO) {
+            try {
+                context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                    inputStream.bufferedReader(Charsets.UTF_8).readText()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
         }
     }
 

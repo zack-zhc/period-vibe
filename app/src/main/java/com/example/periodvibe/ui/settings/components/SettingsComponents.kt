@@ -14,18 +14,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesome
-import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.ChevronRight
-import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.Folder
-import androidx.compose.material.icons.rounded.Gavel
 import androidx.compose.material.icons.rounded.Lock
-import androidx.compose.material.icons.rounded.MailOutline
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -53,6 +51,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,6 +59,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -79,16 +79,16 @@ fun DisableAppLockConfirmationDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("确认操作") },
-        text = { Text("确定要关闭应用锁吗？") },
+        title = { Text(stringResource(R.string.dlg_confirm_action)) },
+        text = { Text(stringResource(R.string.dlg_disable_app_lock_message)) },
         confirmButton = {
             TextButton(onClick = onConfirm) {
-                Text("确定")
+                Text(stringResource(R.string.set_confirm))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("取消")
+                Text(stringResource(R.string.set_cancel))
             }
         }
     )
@@ -103,39 +103,48 @@ fun CycleParametersDialog(
     onDismiss: () -> Unit,
     onConfirm: (Int, Int) -> Unit
 ) {
-    var cycleLengthValue by remember { mutableIntStateOf(cycleLength) }
-    var periodLengthValue by remember { mutableIntStateOf(periodLength) }
+    var cycleLengthText by rememberSaveable { mutableStateOf(cycleLength.toString()) }
+    var periodLengthText by rememberSaveable { mutableStateOf(periodLength.toString()) }
+    var cycleLengthError by rememberSaveable { mutableStateOf(false) }
+    var periodLengthError by rememberSaveable { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("周期参数设置") },
+        title = { Text(stringResource(R.string.dlg_cycle_parameters_title)) },
         text = {
             Column {
                 OutlinedTextField(
-                    value = cycleLengthValue.toString(),
+                    value = cycleLengthText,
                     onValueChange = { value ->
-                        value.toIntOrNull()?.let {
-                            if (it in cycleLengthRange) {
-                                cycleLengthValue = it
-                            }
-                        }
+                        // 只保留数字，允许任意中间输入，确认时才做范围校验
+                        cycleLengthText = value.filter { it.isDigit() }
+                        cycleLengthError = false
                     },
-                    label = { Text("平均周期长度 ($cycleLengthRange)") },
+                    label = { Text(stringResource(R.string.dlg_cycle_length_label, cycleLengthRange.toString())) },
+                    isError = cycleLengthError,
+                    supportingText = if (cycleLengthError) {
+                        { Text(stringResource(R.string.dlg_range_input_error, cycleLengthRange.toString())) }
+                    } else {
+                        null
+                    },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth()
                 )
 
                 OutlinedTextField(
-                    value = periodLengthValue.toString(),
+                    value = periodLengthText,
                     onValueChange = { value ->
-                        value.toIntOrNull()?.let {
-                            if (it in periodLengthRange) {
-                                periodLengthValue = it
-                            }
-                        }
+                        periodLengthText = value.filter { it.isDigit() }
+                        periodLengthError = false
                     },
-                    label = { Text("平均经期天数 ($periodLengthRange)") },
+                    label = { Text(stringResource(R.string.dlg_period_length_label, periodLengthRange.toString())) },
+                    isError = periodLengthError,
+                    supportingText = if (periodLengthError) {
+                        { Text(stringResource(R.string.dlg_range_input_error, periodLengthRange.toString())) }
+                    } else {
+                        null
+                    },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier
@@ -145,72 +154,23 @@ fun CycleParametersDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(cycleLengthValue, periodLengthValue) }) {
-                Text("保存")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("取消")
-            }
-        }
-    )
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun DaysBeforeDialog(
-    initialDaysBefore: Int,
-    onDismiss: () -> Unit,
-    onConfirm: (Int) -> Unit
-) {
-    val options = (1..7).map { it }
-    var expanded by remember { mutableStateOf(false) }
-    var selectedDays by remember { mutableIntStateOf(initialDaysBefore) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("提前天数设置") },
-        text = {
-            ExposedDropdownMenuBox(
-                expanded = expanded,
-                onExpandedChange = { expanded = !expanded }
-            ) {
-                OutlinedTextField(
-                    value = "$selectedDays 天",
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("提前天数") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor()
-                )
-                ExposedDropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false }
-                ) {
-                    options.forEach { days ->
-                        DropdownMenuItem(
-                            text = { Text("$days 天") },
-                            onClick = {
-                                selectedDays = days
-                                expanded = false
-                            },
-                            contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
-                        )
+            TextButton(
+                onClick = {
+                    val cycle = cycleLengthText.toIntOrNull()
+                    val period = periodLengthText.toIntOrNull()
+                    cycleLengthError = cycle == null || cycle !in cycleLengthRange
+                    periodLengthError = period == null || period !in periodLengthRange
+                    if (!cycleLengthError && !periodLengthError && cycle != null && period != null) {
+                        onConfirm(cycle, period)
                     }
                 }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = { onConfirm(selectedDays) }) {
-                Text("保存")
+            ) {
+                Text(stringResource(R.string.set_save))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("取消")
+                Text(stringResource(R.string.set_cancel))
             }
         }
     )
@@ -223,26 +183,32 @@ fun NotificationTimeDialog(
     onDismiss: () -> Unit,
     onConfirm: (LocalTime) -> Unit
 ) {
-    val timePickerState = remember { TimePickerState(initialHour = time.hour, initialMinute = time.minute, is24Hour = true) }
+    val timePickerState = remember {
+        TimePickerState(initialHour = time.hour, initialMinute = time.minute, is24Hour = true)
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("提醒时间设置") },
+        title = { Text(stringResource(R.string.dlg_notification_time_title)) },
         text = {
-            TimePicker(
-                state = timePickerState
-            )
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState())
+            ) {
+                TimePicker(
+                    state = timePickerState
+                )
+            }
         },
         confirmButton = {
             TextButton(onClick = {
                 onConfirm(LocalTime.of(timePickerState.hour, timePickerState.minute))
             }) {
-                Text("确定")
+                Text(stringResource(R.string.set_confirm))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("取消")
+                Text(stringResource(R.string.set_cancel))
             }
         }
     )
@@ -255,23 +221,23 @@ fun ClearDataConfirmationDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("确认清除数据") },
+        title = { Text(stringResource(R.string.dlg_clear_data_title)) },
         text = {
-            Text("此操作将永久删除所有周期记录和日常数据，且无法恢复。确定要继续吗？")
+            Text(stringResource(R.string.dlg_clear_data_message))
         },
         confirmButton = {
             TextButton(
                 onClick = onConfirm
             ) {
                 Text(
-                    "确定清除",
+                    stringResource(R.string.dlg_confirm_clear),
                     color = MaterialTheme.colorScheme.error
                 )
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("取消")
+                Text(stringResource(R.string.set_cancel))
             }
         }
     )
@@ -283,25 +249,23 @@ fun ImportConfirmationDialog(
     cycleCount: Int,
     recordCount: Int,
     onDismiss: () -> Unit,
-    onConfirm: (com.example.periodvibe.ui.settings.SettingsViewModel.ImportMode) -> Unit
+    onConfirm: (com.example.periodvibe.ui.settings.ImportMode) -> Unit
 ) {
-    var selectedMode by remember {
-        mutableStateOf(com.example.periodvibe.ui.settings.SettingsViewModel.ImportMode.OVERWRITE)
+    var selectedMode by rememberSaveable {
+        mutableStateOf(com.example.periodvibe.ui.settings.ImportMode.OVERWRITE)
     }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("确认导入数据") },
+        title = { Text(stringResource(R.string.dlg_import_confirm_title)) },
         text = {
             Column {
                 Text(
-                    "即将导入：\n" +
-                        "• $cycleCount 个周期记录\n" +
-                        "• $recordCount 条日常记录\n"
+                    stringResource(R.string.dlg_import_summary, cycleCount, recordCount)
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    "导入模式",
+                    stringResource(R.string.dlg_import_mode_title),
                     style = MaterialTheme.typography.titleMedium
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -309,8 +273,8 @@ fun ImportConfirmationDialog(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     val modes = listOf(
-                        com.example.periodvibe.ui.settings.SettingsViewModel.ImportMode.OVERWRITE to "覆盖",
-                        com.example.periodvibe.ui.settings.SettingsViewModel.ImportMode.MERGE to "合并"
+                        com.example.periodvibe.ui.settings.ImportMode.OVERWRITE to stringResource(R.string.dlg_import_mode_overwrite),
+                        com.example.periodvibe.ui.settings.ImportMode.MERGE to stringResource(R.string.dlg_import_mode_merge)
                     )
                     modes.forEachIndexed { index, (mode, label) ->
                         SegmentedButton(
@@ -328,10 +292,10 @@ fun ImportConfirmationDialog(
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     when (selectedMode) {
-                        com.example.periodvibe.ui.settings.SettingsViewModel.ImportMode.OVERWRITE ->
-                            "将删除所有现有数据后导入，请确保已备份。"
-                        com.example.periodvibe.ui.settings.SettingsViewModel.ImportMode.MERGE ->
-                            "将跳过已存在的日期，只添加新数据。"
+                        com.example.periodvibe.ui.settings.ImportMode.OVERWRITE ->
+                            stringResource(R.string.dlg_import_overwrite_hint)
+                        com.example.periodvibe.ui.settings.ImportMode.MERGE ->
+                            stringResource(R.string.dlg_import_merge_hint)
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -342,12 +306,32 @@ fun ImportConfirmationDialog(
             TextButton(
                 onClick = { onConfirm(selectedMode) }
             ) {
-                Text("确认导入")
+                Text(stringResource(R.string.dlg_confirm_import))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("取消")
+                Text(stringResource(R.string.set_cancel))
+            }
+        }
+    )
+}
+
+@Composable
+fun ResultDialog(
+    success: Boolean,
+    message: String,
+    successTitle: String,
+    failureTitle: String,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(if (success) successTitle else failureTitle) },
+        text = { Text(message) },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.set_confirm))
             }
         }
     )
@@ -359,15 +343,12 @@ fun ImportResultDialog(
     message: String,
     onDismiss: () -> Unit
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(if (success) "导入成功" else "导入失败") },
-        text = { Text(message) },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("确定")
-            }
-        }
+    ResultDialog(
+        success = success,
+        message = message,
+        successTitle = stringResource(R.string.dlg_import_success_title),
+        failureTitle = stringResource(R.string.dlg_import_failure_title),
+        onDismiss = onDismiss
     )
 }
 
@@ -378,7 +359,7 @@ fun ExportFormatDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("选择导出格式") },
+        title = { Text(stringResource(R.string.dlg_export_format_title)) },
         text = {
             Column {
                 TextButton(
@@ -386,9 +367,9 @@ fun ExportFormatDialog(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(Modifier.fillMaxWidth()) {
-                        Text("JSON 格式", style = MaterialTheme.typography.bodyLarge)
+                        Text(stringResource(R.string.dlg_export_format_json), style = MaterialTheme.typography.bodyLarge)
                         Text(
-                            "推荐格式，完整保留所有数据",
+                            stringResource(R.string.dlg_export_format_json_hint),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -399,9 +380,9 @@ fun ExportFormatDialog(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(Modifier.fillMaxWidth()) {
-                        Text("CSV 格式", style = MaterialTheme.typography.bodyLarge)
+                        Text(stringResource(R.string.dlg_export_format_csv), style = MaterialTheme.typography.bodyLarge)
                         Text(
-                            "可在 Excel 中打开，便于查看",
+                            stringResource(R.string.dlg_export_format_csv_hint),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -411,7 +392,7 @@ fun ExportFormatDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("取消")
+                Text(stringResource(R.string.set_cancel))
             }
         }
     )
@@ -423,15 +404,12 @@ fun ExportResultDialog(
     message: String,
     onDismiss: () -> Unit
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(if (success) "导出成功" else "导出失败") },
-        text = { Text(message) },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("确定")
-            }
-        }
+    ResultDialog(
+        success = success,
+        message = message,
+        successTitle = stringResource(R.string.dlg_export_success_title),
+        failureTitle = stringResource(R.string.dlg_export_failure_title),
+        onDismiss = onDismiss
     )
 }
 
@@ -472,7 +450,7 @@ fun AboutDialog(
                     Box(contentAlignment = Alignment.Center) {
                         Image(
                             painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                            contentDescription = "应用图标",
+                            contentDescription = stringResource(R.string.set_app_icon_desc),
                             modifier = Modifier
                                 .size(72.dp)
                                 .clip(CircleShape)
@@ -484,7 +462,7 @@ fun AboutDialog(
 
                 // App Name - Expressive typography
                 Text(
-                    text = "Period Vibe",
+                    text = stringResource(R.string.app_name),
                     style = MaterialTheme.typography.displaySmall,
                     fontWeight = FontWeight.Black,
                     color = MaterialTheme.colorScheme.onSurface
@@ -499,7 +477,7 @@ fun AboutDialog(
                     tonalElevation = 2.dp
                 ) {
                     Text(
-                        text = "v$versionName",
+                        text = stringResource(R.string.set_version_prefix, versionName),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSecondaryContainer,
@@ -511,7 +489,7 @@ fun AboutDialog(
 
                 // Description
                 Text(
-                    text = "轻量、简洁的生理期追踪工具",
+                    text = stringResource(R.string.set_about_description),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
@@ -532,22 +510,22 @@ fun AboutDialog(
                     ) {
                         AboutFeatureItem(
                             icon = Icons.Rounded.AutoAwesome,
-                            text = "周期预测",
+                            text = stringResource(R.string.set_feature_cycle_prediction),
                             iconColor = MaterialTheme.colorScheme.primary
                         )
                         AboutFeatureItem(
                             icon = Icons.Rounded.Notifications,
-                            text = "智能提醒",
+                            text = stringResource(R.string.set_feature_smart_reminders),
                             iconColor = MaterialTheme.colorScheme.tertiary
                         )
                         AboutFeatureItem(
                             icon = Icons.Rounded.Lock,
-                            text = "隐私保护",
+                            text = stringResource(R.string.set_feature_privacy),
                             iconColor = MaterialTheme.colorScheme.error
                         )
                         AboutFeatureItem(
                             icon = Icons.Rounded.Folder,
-                            text = "数据导出",
+                            text = stringResource(R.string.set_feature_data_export),
                             iconColor = MaterialTheme.colorScheme.secondary
                         )
                     }
@@ -570,7 +548,7 @@ fun AboutDialog(
                     )
                 ) {
                     Text(
-                        text = "关闭",
+                        text = stringResource(R.string.set_close),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -615,194 +593,12 @@ private fun AboutFeatureItem(
     }
 }
 
-@Composable
-private fun AboutLinkItem(
-    icon: ImageVector,
-    title: String,
-    onClick: () -> Unit,
-    iconColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Surface(
-            shape = CircleShape,
-            color = iconColor.copy(alpha = 0.1f),
-            modifier = Modifier.size(36.dp)
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = iconColor,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-        }
-        Text(
-            text = title,
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f)
-        )
-        Icon(
-            imageVector = Icons.Rounded.ChevronRight,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(20.dp)
-        )
-    }
-}
-
 // ======================= Preview =======================
 
 @androidx.compose.ui.tooling.preview.Preview(showBackground = true, name = "应用介绍弹窗", apiLevel = 34)
 @Composable
 private fun AboutDialogPreview() {
     com.example.periodvibe.ui.theme.PeriodVibeTheme {
-        val versionName = "1.0.0"
-
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background.copy(alpha = 0.5f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Card(
-                shape = RoundedCornerShape(28.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .width(320.dp)
-                        .padding(28.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    // App Icon
-                    Surface(
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        modifier = Modifier.size(96.dp),
-                        tonalElevation = 4.dp
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Image(
-                                painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                                contentDescription = "应用图标",
-                                modifier = Modifier
-                                    .size(72.dp)
-                                    .clip(CircleShape)
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    // App Name
-                    Text(
-                        text = "Period Vibe",
-                        style = MaterialTheme.typography.displaySmall,
-                        fontWeight = FontWeight.Black,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    // Version pill
-                    Surface(
-                        shape = RoundedCornerShape(50),
-                        color = MaterialTheme.colorScheme.secondaryContainer,
-                        tonalElevation = 2.dp
-                    ) {
-                        Text(
-                            text = "v$versionName",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    // Description
-                    Text(
-                        text = "轻量、简洁的生理期追踪工具",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center
-                    )
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    // Feature highlights
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerLow,
-                        tonalElevation = 2.dp,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(20.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            AboutFeatureItem(
-                                icon = Icons.Rounded.AutoAwesome,
-                                text = "周期预测",
-                                iconColor = MaterialTheme.colorScheme.primary
-                            )
-                            AboutFeatureItem(
-                                icon = Icons.Rounded.Notifications,
-                                text = "智能提醒",
-                                iconColor = MaterialTheme.colorScheme.tertiary
-                            )
-                            AboutFeatureItem(
-                                icon = Icons.Rounded.Lock,
-                                text = "隐私保护",
-                                iconColor = MaterialTheme.colorScheme.error
-                            )
-                            AboutFeatureItem(
-                                icon = Icons.Rounded.Folder,
-                                text = "数据导出",
-                                iconColor = MaterialTheme.colorScheme.secondary
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    // Close button
-                    Button(
-                        onClick = { },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
-                        ),
-                        elevation = ButtonDefaults.buttonElevation(
-                            defaultElevation = 2.dp,
-                            pressedElevation = 4.dp
-                        )
-                    ) {
-                        Text(
-                            text = "关闭",
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                }
-            }
-        }
+        AboutDialog(onDismiss = { })
     }
 }
