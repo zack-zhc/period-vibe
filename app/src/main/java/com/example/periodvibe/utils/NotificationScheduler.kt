@@ -41,11 +41,6 @@ class NotificationScheduler @Inject constructor(
         }
     }
 
-    @Deprecated("Use rescheduleAllNotifications() instead")
-    suspend fun rescheduleNotificationIfNeeded() {
-        rescheduleAllNotifications()
-    }
-
     private suspend fun schedulePeriodNotification(settings: Settings) {
         if (!settings.periodNotificationEnabled) {
             alarmScheduler.cancel(NotificationType.PERIOD_START)

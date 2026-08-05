@@ -56,7 +56,7 @@ class MainActivity : FragmentActivity() {
     ) { _ ->
         // 无论用户是否同意，我们都继续安排通知（如果有权限的话）
         activityScope.launch {
-            notificationScheduler.rescheduleNotificationIfNeeded()
+            notificationScheduler.rescheduleAllNotifications()
         }
     }
 
@@ -72,7 +72,7 @@ class MainActivity : FragmentActivity() {
         } else {
             // 旧版本 Android 不需要请求通知权限，直接安排通知
             activityScope.launch {
-                notificationScheduler.rescheduleNotificationIfNeeded()
+                notificationScheduler.rescheduleAllNotifications()
             }
         }
 

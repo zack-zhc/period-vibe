@@ -33,8 +33,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.periodvibe.R
 import com.example.periodvibe.domain.model.Cycle
 import com.example.periodvibe.domain.model.CyclePhase
 import com.example.periodvibe.domain.usecase.CalendarDay
@@ -109,7 +111,7 @@ private fun DateHeader(day: CalendarDay.Data) {
                         tonalElevation = 0.dp
                     ) {
                         Text(
-                            text = "今天",
+                            text = stringResource(R.string.cal_today),
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onPrimary,
@@ -136,7 +138,7 @@ private fun DateHeader(day: CalendarDay.Data) {
                             modifier = Modifier.size(14.dp)
                         )
                         Text(
-                            text = "已记录",
+                            text = stringResource(R.string.cal_recorded),
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.primary
@@ -212,13 +214,13 @@ private fun CycleStatusInfo(
         ) {
             if (cycleDay != null) {
                 Text(
-                    text = "周期第 $cycleDay 天",
+                    text = stringResource(R.string.cal_cycle_day, cycleDay),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "当前处于 ${day.phase.displayName}",
+                    text = stringResource(R.string.cal_current_phase, day.phase.displayName),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -253,7 +255,7 @@ private fun RecordInfo(day: CalendarDay.Data) {
         ) {
             if (day.record?.isPeriod == true) {
                 Text(
-                    text = "经期",
+                    text = stringResource(R.string.cal_period),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -299,7 +301,7 @@ private fun NoCycleInfo(day: CalendarDay.Data) {
                 color = MaterialTheme.colorScheme.onSurface
             )
             Text(
-                text = "选择下方操作开始记录",
+                text = stringResource(R.string.cal_cycle_start_hint),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -324,22 +326,24 @@ private fun ActionButtons(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         when {
-            // 只要有经期记录，就显示编辑按钮
+            // 只要有经期记录，就显示编辑按钮（周期内还显示结束周期按钮）
             hasPeriodRecord -> {
                 EditButton(onClick = onEditClick)
-                // 如果在周期内，还显示结束周期按钮
                 if (hasActiveCycle) {
                     EndCycleButton(onClick = onEndCycleClick)
                 }
             }
+            // 周期内、无记录：记录 + 结束周期
+            context == ActionContext.IN_CYCLE_NO_RECORD -> {
+                RecordButton(text = stringResource(R.string.cal_record_today), onClick = onRecordClick)
+                EndCycleButton(onClick = onEndCycleClick)
+            }
+            // 周期内、有非经期记录：编辑 + 结束周期
             context == ActionContext.IN_CYCLE_WITH_RECORD -> {
                 EditButton(onClick = onEditClick)
                 EndCycleButton(onClick = onEndCycleClick)
             }
-            context == ActionContext.IN_CYCLE_NO_RECORD -> {
-                RecordButton(text = "记录今日", onClick = onRecordClick)
-                EndCycleButton(onClick = onEndCycleClick)
-            }
+            // 周期外、无记录：开始周期
             context == ActionContext.OUT_CYCLE_NO_RECORD -> {
                 NewCycleButton(onClick = onNewCycleClick)
             }
@@ -387,7 +391,7 @@ private fun EditButton(onClick: () -> Unit) {
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
-            text = "编辑记录",
+            text = stringResource(R.string.cal_edit_record),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold
         )
@@ -408,7 +412,7 @@ private fun EndCycleButton(onClick: () -> Unit) {
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
-            text = "结束周期",
+            text = stringResource(R.string.cal_end_cycle),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold
         )
@@ -434,7 +438,7 @@ private fun NewCycleButton(onClick: () -> Unit) {
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
-            text = "开始周期",
+            text = stringResource(R.string.cal_start_cycle),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold
         )
@@ -450,14 +454,14 @@ fun EndCycleConfirmationDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                text = "结束周期",
+                text = stringResource(R.string.cal_end_cycle),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold
             )
         },
         text = {
             Text(
-                text = "确定要结束当前周期吗？这将标记当前周期的结束日期。",
+                text = stringResource(R.string.cal_end_cycle_message),
                 style = MaterialTheme.typography.bodyLarge
             )
         },
@@ -466,12 +470,12 @@ fun EndCycleConfirmationDialog(
                 onClick = onConfirm,
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("确定")
+                Text(stringResource(R.string.cal_confirm))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("取消")
+                Text(stringResource(R.string.cal_cancel))
             }
         }
     )
@@ -488,8 +492,8 @@ private fun determineActionContext(
     day: CalendarDay.Data,
     activeCycle: Cycle?
 ): ActionContext {
-    val hasActiveCycle = activeCycle != null && activeCycle.isCurrentCycle
-    val isInCycle = hasActiveCycle && day.date >= activeCycle!!.startDate
+    val cycle = activeCycle
+    val isInCycle = cycle != null && cycle.isCurrentCycle && day.date >= cycle.startDate
     val hasRecord = day.record?.flowLevel != null
 
     return when {

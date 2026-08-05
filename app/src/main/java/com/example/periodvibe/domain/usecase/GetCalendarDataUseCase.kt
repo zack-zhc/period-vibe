@@ -27,8 +27,8 @@ class GetCalendarDataUseCase @Inject constructor(
             val monthStart = yearMonth.atDay(1)
             val monthEnd = yearMonth.atEndOfMonth()
 
-            val calendarDays = generateCalendarDays(yearMonth, cycles, records, settings)
             val prediction = createPrediction(cycles, settings)
+            val calendarDays = generateCalendarDays(yearMonth, cycles, records, settings, prediction)
 
             CalendarData(
                 yearMonth = yearMonth,
@@ -43,14 +43,15 @@ class GetCalendarDataUseCase @Inject constructor(
         yearMonth: YearMonth,
         cycles: List<Cycle>,
         records: List<DailyRecord>,
-        settings: com.example.periodvibe.domain.model.Settings?
+        settings: com.example.periodvibe.domain.model.Settings?,
+        prediction: Prediction?
     ): List<CalendarDay> {
         val days = mutableListOf<CalendarDay>()
         val monthStart = yearMonth.atDay(1)
         val monthEnd = yearMonth.atEndOfMonth()
         val firstDayOfWeek = monthStart.dayOfWeek.value % 7
+        val recordsByDate = records.associateBy { it.date }
 
-        val prediction = createPrediction(cycles, settings)
         val currentCycle = cycles.firstOrNull { it.isCurrentCycle }
 
         for (i in 0 until firstDayOfWeek) {
@@ -59,7 +60,7 @@ class GetCalendarDataUseCase @Inject constructor(
 
         for (day in 1..monthEnd.dayOfMonth) {
             val date = monthStart.withDayOfMonth(day)
-            val record = records.find { it.date == date }
+            val record = recordsByDate[date]
             val phase = CyclePhase.fromDate(date, prediction, currentCycle, record)
             val isToday = date == LocalDate.now()
 
@@ -139,10 +140,11 @@ class GetCalendarDataUseCase @Inject constructor(
         }
 
         val predictedNextPeriodStart = latestCycle.startDate!!.plusDays(cycleLength.toLong())
+        val effectivePeriodLength = periodLength.coerceAtLeast(1)
 
         return Prediction(
             nextPeriodStart = predictedNextPeriodStart,
-            nextPeriodEnd = predictedNextPeriodStart.plusDays(periodLength.toLong()),
+            nextPeriodEnd = predictedNextPeriodStart.plusDays((effectivePeriodLength - 1).toLong()),
             ovulationDate = predictedNextPeriodStart.minusDays(14),
             ovulationWindow = predictedNextPeriodStart.minusDays(17)..predictedNextPeriodStart.minusDays(11),
             fertileWindow = predictedNextPeriodStart.minusDays(19)..predictedNextPeriodStart.minusDays(9),

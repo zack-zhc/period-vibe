@@ -43,8 +43,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLocale
+import androidx.compose.ui.res.stringArrayResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.periodvibe.R
 import com.example.periodvibe.domain.usecase.CalendarDay
 import com.example.periodvibe.domain.usecase.CalendarDayType
 import com.example.periodvibe.ui.theme.CalendarFertileDark
@@ -86,7 +89,7 @@ fun CalendarMonthHeader(
             IconButton(onClick = onPreviousMonth) {
                 Icon(
                     imageVector = Icons.Rounded.ChevronLeft,
-                    contentDescription = "上个月",
+                    contentDescription = stringResource(R.string.cal_prev_month),
                     tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(28.dp)
                 )
@@ -95,7 +98,11 @@ fun CalendarMonthHeader(
 
         // 中间：月份标题
         Text(
-            text = "${yearMonth.year}年${yearMonth.month.getDisplayName(TextStyle.FULL, LocalLocale.current.platformLocale)}",
+            text = stringResource(
+                R.string.cal_month_title,
+                yearMonth.year,
+                yearMonth.month.getDisplayName(TextStyle.FULL, LocalLocale.current.platformLocale)
+            ),
             style = MaterialTheme.typography.headlineLarge,
             fontWeight = FontWeight.Black,
             color = MaterialTheme.colorScheme.onSurface
@@ -111,7 +118,7 @@ fun CalendarMonthHeader(
             IconButton(onClick = onNextMonth) {
                 Icon(
                     imageVector = Icons.Rounded.ChevronRight,
-                    contentDescription = "下个月",
+                    contentDescription = stringResource(R.string.cal_next_month),
                     tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(28.dp)
                 )
@@ -127,6 +134,7 @@ fun CalendarGrid(
     yearMonth: YearMonth,
     days: List<CalendarDay>,
     selectedDate: java.time.LocalDate?,
+    darkTheme: Boolean = isSystemInDarkTheme(),
     onDateClick: (java.time.LocalDate) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -139,6 +147,7 @@ fun CalendarGrid(
         CalendarDaysGrid(
             days = days,
             selectedDate = selectedDate,
+            darkTheme = darkTheme,
             onDateClick = onDateClick
         )
     }
@@ -148,9 +157,9 @@ fun CalendarGrid(
 private fun WeekdayHeader(modifier: Modifier = Modifier) {
     val isChinese = LocalLocale.current.platformLocale.language == Locale.CHINESE.language
     val weekdays = if (isChinese) {
-        listOf("日", "一", "二", "三", "四", "五", "六")
+        stringArrayResource(R.array.cal_weekdays_cn).toList()
     } else {
-        listOf("S", "M", "T", "W", "T", "F", "S")
+        stringArrayResource(R.array.cal_weekdays_en).toList()
     }
 
     Row(
@@ -173,6 +182,7 @@ private fun WeekdayHeader(modifier: Modifier = Modifier) {
 private fun CalendarDaysGrid(
     days: List<CalendarDay>,
     selectedDate: java.time.LocalDate?,
+    darkTheme: Boolean,
     onDateClick: (java.time.LocalDate) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -192,6 +202,7 @@ private fun CalendarDaysGrid(
                     CalendarDayCell(
                         day = day,
                         isSelected = day is CalendarDay.Data && selectedDate == day.date,
+                        darkTheme = darkTheme,
                         onClick = { if (day is CalendarDay.Data) onDateClick(day.date) },
                         modifier = Modifier.weight(1f / 7)
                     )
@@ -207,6 +218,7 @@ private fun CalendarDaysGrid(
 private fun CalendarDayCell(
     day: CalendarDay,
     isSelected: Boolean,
+    darkTheme: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -218,6 +230,7 @@ private fun CalendarDayCell(
             DayContent(
                 day = day,
                 isSelected = isSelected,
+                darkTheme = darkTheme,
                 onClick = onClick,
                 modifier = modifier
             )
@@ -229,12 +242,11 @@ private fun CalendarDayCell(
 private fun DayContent(
     day: CalendarDay.Data,
     isSelected: Boolean,
+    darkTheme: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val isDark = isSystemInDarkTheme()
-
-    val cellColors = getCellColors(day, isSelected, isDark)
+    val cellColors = getCellColors(day, isSelected, darkTheme)
     val scale by animateFloatAsState(
         targetValue = if (isSelected) 1.05f else 1f,
         animationSpec = tween(durationMillis = 200),
@@ -315,7 +327,7 @@ private fun DayContent(
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Check,
-                    contentDescription = "已记录",
+                    contentDescription = stringResource(R.string.cal_recorded),
                     tint = if (day.isToday) MaterialTheme.colorScheme.primary
                     else MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.size(8.dp)
@@ -349,10 +361,11 @@ private fun getCellColors(
     val fertileColor = if (isDark) CalendarFertileDark else CalendarFertileLight
 
     // 先获取基础背景色（非今天、非选中状态）
+    // 视觉层级：已记录经期 > 预测经期 > 排卵 > 易孕，预测区域用更淡的背景区分于真实记录
     val baseState = when {
         day.dayType == CalendarDayType.PERIOD -> {
             CellColors(
-                container = periodColor.copy(alpha = 0.25f),
+                container = periodColor.copy(alpha = 0.3f),
                 text = onSurface,
                 border = Color.Transparent,
                 borderWidth = 0.dp,
@@ -370,17 +383,8 @@ private fun getCellColors(
         }
         day.dayType == CalendarDayType.OVULATION -> {
             CellColors(
-                container = ovulationColor.copy(alpha = 0.25f),
+                container = ovulationColor.copy(alpha = 0.16f),
                 text = ovulationColor,
-                border = Color.Transparent,
-                borderWidth = 0.dp,
-                hasShadow = false
-            )
-        }
-        day.isPredictedOvulation -> {
-            CellColors(
-                container = ovulationColor.copy(alpha = 0.08f),
-                text = onSurface.copy(alpha = 0.7f),
                 border = Color.Transparent,
                 borderWidth = 0.dp,
                 hasShadow = false
@@ -388,17 +392,8 @@ private fun getCellColors(
         }
         day.dayType == CalendarDayType.FERTILE -> {
             CellColors(
-                container = fertileColor.copy(alpha = 0.25f),
+                container = fertileColor.copy(alpha = 0.12f),
                 text = onSurface,
-                border = Color.Transparent,
-                borderWidth = 0.dp,
-                hasShadow = false
-            )
-        }
-        day.isPredictedFertile -> {
-            CellColors(
-                container = fertileColor.copy(alpha = 0.08f),
-                text = onSurface.copy(alpha = 0.7f),
                 border = Color.Transparent,
                 borderWidth = 0.dp,
                 hasShadow = false
@@ -456,12 +451,14 @@ private fun getCellColors(
 // ==================== 图例 ====================
 
 @Composable
-fun CalendarLegend(modifier: Modifier = Modifier) {
-    val isDark = isSystemInDarkTheme()
-    val periodColor = if (isDark) CalendarPeriodDark else CalendarPeriodLight
-    val predictedPeriodColor = if (isDark) CalendarPredictedPeriodDark else CalendarPredictedPeriodLight
-    val ovulationColor = if (isDark) CalendarOvulationDark else CalendarOvulationLight
-    val fertileColor = if (isDark) CalendarFertileDark else CalendarFertileLight
+fun CalendarLegend(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    modifier: Modifier = Modifier
+) {
+    val periodColor = if (darkTheme) CalendarPeriodDark else CalendarPeriodLight
+    val predictedPeriodColor = if (darkTheme) CalendarPredictedPeriodDark else CalendarPredictedPeriodLight
+    val ovulationColor = if (darkTheme) CalendarOvulationDark else CalendarOvulationLight
+    val fertileColor = if (darkTheme) CalendarFertileDark else CalendarFertileLight
 
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -476,10 +473,10 @@ fun CalendarLegend(modifier: Modifier = Modifier) {
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            LegendItem(color = periodColor, label = "经期", isPredicted = false)
-            LegendItem(color = predictedPeriodColor, label = "预测经期", isPredicted = true)
-            LegendItem(color = fertileColor, label = "易孕", isPredicted = false)
-            LegendItem(color = ovulationColor, label = "排卵", isPredicted = false)
+            LegendItem(color = periodColor, label = stringResource(R.string.cal_period), isPredicted = false)
+            LegendItem(color = predictedPeriodColor, label = stringResource(R.string.cal_predicted_period), isPredicted = true)
+            LegendItem(color = fertileColor, label = stringResource(R.string.cal_fertile_short), isPredicted = false)
+            LegendItem(color = ovulationColor, label = stringResource(R.string.cal_ovulation_short), isPredicted = false)
         }
     }
 }
@@ -551,14 +548,14 @@ fun EmptySelectionCard(modifier: Modifier = Modifier) {
                 }
 
                 Text(
-                    text = "选择日期",
+                    text = stringResource(R.string.cal_empty_title),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSecondaryContainer
                 )
 
                 Text(
-                    text = "点击日历中的任意日期，查看详情并记录",
+                    text = stringResource(R.string.cal_empty_hint),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
                     textAlign = TextAlign.Center

@@ -25,7 +25,7 @@ class PeriodVibeApplication : Application() {
 
         // 应用启动时重新安排通知
         applicationScope.launch {
-            notificationScheduler.rescheduleNotificationIfNeeded()
+            notificationScheduler.rescheduleAllNotifications()
         }
     }
 }

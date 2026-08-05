@@ -122,7 +122,7 @@ class HomeViewModel @Inject constructor(
                 .onSuccess {
                     hideRecordSheet()
                     refresh()
-                    notificationScheduler.rescheduleNotificationIfNeeded()
+                    notificationScheduler.rescheduleAllNotifications()
                 }
                 .onFailure { e ->
                     e.printStackTrace()
@@ -171,7 +171,7 @@ class HomeViewModel @Inject constructor(
             .onSuccess {
                 hideNewCycleSheet()
                 refresh()
-                notificationScheduler.rescheduleNotificationIfNeeded()
+                notificationScheduler.rescheduleAllNotifications()
             }
             .onFailure { e ->
                 e.printStackTrace()
@@ -192,7 +192,7 @@ class HomeViewModel @Inject constructor(
                 .onSuccess {
                     hideEndCycleMenu()
                     refresh()
-                    notificationScheduler.rescheduleNotificationIfNeeded()
+                    notificationScheduler.rescheduleAllNotifications()
                 }
                 .onFailure { e ->
                     e.printStackTrace()

@@ -1,46 +1,122 @@
+// 仅 migrateLegacyPin() 使用已弃用的 EncryptedSharedPreferences 读取旧数据
+@file:Suppress("DEPRECATION")
+
 package com.example.periodvibe.data.repository
 
 import android.content.Context
+import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyProperties
+import android.util.Base64
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.security.KeyStore
+import javax.crypto.Cipher
+import javax.crypto.KeyGenerator
+import javax.crypto.SecretKey
+import javax.crypto.spec.GCMParameterSpec
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * PIN 码的安全存储。
+ * 使用 Android Keystore 中的 AES/GCM 密钥加密后存入普通 SharedPreferences，
+ * 替代已弃用的 EncryptedSharedPreferences。
+ */
 @Singleton
-class SecurityRepository @Inject constructor(@ApplicationContext private val context: Context) {
+class SecurityRepository @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
 
-    private val masterKey = MasterKey.Builder(context)
-        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-        .build()
+    private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    private val keyStore = KeyStore.getInstance(KEYSTORE_PROVIDER).apply { load(null) }
+    private val keyAlias = "period_vibe_master_key"
 
-    private val sharedPreferences = EncryptedSharedPreferences.create(
-        context,
-        "secret_shared_prefs",
-        masterKey,
-        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-    )
+    init {
+        migrateLegacyPin()
+    }
 
     fun savePin(pin: String) {
-        with(sharedPreferences.edit()) {
-            putString("app_pin", pin)
-            apply()
-        }
+        prefs.edit().putString(KEY_PIN, encrypt(pin)).apply()
     }
 
     fun getPin(): String? {
-        return sharedPreferences.getString("app_pin", null)
+        val encrypted = prefs.getString(KEY_PIN, null) ?: return null
+        return try {
+            decrypt(encrypted)
+        } catch (e: Exception) {
+            // 密钥不可用（Keystore 异常/备份恢复等），按无 PIN 处理，避免锁死用户
+            e.printStackTrace()
+            null
+        }
     }
 
-    fun hasPin(): Boolean {
-        return sharedPreferences.contains("app_pin")
-    }
+    fun hasPin(): Boolean = getPin() != null
 
     fun deletePin() {
-        with(sharedPreferences.edit()) {
-            remove("app_pin")
-            apply()
+        prefs.edit().remove(KEY_PIN).apply()
+    }
+
+    // ==================== Keystore AES/GCM 加解密 ====================
+
+    private fun getOrCreateKey(): SecretKey {
+        (keyStore.getEntry(keyAlias, null) as? KeyStore.SecretKeyEntry)?.let {
+            return it.secretKey
         }
+        val keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, KEYSTORE_PROVIDER)
+        keyGenerator.init(
+            KeyGenParameterSpec.Builder(
+                keyAlias,
+                KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
+            )
+                .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                .build()
+        )
+        return keyGenerator.generateKey()
+    }
+
+    private fun encrypt(value: String): String {
+        val cipher = Cipher.getInstance(TRANSFORMATION)
+        cipher.init(Cipher.ENCRYPT_MODE, getOrCreateKey())
+        val ciphertext = cipher.doFinal(value.toByteArray(Charsets.UTF_8))
+        return Base64.encodeToString(cipher.iv + ciphertext, Base64.NO_WRAP)
+    }
+
+    private fun decrypt(encoded: String): String {
+        val data = Base64.decode(encoded, Base64.NO_WRAP)
+        val iv = data.copyOfRange(0, IV_SIZE)
+        val ciphertext = data.copyOfRange(IV_SIZE, data.size)
+        val cipher = Cipher.getInstance(TRANSFORMATION)
+        cipher.init(Cipher.DECRYPT_MODE, getOrCreateKey(), GCMParameterSpec(128, iv))
+        return String(cipher.doFinal(ciphertext), Charsets.UTF_8)
+    }
+
+    // ==================== 旧 EncryptedSharedPreferences 数据迁移 ====================
+
+    private fun migrateLegacyPin() {
+        if (prefs.contains(KEY_PIN)) return
+        // 旧文件不存在或为空则跳过（避免每次启动都创建旧存储）
+        if (context.getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE).all.isEmpty()) return
+
+        val legacy = EncryptedSharedPreferences.create(
+            context,
+            LEGACY_PREFS_NAME,
+            MasterKey.Builder(context).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build(),
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        )
+        val legacyPin = legacy.getString("app_pin", null) ?: return
+        savePin(legacyPin)
+        legacy.edit().clear().apply()
+    }
+
+    private companion object {
+        const val PREFS_NAME = "secure_prefs"
+        const val LEGACY_PREFS_NAME = "secret_shared_prefs"
+        const val KEY_PIN = "app_pin_enc"
+        const val KEYSTORE_PROVIDER = "AndroidKeyStore"
+        const val TRANSFORMATION = "AES/GCM/NoPadding"
+        const val IV_SIZE = 12
     }
 }

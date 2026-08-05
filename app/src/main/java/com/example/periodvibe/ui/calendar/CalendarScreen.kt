@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
@@ -25,6 +26,8 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarScrollBehavior
@@ -38,15 +41,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.periodvibe.R
 import com.example.periodvibe.domain.usecase.CalendarDay
 import com.example.periodvibe.ui.home.RecordBottomSheetContent
 import com.example.periodvibe.ui.home.RecordMode
@@ -56,6 +62,7 @@ import com.example.periodvibe.ui.theme.CalendarOvulationDark
 import com.example.periodvibe.ui.theme.CalendarOvulationLight
 import com.example.periodvibe.ui.theme.CalendarPeriodDark
 import com.example.periodvibe.ui.theme.CalendarPeriodLight
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.YearMonth
@@ -68,6 +75,7 @@ fun CalendarScreen(
     onNavigateToSettings: () -> Unit,
     onDateClick: (java.time.LocalDate) -> Unit,
     scrollBehavior: TopAppBarScrollBehavior? = null,
+    darkTheme: Boolean = isSystemInDarkTheme(),
     modifier: Modifier = Modifier,
     viewModel: CalendarViewModel = hiltViewModel()
 ) {
@@ -76,11 +84,23 @@ fun CalendarScreen(
     val selectedDate by viewModel.selectedDate.collectAsState()
     val activeCycle by viewModel.activeCycle.collectAsState()
     val showEndCycleDialog by viewModel.showEndCycleDialog.collectAsState()
+    val errorMessageRes by viewModel.errorMessage.collectAsState()
     var showRecordSheet by remember { mutableStateOf(false) }
     var recordDate by remember { mutableStateOf(java.time.LocalDate.now()) }
     var recordMode by remember { mutableStateOf(RecordMode.AUTO) }
 
-    val hasCurrentCycle = activeCycle != null && activeCycle?.isCurrentCycle == true
+    val hasCurrentCycle = activeCycle?.isCurrentCycle == true
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    val errorMessageText = errorMessageRes?.let { stringResource(it) }
+
+    // 保存/结束周期失败时通过 Snackbar 反馈
+    LaunchedEffect(errorMessageText) {
+        errorMessageText?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            viewModel.consumeError()
+        }
+    }
 
     // 生成一个足够大的月份范围作为 Pager 的页面
     val startMonth = remember { YearMonth.now().minusMonths(120) } // 10年前
@@ -110,9 +130,15 @@ fun CalendarScreen(
         }
     }
 
-    // 当 Pager 页面变化时通知 ViewModel
-    LaunchedEffect(currentPageYearMonth) {
-        viewModel.onPageChanged(currentPageYearMonth)
+    // 当 Pager 页面停稳后通知 ViewModel，避免动画/快速滑动时逐页重复触发
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.currentPage to pagerState.isScrollInProgress }
+            .distinctUntilChanged()
+            .collect { (page, isScrolling) ->
+                if (!isScrolling) {
+                    viewModel.onPageChanged(startMonth.plusMonths(page.toLong()))
+                }
+            }
     }
 
     // 当 ViewModel 的 currentYearMonth 变化时（比如点击"今天"按钮），同步 Pager
@@ -130,7 +156,9 @@ fun CalendarScreen(
     Box(modifier = modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                .align(Alignment.TopCenter)
+                .widthIn(max = 560.dp)
+                .fillMaxWidth()
                 .let { if (scrollBehavior != null) it.nestedScroll(scrollBehavior.nestedScrollConnection) else it }
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp, vertical = 16.dp),
@@ -139,6 +167,8 @@ fun CalendarScreen(
             CalendarContent(
                 pagerState = pagerState,
                 startMonth = startMonth,
+                currentPageYearMonth = currentPageYearMonth,
+                darkTheme = darkTheme,
                 calendarPages = calendarPages,
                 selectedDate = selectedDate,
                 activeCycle = activeCycle,
@@ -193,12 +223,20 @@ fun CalendarScreen(
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Text(
-                    text = "今",
+                    text = stringResource(R.string.cal_today_fab),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
                 )
             }
         }
+
+        // 操作失败的 Snackbar - FAB 可见时抬高，避免重叠
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = if (!isCurrentMonth) 104.dp else 24.dp)
+        )
     }
 
     if (showEndCycleDialog) {
@@ -264,6 +302,8 @@ fun CalendarScreen(
 private fun CalendarContent(
     pagerState: androidx.compose.foundation.pager.PagerState,
     startMonth: YearMonth,
+    currentPageYearMonth: YearMonth,
+    darkTheme: Boolean,
     calendarPages: Map<YearMonth, CalendarUiState>,
     selectedDate: java.time.LocalDate?,
     activeCycle: com.example.periodvibe.domain.model.Cycle?,
@@ -275,9 +315,6 @@ private fun CalendarContent(
     onNewCycleClick: (java.time.LocalDate) -> Unit,
     onEditClick: (java.time.LocalDate) -> Unit
 ) {
-    val currentPageYearMonth = remember(pagerState.currentPage) {
-        startMonth.plusMonths(pagerState.currentPage.toLong())
-    }
     val currentUiState = calendarPages[currentPageYearMonth]
 
     Column(
@@ -309,6 +346,7 @@ private fun CalendarContent(
                         yearMonth = yearMonth,
                         days = uiState.days,
                         selectedDate = if (yearMonth == currentPageYearMonth) selectedDate else null,
+                        darkTheme = darkTheme,
                         onDateClick = onDateClick
                     )
                 }
@@ -318,26 +356,27 @@ private fun CalendarContent(
             }
         }
 
-        CalendarLegend()
+        CalendarLegend(darkTheme = darkTheme)
 
-        if (currentUiState is CalendarUiState.Success && selectedDate != null) {
-            val date = selectedDate
-            val selectedDay = currentUiState.days.find {
-                it is com.example.periodvibe.domain.usecase.CalendarDay.Data && it.date == date
-            }
-            if (selectedDay is com.example.periodvibe.domain.usecase.CalendarDay.Data) {
-                SmartActionCard(
-                    day = selectedDay,
-                    activeCycle = activeCycle,
-                    onRecordClick = { onRecordClick(date) },
-                    onEndCycleClick = onEndCycleClick,
-                    onNewCycleClick = { onNewCycleClick(date) },
-                    onEditClick = { onEditClick(date) }
-                )
-            }
+        // 选中的日期在可见月份中才显示操作卡；否则显示空状态卡，避免翻页过渡时空白
+        val selectedDayInMonth = if (currentUiState is CalendarUiState.Success && selectedDate != null) {
+            currentUiState.days
+                .filterIsInstance<CalendarDay.Data>()
+                .find { it.date == selectedDate }
+        } else {
+            null
         }
 
-        if (selectedDate == null) {
+        if (selectedDayInMonth != null) {
+            SmartActionCard(
+                day = selectedDayInMonth,
+                activeCycle = activeCycle,
+                onRecordClick = { onRecordClick(selectedDayInMonth.date) },
+                onEndCycleClick = onEndCycleClick,
+                onNewCycleClick = { onNewCycleClick(selectedDayInMonth.date) },
+                onEditClick = { onEditClick(selectedDayInMonth.date) }
+            )
+        } else {
             EmptySelectionCard()
         }
     }
@@ -356,17 +395,19 @@ private fun LoadingState() {
 }
 
 @Composable
-fun LegendDialog(onDismiss: () -> Unit) {
-    val isDark = isSystemInDarkTheme()
-    val periodColor = if (isDark) CalendarPeriodDark else CalendarPeriodLight
-    val ovulationColor = if (isDark) CalendarOvulationDark else CalendarOvulationLight
-    val fertileColor = if (isDark) CalendarFertileDark else CalendarFertileLight
+fun LegendDialog(
+    onDismiss: () -> Unit,
+    darkTheme: Boolean = isSystemInDarkTheme()
+) {
+    val periodColor = if (darkTheme) CalendarPeriodDark else CalendarPeriodLight
+    val ovulationColor = if (darkTheme) CalendarOvulationDark else CalendarOvulationLight
+    val fertileColor = if (darkTheme) CalendarFertileDark else CalendarFertileLight
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                text = "图例说明",
+                text = stringResource(R.string.cal_legend_title),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold
             )
@@ -377,16 +418,16 @@ fun LegendDialog(onDismiss: () -> Unit) {
             ) {
                 LegendItem(
                     color = MaterialTheme.colorScheme.primary,
-                    label = "今天 / 已选中",
+                    label = stringResource(R.string.cal_legend_today_selected),
                     isPredicted = false,
                     isTodayOrSelected = true
                 )
-                LegendItem(color = periodColor, label = "已记录经期", isPredicted = false)
-                LegendItem(color = periodColor, label = "预测经期", isPredicted = true)
-                LegendItem(color = ovulationColor, label = "排卵期", isPredicted = false)
-                LegendItem(color = fertileColor, label = "易孕期", isPredicted = false)
+                LegendItem(color = periodColor, label = stringResource(R.string.cal_legend_recorded_period), isPredicted = false)
+                LegendItem(color = periodColor, label = stringResource(R.string.cal_legend_predicted_period), isPredicted = true)
+                LegendItem(color = ovulationColor, label = stringResource(R.string.cal_legend_ovulation), isPredicted = false)
+                LegendItem(color = fertileColor, label = stringResource(R.string.cal_legend_fertile), isPredicted = false)
                 Text(
-                    text = "提示：右上角有对勾标记表示该日期有记录",
+                    text = stringResource(R.string.cal_legend_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                 )
@@ -394,7 +435,7 @@ fun LegendDialog(onDismiss: () -> Unit) {
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("知道了")
+                Text(stringResource(R.string.cal_legend_ok))
             }
         }
     )

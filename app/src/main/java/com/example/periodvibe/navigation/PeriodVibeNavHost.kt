@@ -316,6 +316,7 @@ fun PeriodVibeNavHost(
                     onNavigateToSettings = { navigateToTopLevel(Screen.Settings) },
                     onDateClick = {},
                     scrollBehavior = scrollBehavior,
+                    darkTheme = darkTheme,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues)
@@ -323,7 +324,10 @@ fun PeriodVibeNavHost(
             }
 
             if (showLegendDialog) {
-                LegendDialog(onDismiss = { showLegendDialog = false })
+                LegendDialog(
+                    onDismiss = { showLegendDialog = false },
+                    darkTheme = darkTheme
+                )
             }
         }
 

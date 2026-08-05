@@ -1,3 +1,57 @@
 <resources>
     <string name="app_name">Period Vibe</string>
+
+    <!-- 日历 -->
+    <string name="cal_prev_month">上个月</string>
+    <string name="cal_next_month">下个月</string>
+    <string name="cal_today_fab">今天</string>
+    <string name="cal_month_title">%1$d年%2$s</string>
+    <string name="cal_today">今天</string>
+    <string name="cal_recorded">已记录</string>
+    <string name="cal_period">经期</string>
+    <string name="cal_predicted_period">预测经期</string>
+    <string name="cal_ovulation_short">排卵</string>
+    <string name="cal_fertile_short">易孕</string>
+    <string name="cal_cycle_day">周期第 %1$d 天</string>
+    <string name="cal_current_phase">当前处于 %1$s</string>
+    <string name="cal_record_today">记录今日</string>
+    <string name="cal_edit_record">编辑记录</string>
+    <string name="cal_end_cycle">结束周期</string>
+    <string name="cal_start_cycle">开始周期</string>
+    <string name="cal_end_cycle_message">确定要结束当前周期吗？这将标记当前周期的结束日期。</string>
+    <string name="cal_confirm">确定</string>
+    <string name="cal_cancel">取消</string>
+    <string name="cal_empty_title">选择日期</string>
+    <string name="cal_empty_hint">点击日历中的任意日期，查看详情并记录</string>
+    <string name="cal_cycle_start_hint">选择下方操作开始记录</string>
+    <string name="cal_legend_title">图例说明</string>
+    <string name="cal_legend_today_selected">今天 / 已选中</string>
+    <string name="cal_legend_recorded_period">已记录经期</string>
+    <string name="cal_legend_predicted_period">预测经期</string>
+    <string name="cal_legend_ovulation">排卵期</string>
+    <string name="cal_legend_fertile">易孕期</string>
+    <string name="cal_legend_hint">提示：右上角有对勾标记表示该日期有记录</string>
+    <string name="cal_legend_ok">知道了</string>
+    <string-array name="cal_weekdays_cn">
+        <item>日</item>
+        <item>一</item>
+        <item>二</item>
+        <item>三</item>
+        <item>四</item>
+        <item>五</item>
+        <item>六</item>
+    </string-array>
+    <string-array name="cal_weekdays_en">
+        <item>S</item>
+        <item>M</item>
+        <item>T</item>
+        <item>W</item>
+        <item>T</item>
+        <item>F</item>
+        <item>S</item>
+    </string-array>
+
+    <!-- 错误提示 -->
+    <string name="error_save_failed">保存失败，请重试</string>
+    <string name="error_end_cycle_failed">结束周期失败，请重试</string>
 </resources>
