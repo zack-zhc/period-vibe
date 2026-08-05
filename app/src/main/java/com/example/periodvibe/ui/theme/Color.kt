@@ -70,12 +70,21 @@ val OutlineDark = Color(0xFF9E8C8E)
 val OutlineVariantDark = Color(0xFF514345)
 
 // 周期阶段颜色 (Material 3 Expressive 风格)
+// 浅色：色相分离保证可区分——月经红粉 / 卵泡绿 / 排卵紫 / 易孕蓝 / 安全蓝绿 / 黄体橙
 val MenstruationColor = Color(0xFFE91E63)
-val OvulationColor = Color(0xFFFF6090)
-val FertileColor = Color(0xFFEC407A)
-val SafeColor = Color(0xFF42A5F5)
 val FollicularColor = Color(0xFF66BB6A)
+val OvulationColor = Color(0xFF9C27B0)
+val FertileColor = Color(0xFF0288D1)
+val SafeColor = Color(0xFF26A69A)
 val LutealColor = Color(0xFFFFB74D)
+
+// 暗色变体：提高亮度保证深色背景上的对比度（与日历页暗色方案同族）
+val MenstruationColorDark = Color(0xFFF06292)
+val FollicularColorDark = Color(0xFF81C784)
+val OvulationColorDark = Color(0xFFCE93D8)
+val FertileColorDark = Color(0xFF4FC3F7)
+val SafeColorDark = Color(0xFF4DB6AC)
+val LutealColorDark = Color(0xFFFFCC80)
 
 // 日历专用颜色
 // 经期：鲜明的红色，容易识别

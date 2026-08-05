@@ -1,6 +1,8 @@
 package com.example.periodvibe.ui.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,6 +33,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
@@ -44,6 +47,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -56,12 +60,18 @@ import com.example.periodvibe.ui.theme.PeriodVibeTheme
 import com.example.periodvibe.ui.home.CombinedInfoCard
 import com.example.periodvibe.ui.home.FeaturePreviewCard
 import com.example.periodvibe.ui.theme.FertileColor
+import com.example.periodvibe.ui.theme.FertileColorDark
 import com.example.periodvibe.ui.theme.FollicularColor
+import com.example.periodvibe.ui.theme.FollicularColorDark
 import com.example.periodvibe.ui.theme.HomeCardShape
 import com.example.periodvibe.ui.theme.LutealColor
+import com.example.periodvibe.ui.theme.LutealColorDark
 import com.example.periodvibe.ui.theme.MenstruationColor
+import com.example.periodvibe.ui.theme.MenstruationColorDark
 import com.example.periodvibe.ui.theme.OvulationColor
+import com.example.periodvibe.ui.theme.OvulationColorDark
 import com.example.periodvibe.ui.theme.SafeColor
+import com.example.periodvibe.ui.theme.SafeColorDark
 import com.example.periodvibe.ui.theme.cardBorderStroke
 import kotlinx.coroutines.launch
 import java.time.LocalTime
@@ -69,12 +79,11 @@ import java.time.LocalTime
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    onRecordClick: () -> Unit,
     onCalendarClick: () -> Unit,
     onHistoryClick: () -> Unit,
     onSettingsClick: () -> Unit,
     showRecordSheetOnStart: Boolean = false,
-    darkTheme: Boolean = androidx.compose.foundation.isSystemInDarkTheme(),
+    darkTheme: Boolean = isSystemInDarkTheme(),
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
@@ -106,7 +115,7 @@ fun HomeScreen(
         }
     }
 
-    androidx.compose.foundation.layout.Box(
+    Box(
         modifier = modifier.fillMaxSize()
     ) {
         when (val state = homeData) {
@@ -121,20 +130,20 @@ fun HomeScreen(
                     cycleDay = state.cycleDay,
                     daysUntilPeriod = state.daysUntilPeriod,
                     phase = state.phase,
-                    hasCurrentCycle = state.hasCurrentCycle,
                     cycleLength = state.cycleLength,
                     daysUntilNextPhase = state.daysUntilNextPhase,
                     nextPhaseName = state.nextPhaseName,
-                    ovulationDate = state.ovulationDate
+                    ovulationDate = state.ovulationDate,
+                    darkTheme = darkTheme
                 )
             }
         }
 
-        androidx.compose.foundation.layout.Box(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp),
-            contentAlignment = androidx.compose.ui.Alignment.BottomEnd
+            contentAlignment = Alignment.BottomEnd
         ) {
             RecordFAB(
                 hasCurrentCycle = hasCurrentCycle,
@@ -202,13 +211,13 @@ private fun HomeContent(
     cycleDay: Int,
     daysUntilPeriod: Int,
     phase: CyclePhase,
-    hasCurrentCycle: Boolean,
     cycleLength: Int,
     daysUntilNextPhase: Int,
     nextPhaseName: String,
-    ovulationDate: java.time.LocalDate?
+    ovulationDate: java.time.LocalDate?,
+    darkTheme: Boolean = false
 ) {
-    val phaseData = getPhaseData(phase)
+    val phaseData = getPhaseData(phase, darkTheme)
 
     Column(
         modifier = Modifier
@@ -313,10 +322,11 @@ private fun MainStatusCard(
         // Circular Progress Ring
         CircularProgressRing(
             progress = progress,
-            size = 256.dp,
-            strokeWidth = 16.dp,
+            size = 200.dp,
+            strokeWidth = 14.dp,
             backgroundColor = phaseData.container,
-            progressColor = phaseData.primary
+            progressColor = phaseData.primary,
+            contentDescription = "周期进度，第 $cycleDay 天"
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -504,13 +514,13 @@ private fun NoDataState(darkTheme: Boolean, modifier: Modifier = Modifier) {
                             .background(MaterialTheme.colorScheme.surfaceContainerHigh),
                         contentAlignment = Alignment.Center
                     ) {
-                        androidx.compose.foundation.Image(
+                        Image(
                             painter = painterResource(
                                 id = if (darkTheme) R.drawable.welcome_image_dark else R.drawable.welcome_image
                             ),
                             contentDescription = null,
                             modifier = Modifier.fillMaxSize(),
-                            contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                            contentScale = ContentScale.Crop
                         )
                     }
 
@@ -641,35 +651,36 @@ private data class PhaseData(
     val icon: ImageVector
 )
 
-private fun getPhaseData(phase: CyclePhase): PhaseData {
+private fun getPhaseData(phase: CyclePhase, darkTheme: Boolean = false): PhaseData {
+    fun pick(light: Color, dark: Color) = if (darkTheme) dark else light
     return when (phase) {
         CyclePhase.MENSTRATION -> PhaseData(
-            primary = MenstruationColor,
+            primary = pick(MenstruationColor, MenstruationColorDark),
             container = MenstruationColor.copy(alpha = 0.15f),
             icon = PhaseIcons.Menstruation
         )
         CyclePhase.OVULATION -> PhaseData(
-            primary = OvulationColor,
+            primary = pick(OvulationColor, OvulationColorDark),
             container = OvulationColor.copy(alpha = 0.15f),
             icon = PhaseIcons.Ovulation
         )
         CyclePhase.FERTILE -> PhaseData(
-            primary = FertileColor,
+            primary = pick(FertileColor, FertileColorDark),
             container = FertileColor.copy(alpha = 0.15f),
             icon = PhaseIcons.Fertile
         )
         CyclePhase.SAFE -> PhaseData(
-            primary = SafeColor,
+            primary = pick(SafeColor, SafeColorDark),
             container = SafeColor.copy(alpha = 0.15f),
             icon = PhaseIcons.Safe
         )
         CyclePhase.FOLLICULAR -> PhaseData(
-            primary = FollicularColor,
+            primary = pick(FollicularColor, FollicularColorDark),
             container = FollicularColor.copy(alpha = 0.15f),
             icon = PhaseIcons.Follicular
         )
         CyclePhase.LUTEAL -> PhaseData(
-            primary = LutealColor,
+            primary = pick(LutealColor, LutealColorDark),
             container = LutealColor.copy(alpha = 0.15f),
             icon = PhaseIcons.Luteal
         )
@@ -682,7 +693,7 @@ private fun getPhaseData(phase: CyclePhase): PhaseData {
 @Composable
 private fun HomeScreenPreview_Menstruation() {
     PeriodVibeTheme {
-        androidx.compose.material3.Scaffold(
+        Scaffold(
             modifier = Modifier.fillMaxSize()
         ) { paddingValues ->
             Box(
@@ -694,7 +705,6 @@ private fun HomeScreenPreview_Menstruation() {
                     cycleDay = 3,
                     daysUntilPeriod = 0,
                     phase = CyclePhase.MENSTRATION,
-                    hasCurrentCycle = true,
                     cycleLength = 28,
                     daysUntilNextPhase = 4,
                     nextPhaseName = "卵泡期",
@@ -721,7 +731,7 @@ private fun HomeScreenPreview_Menstruation() {
 @Composable
 private fun HomeScreenPreview_Ovulation() {
     PeriodVibeTheme {
-        androidx.compose.material3.Scaffold(
+        Scaffold(
             modifier = Modifier.fillMaxSize()
         ) { paddingValues ->
             Box(
@@ -733,7 +743,6 @@ private fun HomeScreenPreview_Ovulation() {
                     cycleDay = 14,
                     daysUntilPeriod = 14,
                     phase = CyclePhase.OVULATION,
-                    hasCurrentCycle = true,
                     cycleLength = 28,
                     daysUntilNextPhase = 2,
                     nextPhaseName = "黄体期",
@@ -760,7 +769,7 @@ private fun HomeScreenPreview_Ovulation() {
 @Composable
 private fun HomeScreenPreview_Follicular() {
     PeriodVibeTheme {
-        androidx.compose.material3.Scaffold(
+        Scaffold(
             modifier = Modifier.fillMaxSize()
         ) { paddingValues ->
             Box(
@@ -772,7 +781,6 @@ private fun HomeScreenPreview_Follicular() {
                     cycleDay = 8,
                     daysUntilPeriod = 20,
                     phase = CyclePhase.FOLLICULAR,
-                    hasCurrentCycle = true,
                     cycleLength = 28,
                     daysUntilNextPhase = 6,
                     nextPhaseName = "排卵期",
@@ -799,7 +807,7 @@ private fun HomeScreenPreview_Follicular() {
 @Composable
 private fun HomeScreenPreview_Luteal() {
     PeriodVibeTheme {
-        androidx.compose.material3.Scaffold(
+        Scaffold(
             modifier = Modifier.fillMaxSize()
         ) { paddingValues ->
             Box(
@@ -811,7 +819,6 @@ private fun HomeScreenPreview_Luteal() {
                     cycleDay = 22,
                     daysUntilPeriod = 6,
                     phase = CyclePhase.LUTEAL,
-                    hasCurrentCycle = true,
                     cycleLength = 28,
                     daysUntilNextPhase = 6,
                     nextPhaseName = "月经期",
@@ -838,7 +845,7 @@ private fun HomeScreenPreview_Luteal() {
 @Composable
 private fun HomeScreenPreview_Safe() {
     PeriodVibeTheme {
-        androidx.compose.material3.Scaffold(
+        Scaffold(
             modifier = Modifier.fillMaxSize()
         ) { paddingValues ->
             Box(
@@ -850,7 +857,6 @@ private fun HomeScreenPreview_Safe() {
                     cycleDay = 26,
                     daysUntilPeriod = 2,
                     phase = CyclePhase.SAFE,
-                    hasCurrentCycle = true,
                     cycleLength = 28,
                     daysUntilNextPhase = 2,
                     nextPhaseName = "月经期",
@@ -877,7 +883,7 @@ private fun HomeScreenPreview_Safe() {
 @Composable
 private fun HomeScreenPreview_NoData() {
     PeriodVibeTheme {
-        androidx.compose.material3.Scaffold(
+        Scaffold(
             modifier = Modifier.fillMaxSize()
         ) { paddingValues ->
             Box(
@@ -907,7 +913,7 @@ private fun HomeScreenPreview_NoData() {
 @Composable
 private fun HomeScreenPreview_Loading() {
     PeriodVibeTheme {
-        androidx.compose.material3.Scaffold(
+        Scaffold(
             modifier = Modifier.fillMaxSize()
         ) { paddingValues ->
             Box(
@@ -927,7 +933,7 @@ private fun HomeScreenPreview_Loading() {
 @Composable
 private fun CombinedInfoCardPreview_Menstruation() {
     PeriodVibeTheme {
-        androidx.compose.foundation.layout.Box(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp)
@@ -943,7 +949,7 @@ private fun CombinedInfoCardPreview_Menstruation() {
 @Composable
 private fun CombinedInfoCardPreview_Ovulation() {
     PeriodVibeTheme {
-        androidx.compose.foundation.layout.Box(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp)
@@ -959,7 +965,7 @@ private fun CombinedInfoCardPreview_Ovulation() {
 @Composable
 private fun HomeScreenPreview_WithCombinedCard() {
     PeriodVibeTheme {
-        androidx.compose.material3.Scaffold(
+        Scaffold(
             modifier = Modifier.fillMaxSize()
         ) { paddingValues ->
             Box(

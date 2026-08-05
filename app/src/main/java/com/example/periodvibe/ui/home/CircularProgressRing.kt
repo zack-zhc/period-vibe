@@ -17,6 +17,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -24,10 +26,11 @@ import androidx.compose.ui.unit.dp
 fun CircularProgressRing(
     progress: Float,
     modifier: Modifier = Modifier,
-    size: Dp = 256.dp,
-    strokeWidth: Dp = 12.dp,
+    size: Dp = 200.dp,
+    strokeWidth: Dp = 14.dp,
     backgroundColor: Color,
     progressColor: Color,
+    contentDescription: String? = null,
     content: @Composable () -> Unit
 ) {
     val animatedProgress by animateFloatAsState(
@@ -36,19 +39,37 @@ fun CircularProgressRing(
         label = "progressAnimation"
     )
 
-    val gradientColors = remember(progressColor) {
-        listOf(
-            progressColor.copy(alpha = 0.6f),
-            progressColor,
-            progressColor.copy(alpha = 0.8f)
+    val progressBrush = remember(progressColor) {
+        Brush.sweepGradient(
+            colors = listOf(
+                progressColor.copy(alpha = 0.6f),
+                progressColor,
+                progressColor.copy(alpha = 0.8f)
+            )
+        )
+    }
+    val backgroundBrush = remember(backgroundColor) {
+        Brush.sweepGradient(
+            colors = listOf(
+                backgroundColor.copy(alpha = 0.3f),
+                backgroundColor.copy(alpha = 0.5f),
+                backgroundColor.copy(alpha = 0.3f)
+            )
         )
     }
 
     Box(
-        modifier = modifier.size(size),
+        modifier = modifier
+            .size(size)
+            .then(
+                if (contentDescription != null) {
+                    Modifier.semantics { this.contentDescription = contentDescription }
+                } else {
+                    Modifier
+                }
+            ),
         contentAlignment = Alignment.Center
     ) {
-        // Background track with subtle gradient
         Canvas(modifier = Modifier.size(size)) {
             val strokeWidthPx = strokeWidth.toPx()
             val diameter = size.toPx() - strokeWidthPx
@@ -56,15 +77,9 @@ fun CircularProgressRing(
             val centerX = size.toPx() / 2f
             val centerY = size.toPx() / 2f
 
-            // Subtle background ring with gradient
+            // 背景环
             drawCircle(
-                brush = Brush.sweepGradient(
-                    colors = listOf(
-                        backgroundColor.copy(alpha = 0.3f),
-                        backgroundColor.copy(alpha = 0.5f),
-                        backgroundColor.copy(alpha = 0.3f)
-                    )
-                ),
+                brush = backgroundBrush,
                 radius = radius,
                 center = Offset(centerX, centerY),
                 style = Stroke(
@@ -72,23 +87,11 @@ fun CircularProgressRing(
                     cap = StrokeCap.Round
                 )
             )
-        }
 
-        // Progress arc with gradient
-        Canvas(modifier = Modifier.size(size)) {
-            val strokeWidthPx = strokeWidth.toPx()
-            val diameter = size.toPx() - strokeWidthPx
-            val radius = diameter / 2f
-            val centerX = size.toPx() / 2f
-            val centerY = size.toPx() / 2f
-
-            // Draw progress arc with gradient
+            // 进度弧
             if (animatedProgress > 0f) {
                 drawArc(
-                    brush = Brush.sweepGradient(
-                        colors = gradientColors,
-                        center = Offset(centerX, centerY)
-                    ),
+                    brush = progressBrush,
                     startAngle = -90f,
                     sweepAngle = animatedProgress * 360f,
                     useCenter = false,
@@ -99,24 +102,11 @@ fun CircularProgressRing(
                     size = Size(diameter, diameter),
                     topLeft = Offset(centerX - radius, centerY - radius)
                 )
-            }
-        }
 
-        // Subtle glow effect on the progress tip
-        Canvas(modifier = Modifier.size(size)) {
-            val strokeWidthPx = strokeWidth.toPx()
-            val diameter = size.toPx() - strokeWidthPx
-            val radius = diameter / 2f
-            val centerX = size.toPx() / 2f
-            val centerY = size.toPx() / 2f
-
-            if (animatedProgress > 0f) {
-                // Calculate the tip position
+                // 进度弧末端的柔和光晕
                 val tipAngle = Math.toRadians((-90f + animatedProgress * 360f).toDouble())
                 val tipX = centerX + radius * kotlin.math.cos(tipAngle).toFloat()
                 val tipY = centerY + radius * kotlin.math.sin(tipAngle).toFloat()
-
-                // Draw a subtle glow at the tip
                 drawCircle(
                     color = progressColor.copy(alpha = 0.3f),
                     radius = strokeWidthPx * 1.5f,

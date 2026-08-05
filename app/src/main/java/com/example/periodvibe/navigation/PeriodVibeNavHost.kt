@@ -264,7 +264,6 @@ fun PeriodVibeNavHost(
                 }
             ) { innerPadding ->
                 HomeScreen(
-                    onRecordClick = { },
                     onCalendarClick = { navigateToTopLevel(Screen.Calendar) },
                     onHistoryClick = { navigateToDetail(Screen.History) },
                     onSettingsClick = { navigateToTopLevel(Screen.Settings) },

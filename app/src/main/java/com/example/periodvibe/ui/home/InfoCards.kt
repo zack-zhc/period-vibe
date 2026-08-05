@@ -127,7 +127,7 @@ fun CombinedInfoCard(
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.AutoAwesome,
@@ -145,7 +145,7 @@ fun CombinedInfoCard(
                     }
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
                             text = nextPhaseName,
@@ -172,7 +172,7 @@ fun CombinedInfoCard(
 
             // 分隔线
             if (nextPhaseName.isNotEmpty()) {
-                androidx.compose.foundation.layout.Spacer(
+                Spacer(
                     modifier = Modifier
                         .height(1.dp)
                         .fillMaxWidth()
@@ -184,7 +184,7 @@ fun CombinedInfoCard(
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.BubbleChart,
@@ -213,7 +213,7 @@ fun CombinedInfoCard(
             }
 
             // 分隔线
-            androidx.compose.foundation.layout.Spacer(
+            Spacer(
                 modifier = Modifier
                     .height(1.dp)
                     .fillMaxWidth()
@@ -224,7 +224,7 @@ fun CombinedInfoCard(
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.AutoAwesome,
@@ -273,7 +273,7 @@ fun FeaturePreviewCard(
         ) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
                     imageVector = Icons.Rounded.AutoAwesome,
@@ -313,7 +313,7 @@ private fun FeatureItem(
 ) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
