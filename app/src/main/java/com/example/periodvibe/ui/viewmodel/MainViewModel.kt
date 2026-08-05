@@ -20,13 +20,18 @@ class MainViewModel @Inject constructor(
     
     private val _showOnboarding = MutableStateFlow<Boolean?>(null)
     val showOnboarding: StateFlow<Boolean?> = _showOnboarding.asStateFlow()
-    
+
     init {
         checkOnboardingStatus()
     }
-    
+
     private fun checkOnboardingStatus() {
         viewModelScope.launch {
+            // 全新安装时数据库没有设置数据，先创建默认设置，
+            // 否则导航逻辑会因为 settings 为 null 而一直停留在空白 Loading 页
+            if (settingsRepository.getSettingsSync() == null) {
+                settingsRepository.insertSettings(Settings())
+            }
             _showOnboarding.value = onboardingManager.shouldShowOnboarding()
         }
     }
