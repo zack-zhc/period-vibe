@@ -76,6 +76,10 @@ class SettingsViewModel @Inject constructor(
     private val _errorMessage = MutableStateFlow<Int?>(null)
     val errorMessage: StateFlow<Int?> = _errorMessage.asStateFlow()
 
+    // 导入/导出/清除数据等耗时操作进行中（用于悬浮进度指示）
+    private val _isProcessing = MutableStateFlow(false)
+    val isProcessing: StateFlow<Boolean> = _isProcessing.asStateFlow()
+
     // 当前选择的导出格式
     private var selectedExportFormat: ExportFormat = ExportFormat.JSON
 
@@ -203,6 +207,7 @@ class SettingsViewModel @Inject constructor(
      */
     fun exportData(uri: Uri) {
         viewModelScope.launch {
+            _isProcessing.value = true
             try {
                 val cycles = cycleRepository.getAllCyclesOnce()
                 val dailyRecords = cycleRepository.getAllDailyRecordsOnce()
@@ -225,6 +230,8 @@ class SettingsViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 _exportResult.value = Pair(false, context.getString(com.example.periodvibe.R.string.set_export_failed_with_reason, e.message))
+            } finally {
+                _isProcessing.value = false
             }
             showExportResultDialog()
         }
@@ -235,6 +242,7 @@ class SettingsViewModel @Inject constructor(
      */
     fun previewImportData(uri: Uri) {
         viewModelScope.launch {
+            _isProcessing.value = true
             try {
                 // 获取文件扩展名
                 val fileExtension = uri.lastPathSegment?.substringAfterLast('.', "")?.lowercase()
@@ -333,6 +341,8 @@ class SettingsViewModel @Inject constructor(
             } catch (e: Exception) {
                 _importResult.value = ImportResult.Failure(context.getString(com.example.periodvibe.R.string.set_import_failed_with_reason, e.javaClass.simpleName, e.message))
                 showImportResultDialog()
+            } finally {
+                _isProcessing.value = false
             }
         }
     }
@@ -358,6 +368,7 @@ class SettingsViewModel @Inject constructor(
      */
     fun confirmImportData() {
         viewModelScope.launch {
+            _isProcessing.value = true
             try {
                 val (cycles, dailyRecords) = pendingImportData ?: run {
                     _importResult.value = ImportResult.Failure(context.getString(com.example.periodvibe.R.string.set_no_pending_import))
@@ -377,6 +388,8 @@ class SettingsViewModel @Inject constructor(
                 _importResult.value = ImportResult.Failure(context.getString(com.example.periodvibe.R.string.set_import_failed_simple, e.message))
                 hideImportConfirmationDialog()
                 showImportResultDialog()
+            } finally {
+                _isProcessing.value = false
             }
         }
     }
@@ -626,6 +639,7 @@ class SettingsViewModel @Inject constructor(
     fun clearAllData() {
         viewModelScope.launch {
             hideClearDataConfirmationDialog()
+            _isProcessing.value = true
             try {
                 // 删除所有周期和日常记录数据
                 cycleRepository.deleteAllDailyRecords()
@@ -635,6 +649,8 @@ class SettingsViewModel @Inject constructor(
             } catch (e: Exception) {
                 e.printStackTrace()
                 _errorMessage.value = com.example.periodvibe.R.string.error_clear_data_failed
+            } finally {
+                _isProcessing.value = false
             }
         }
     }

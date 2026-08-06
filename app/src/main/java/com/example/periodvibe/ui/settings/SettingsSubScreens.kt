@@ -8,17 +8,23 @@ import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -41,6 +47,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.ListItemShapes
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
@@ -144,6 +151,17 @@ private fun CycleParametersContent(
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
+            if (uiState !is SettingsUiState.Success) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(64.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    LoadingIndicator()
+                }
+                return@Column
+            }
             if (uiState is SettingsUiState.Success) {
                 val state = uiState
                 val items = mutableListOf<@Composable () -> Unit>()
@@ -396,8 +414,30 @@ private fun RemindersContent(
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
+            if (uiState !is SettingsUiState.Success) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(64.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    LoadingIndicator()
+                }
+                return@Column
+            }
             if (uiState is SettingsUiState.Success) {
                 val state = uiState
+
+                // 分段列表的实际条目数与索引随开关组合动态变化
+                val periodDaysShown = state.notificationEnabled && state.periodNotificationEnabled
+                val ovulationDaysShown = state.notificationEnabled && state.ovulationNotificationEnabled
+                val remindersTotalCount = if (state.notificationEnabled) {
+                    6 - (if (periodDaysShown) 0 else 1) - (if (ovulationDaysShown) 0 else 1)
+                } else {
+                    1
+                }
+                val ovulationToggleIndex = if (periodDaysShown) 3 else 2
+                val ovulationDaysIndex = if (periodDaysShown) 4 else 3
 
                 if (showExactAlarmHint) {
                     Surface(
@@ -443,7 +483,7 @@ private fun RemindersContent(
                     SegmentedListItem(
                         onClick = { onToggleNotificationEnabled(!state.notificationEnabled) },
                         shapes = if (state.notificationEnabled) {
-                            ListItemDefaults.segmentedShapes(index = 0, count = 6)
+                            ListItemDefaults.segmentedShapes(index = 0, count = remindersTotalCount)
                         } else {
                             ListItemDefaults.segmentedShapes(index = 0, count = 1)
                         },
@@ -478,7 +518,7 @@ private fun RemindersContent(
                     if (state.notificationEnabled) {
                         SegmentedListItem(
                             onClick = { onTogglePeriodNotification(!state.periodNotificationEnabled) },
-                            shapes = ListItemDefaults.segmentedShapes(index = 1, count = 6),
+                            shapes = ListItemDefaults.segmentedShapes(index = 1, count = remindersTotalCount),
                             supportingContent = {
                                 Text(
                                     text = stringResource(R.string.set_period_start_reminder_description),
@@ -506,7 +546,7 @@ private fun RemindersContent(
                         if (state.periodNotificationEnabled) {
                             SegmentedListItem(
                                 onClick = { },
-                                shapes = ListItemDefaults.segmentedShapes(index = 2, count = 6),
+                                shapes = ListItemDefaults.segmentedShapes(index = 2, count = remindersTotalCount),
                                 supportingContent = {
                                     Column {
                                         Text(
@@ -560,9 +600,9 @@ private fun RemindersContent(
                         SegmentedListItem(
                             onClick = { onToggleOvulationNotification(!state.ovulationNotificationEnabled) },
                             shapes = if (state.ovulationNotificationEnabled) {
-                                ListItemDefaults.segmentedShapes(index = 3, count = 6)
+                                ListItemDefaults.segmentedShapes(index = ovulationToggleIndex, count = remindersTotalCount)
                             } else {
-                                ListItemDefaults.segmentedShapes(index = 3, count = if (state.periodNotificationEnabled && state.notificationEnabled) 4 else 3)
+                                ListItemDefaults.segmentedShapes(index = ovulationToggleIndex, count = remindersTotalCount)
                             },
                             supportingContent = {
                                 Text(
@@ -591,7 +631,7 @@ private fun RemindersContent(
                         if (state.ovulationNotificationEnabled) {
                             SegmentedListItem(
                                 onClick = { },
-                                shapes = ListItemDefaults.segmentedShapes(index = 4, count = 6),
+                                shapes = ListItemDefaults.segmentedShapes(index = ovulationDaysIndex, count = remindersTotalCount),
                                 supportingContent = {
                                     Column {
                                         Text(
@@ -644,7 +684,7 @@ private fun RemindersContent(
 
                         SegmentedListItem(
                             onClick = { onShowTimeDialog() },
-                            shapes = ListItemDefaults.segmentedShapes(index = 5, count = 6),
+                            shapes = ListItemDefaults.segmentedShapes(index = remindersTotalCount - 1, count = remindersTotalCount),
                             trailingContent = {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
@@ -737,6 +777,17 @@ private fun ThemeContent(
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
+            if (uiState !is SettingsUiState.Success) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(64.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    LoadingIndicator()
+                }
+                return@Column
+            }
             if (uiState is SettingsUiState.Success) {
                 val state = uiState
                 Text(
@@ -758,7 +809,10 @@ private fun ThemeContent(
                         ToggleButton(
                             checked = state.themeMode == mode,
                             onCheckedChange = { onUpdateThemeMode(mode) },
-                            modifier = Modifier.weight(1f).semantics { role = Role.RadioButton },
+                            modifier = Modifier
+                                .weight(1f)
+                                .heightIn(min = 48.dp)
+                                .semantics { role = Role.RadioButton },
                             shapes = when (index) {
                                 0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
                                 themeOptions.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
@@ -837,6 +891,17 @@ private fun PrivacyContent(
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
+            if (uiState !is SettingsUiState.Success) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(64.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    LoadingIndicator()
+                }
+                return@Column
+            }
             if (uiState is SettingsUiState.Success) {
                 val state = uiState
                 Column(
@@ -937,6 +1002,7 @@ fun DataManagementScreen(
     val importResult by viewModel.importResult.collectAsState()
     val exportResult by viewModel.exportResult.collectAsState()
     val errorMessageRes by viewModel.errorMessage.collectAsState()
+    val isProcessing by viewModel.isProcessing.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
     val errorMessageText = errorMessageRes?.let { stringResource(it) }
@@ -987,6 +1053,7 @@ fun DataManagementScreen(
         onExportDataClick = { viewModel.showExportFormatDialog() },
         onImportDataClick = { importFileLauncher.launch(arrayOf("*/*")) },
         onClearDataClick = { viewModel.showClearDataConfirmationDialog() },
+        isProcessing = isProcessing,
         snackbarHostState = snackbarHostState,
         modifier = modifier
     )
@@ -1052,11 +1119,15 @@ private fun DataManagementContent(
     onExportDataClick: () -> Unit,
     onImportDataClick: () -> Unit,
     onClearDataClick: () -> Unit,
+    isProcessing: Boolean = false,
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier
 ) {
+    Box(
+        modifier = modifier.fillMaxSize()
+    ) {
     Scaffold(
-        modifier = modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             CenterAlignedTopAppBar(
@@ -1163,6 +1234,43 @@ private fun DataManagementContent(
                         text = stringResource(R.string.set_clear_data),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+        }
+    }
+    }
+
+    // 导入/导出/清除数据进行中的悬浮进度指示
+    if (isProcessing) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.3f))
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = {}
+                )
+        ) {
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                tonalElevation = 3.dp,
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .padding(24.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 32.dp, vertical = 24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    LoadingIndicator()
+                    Text(
+                        text = stringResource(R.string.set_processing),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }

@@ -1,6 +1,7 @@
 package com.example.periodvibe.ui.settings
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -28,6 +30,7 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Surface
@@ -89,12 +92,21 @@ private fun SettingsContent(
 ) {
     when (uiState) {
         is SettingsUiState.Loading -> {
-            // Loading state - nothing to show for preview
+            Box(
+                modifier = modifier
+                    .fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                LoadingIndicator()
+            }
         }
         is SettingsUiState.Success -> {
+            Box(modifier = modifier.fillMaxSize()) {
             Column(
-                modifier = modifier
-                    .fillMaxSize()
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .widthIn(max = 560.dp)
+                    .fillMaxWidth()
                     .let { if (scrollBehavior != null) it.nestedScroll(scrollBehavior.nestedScrollConnection) else it }
                     .verticalScroll(rememberScrollState())
                     .padding(16.dp)
@@ -198,6 +210,7 @@ private fun SettingsContent(
                 }
 
                 Spacer(modifier = Modifier.height(48.dp))
+            }
             }
         }
     }

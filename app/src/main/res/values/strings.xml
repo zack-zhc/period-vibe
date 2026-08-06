@@ -56,6 +56,7 @@
     <string name="error_end_cycle_failed">结束周期失败，请重试</string>
     <string name="error_delete_failed">删除失败，请重试</string>
     <string name="error_clear_data_failed">清除数据失败，请重试</string>
+    <string name="set_processing">正在处理数据…</string>
 
     <!-- 历史记录 -->
     <string name="history_title">历史记录</string>
