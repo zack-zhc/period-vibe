@@ -172,6 +172,7 @@
     <string name="set_app_intro">应用介绍</string>
     <string name="set_version_info">版本信息</string>
     <string name="set_version_prefix">v%1$s</string>
+    <string name="set_version_format">版本 %1$s</string>
     <string name="set_about_description">轻量、简洁的生理期追踪工具</string>
     <string name="set_feature_cycle_prediction">周期预测</string>
     <string name="set_feature_smart_reminders">智能提醒</string>

@@ -15,21 +15,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.ChevronRight
-import androidx.compose.material.icons.rounded.Folder
+import androidx.compose.material.icons.rounded.FileDownload
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -57,8 +52,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -66,6 +61,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.core.graphics.drawable.toBitmap
 import com.example.periodvibe.R
 import com.example.periodvibe.ui.applock.PIN_LENGTH
 import com.example.periodvibe.ui.applock.PinDotRow
@@ -422,153 +418,77 @@ fun AboutDialog(
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val versionName = remember { AppUtils.getVersionName(context) }
+    // 真实应用图标（自适应图标），与系统"应用信息"页一致的观感
+    val appIcon = remember {
+        context.packageManager.getApplicationIcon(context.packageName)
+            .toBitmap()
+            .asImageBitmap()
+    }
 
-    Dialog(
+    AlertDialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(
-            dismissOnBackPress = true,
-            dismissOnClickOutside = true
-        )
-    ) {
-        Card(
-            shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(
-                // M3 规范：对话框容器用 elevation surface token，从压暗背景中浮起
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(28.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // App Icon with gradient background
-                Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.size(96.dp),
-                    tonalElevation = 4.dp
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                            // 图标旁紧邻应用名文本，属装饰性元素，避免无障碍重复朗读
-                            contentDescription = null,
-                            modifier = Modifier
-                                .size(72.dp)
-                                .clip(CircleShape)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                // App Name - Expressive typography
-                Text(
-                    text = stringResource(R.string.app_name),
-                    style = MaterialTheme.typography.displaySmall,
-                    fontWeight = FontWeight.Black,
-                    color = MaterialTheme.colorScheme.onSurface
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Image(
+                    bitmap = appIcon,
+                    // 图标旁紧邻应用名文本，属装饰性元素，避免无障碍重复朗读
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(11.dp))
                 )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                // Version pill
-                Surface(
-                    shape = RoundedCornerShape(50),
-                    color = MaterialTheme.colorScheme.secondaryContainer,
-                    tonalElevation = 2.dp
-                ) {
+                Spacer(modifier = Modifier.width(16.dp))
+                Column {
                     Text(
-                        text = stringResource(R.string.set_version_prefix, versionName),
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                        text = stringResource(R.string.app_name),
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
-                }
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                // Description
-                Text(
-                    text = stringResource(R.string.set_about_description),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Feature highlights - M3 Expressive style
-                Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    color = MaterialTheme.colorScheme.surfaceContainerLow,
-                    tonalElevation = 2.dp,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier.padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        AboutFeatureItem(
-                            icon = Icons.Rounded.AutoAwesome,
-                            text = stringResource(R.string.set_feature_cycle_prediction),
-                            iconColor = MaterialTheme.colorScheme.primary
-                        )
-                        AboutFeatureItem(
-                            icon = Icons.Rounded.Notifications,
-                            text = stringResource(R.string.set_feature_smart_reminders),
-                            iconColor = MaterialTheme.colorScheme.tertiary
-                        )
-                        AboutFeatureItem(
-                            icon = Icons.Rounded.Lock,
-                            text = stringResource(R.string.set_feature_privacy),
-                            iconColor = MaterialTheme.colorScheme.error
-                        )
-                        AboutFeatureItem(
-                            icon = Icons.Rounded.Folder,
-                            text = stringResource(R.string.set_feature_data_export),
-                            iconColor = MaterialTheme.colorScheme.secondary
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Close button - M3 Expressive filled button
-                Button(
-                    onClick = onDismiss,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    ),
-                    elevation = ButtonDefaults.buttonElevation(
-                        defaultElevation = 2.dp,
-                        pressedElevation = 4.dp
-                    )
-                ) {
                     Text(
-                        text = stringResource(R.string.set_close),
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.SemiBold
+                        text = stringResource(R.string.set_version_format, versionName),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = stringResource(R.string.set_about_description),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                AboutFeatureItem(
+                    icon = Icons.Rounded.CalendarMonth,
+                    text = stringResource(R.string.set_feature_cycle_prediction)
+                )
+                AboutFeatureItem(
+                    icon = Icons.Rounded.Notifications,
+                    text = stringResource(R.string.set_feature_smart_reminders)
+                )
+                AboutFeatureItem(
+                    icon = Icons.Rounded.Lock,
+                    text = stringResource(R.string.set_feature_privacy)
+                )
+                AboutFeatureItem(
+                    icon = Icons.Rounded.FileDownload,
+                    text = stringResource(R.string.set_feature_data_export)
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.set_close))
+            }
         }
-    }
+    )
 }
 
 @Composable
 private fun AboutFeatureItem(
     icon: ImageVector,
     text: String,
-    iconColor: Color,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -576,24 +496,15 @@ private fun AboutFeatureItem(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Surface(
-            shape = CircleShape,
-            color = iconColor.copy(alpha = 0.12f),
-            modifier = Modifier.size(32.dp)
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = iconColor,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-        }
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(20.dp)
+        )
         Text(
             text = text,
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Medium,
+            style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface
         )
     }
@@ -678,7 +589,7 @@ fun VerifyPinDialog(
 
 // ======================= Preview =======================
 
-@androidx.compose.ui.tooling.preview.Preview(showBackground = true, name = "应用介绍弹窗", apiLevel = 34)
+@androidx.compose.ui.tooling.preview.Preview(showBackground = true, name = "应用介绍弹窗 - 原生样式", apiLevel = 34)
 @Composable
 private fun AboutDialogPreview() {
     com.example.periodvibe.ui.theme.PeriodVibeTheme {
