@@ -86,6 +86,9 @@ class SettingsViewModel @Inject constructor(
     // 临时存储待导入的数据
     private var pendingImportData: Pair<List<Cycle>, List<DailyRecord>>? = null
 
+    // 导入预览时产生的警告（如部分 CSV 行解析失败被跳过）
+    private var pendingImportWarnings: List<String> = emptyList()
+
     private var pendingImportMode: ImportMode = ImportMode.OVERWRITE
 
     init {
@@ -169,6 +172,7 @@ class SettingsViewModel @Inject constructor(
     fun hideImportConfirmationDialog() {
         _showImportConfirmationDialog.value = false
         pendingImportData = null
+        pendingImportWarnings = emptyList()
     }
 
     fun showImportResultDialog() {
@@ -273,6 +277,8 @@ class SettingsViewModel @Inject constructor(
                             when (result) {
                                 is ImportResult.Success -> {
                                     pendingImportData = Pair(result.cycles, result.dailyRecords)
+                                    pendingImportWarnings = result.warnings
+                                    if (showNoDataErrorIfEmpty()) return@launch
                                     showImportConfirmationDialog()
                                     return@launch
                                 }
@@ -297,6 +303,7 @@ class SettingsViewModel @Inject constructor(
                 when {
                     fileType == CsvExportImportService.FileType.COMBINED_CSV ||
                             fileType == CsvExportImportService.FileType.CYCLES_CSV ||
+                            fileType == CsvExportImportService.FileType.DAILY_RECORDS_CSV ||
                             isCsvByExtension -> {
                         try {
                             val (cyclesCsv, recordsCsv) = csvExportImportService.readCsvFromFile(context, uri)
@@ -305,21 +312,44 @@ class SettingsViewModel @Inject constructor(
                                 val cyclesResult = csvExportImportService.importCyclesFromCsv(cyclesCsv)
                                 when (cyclesResult) {
                                     is CsvImportResult.Success -> {
-                                        val cycles = cyclesResult.data
-                                        val records = if (recordsCsv != null) {
+                                        // 给周期赋临时唯一 ID，确保日常记录能关联到正确的周期
+                                        val cycles = cyclesResult.data.mapIndexed { index, cycle ->
+                                            cycle.copy(id = index + 1L)
+                                        }
+                                        val (records, warnings) = if (recordsCsv != null) {
                                             when (val recordsResult = csvExportImportService.importDailyRecordsFromCsv(recordsCsv, cycles)) {
-                                                is CsvImportResult.Success -> recordsResult.data
-                                                is CsvImportResult.Failure -> emptyList()
+                                                is CsvImportResult.Success ->
+                                                    recordsResult.data to (cyclesResult.warnings + recordsResult.warnings)
+                                                is CsvImportResult.Failure ->
+                                                    emptyList<DailyRecord>() to cyclesResult.warnings
                                             }
                                         } else {
-                                            emptyList()
+                                            emptyList<DailyRecord>() to cyclesResult.warnings
                                         }
                                         pendingImportData = Pair(cycles, records)
+                                        pendingImportWarnings = warnings
+                                        if (showNoDataErrorIfEmpty()) return@launch
                                         showImportConfirmationDialog()
                                         return@launch
                                     }
                                     is CsvImportResult.Failure -> {
                                         _importResult.value = ImportResult.Failure(context.getString(com.example.periodvibe.R.string.set_csv_parse_failed, cyclesResult.errorMessage))
+                                        showImportResultDialog()
+                                        return@launch
+                                    }
+                                }
+                            } else if (recordsCsv != null) {
+                                // 只有日常记录数据的 CSV
+                                when (val recordsResult = csvExportImportService.importDailyRecordsFromCsv(recordsCsv, emptyList())) {
+                                    is CsvImportResult.Success -> {
+                                        pendingImportData = Pair(emptyList(), recordsResult.data)
+                                        pendingImportWarnings = recordsResult.warnings
+                                        if (showNoDataErrorIfEmpty()) return@launch
+                                        showImportConfirmationDialog()
+                                        return@launch
+                                    }
+                                    is CsvImportResult.Failure -> {
+                                        _importResult.value = ImportResult.Failure(context.getString(com.example.periodvibe.R.string.set_csv_parse_failed, recordsResult.errorMessage))
                                         showImportResultDialog()
                                         return@launch
                                     }
@@ -359,6 +389,21 @@ class SettingsViewModel @Inject constructor(
     }
 
     /**
+     * 当待导入数据为空时显示错误并返回 true（防止覆盖模式清空现有数据）
+     */
+    private fun showNoDataErrorIfEmpty(): Boolean {
+        val (cycles, records) = pendingImportData ?: return false
+        if (cycles.isEmpty() && records.isEmpty()) {
+            _importResult.value = ImportResult.Failure(
+                context.getString(com.example.periodvibe.R.string.set_no_data_to_import)
+            )
+            showImportResultDialog()
+            return true
+        }
+        return false
+    }
+
+    /**
      * 设置导入模式
      */
     fun setImportMode(mode: ImportMode) {
@@ -374,6 +419,13 @@ class SettingsViewModel @Inject constructor(
             try {
                 val (cycles, dailyRecords) = pendingImportData ?: run {
                     _importResult.value = ImportResult.Failure(context.getString(com.example.periodvibe.R.string.set_no_pending_import))
+                    showImportResultDialog()
+                    return@launch
+                }
+
+                if (cycles.isEmpty() && dailyRecords.isEmpty()) {
+                    _importResult.value = ImportResult.Failure(context.getString(com.example.periodvibe.R.string.set_no_data_to_import))
+                    hideImportConfirmationDialog()
                     showImportResultDialog()
                     return@launch
                 }
@@ -430,7 +482,7 @@ class SettingsViewModel @Inject constructor(
         tryRescheduleNotification()
 
         // 结果仅用于展示数量统计
-        _importResult.value = ImportResult.Success(cycles, dailyRecords)
+        _importResult.value = ImportResult.Success(cycles, dailyRecords, warnings = pendingImportWarnings)
         hideImportConfirmationDialog()
         showImportResultDialog()
     }
@@ -484,7 +536,8 @@ class SettingsViewModel @Inject constructor(
 
         _importResult.value = ImportResult.Success(
             newCyclesWithIds.first,
-            newCyclesWithIds.second
+            newCyclesWithIds.second,
+            warnings = pendingImportWarnings
         )
         hideImportConfirmationDialog()
         showImportResultDialog()

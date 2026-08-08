@@ -85,8 +85,9 @@ class CsvExportImportService @Inject constructor() {
      */
     enum class FileType {
         JSON,
-        COMBINED_CSV,  // 带有 === CYCLES === 标记的合并 CSV
-        CYCLES_CSV,     // 只有周期数据的 CSV
+        COMBINED_CSV,      // 带有 === CYCLES === 标记的合并 CSV
+        CYCLES_CSV,        // 只有周期数据的 CSV
+        DAILY_RECORDS_CSV, // 只有日常记录数据的 CSV
         UNKNOWN
     }
 
@@ -95,12 +96,14 @@ class CsvExportImportService @Inject constructor() {
      */
     suspend fun detectFileType(content: String): FileType {
         return withContext(Dispatchers.IO) {
-            val trimmed = content.trim()
+            val trimmed = content.removePrefix("\uFEFF").trim()
+            val firstLine = trimmed.lines().firstOrNull()
             when {
                 trimmed.startsWith("{") -> FileType.JSON
                 trimmed.contains("=== CYCLES ===") -> FileType.COMBINED_CSV
-                trimmed.startsWith(CYCLE_CSV_HEADER) ||
-                    trimmed.contains("start_date") -> FileType.CYCLES_CSV
+                firstLine?.let { it.contains("start_date") && it.contains("end_date") } == true ->
+                    FileType.CYCLES_CSV
+                firstLine?.contains("is_period") == true -> FileType.DAILY_RECORDS_CSV
                 else -> FileType.UNKNOWN
             }
         }
@@ -129,25 +132,26 @@ class CsvExportImportService @Inject constructor() {
             }
 
             if (dataLines.isEmpty()) {
-                return@withContext CsvImportResult.Failure("没有找到数据行")
+                // 只有表头没有数据（例如导出了空数据），视为成功但无数据
+                return@withContext CsvImportResult.Success(emptyList())
             }
 
             val cycles = mutableListOf<Cycle>()
             val errors = mutableListOf<String>()
 
-            dataLines.forEachIndexed { index, line ->
+            dataLines.forEach { line ->
                 try {
                     val cycle = parseCycleCsvLine(line)
                     cycles.add(cycle)
                 } catch (e: Exception) {
-                    errors.add("第 ${index + 1} 行解析失败: ${e.message}")
+                    errors.add("第 ${cycles.size + errors.size + 1} 行解析失败: ${e.message}")
                 }
             }
 
             if (cycles.isEmpty() && errors.isNotEmpty()) {
                 CsvImportResult.Failure(errors.joinToString("\n"))
             } else {
-                CsvImportResult.Success(cycles)
+                CsvImportResult.Success(cycles, warnings = errors)
             }
         }
     }
@@ -186,16 +190,16 @@ class CsvExportImportService @Inject constructor() {
             val records = mutableListOf<DailyRecord>()
             val errors = mutableListOf<String>()
 
-            dataLines.forEachIndexed { index, line ->
+            dataLines.forEach { line ->
                 try {
                     val record = parseDailyRecordCsvLine(line, startDateToCycle)
                     records.add(record)
                 } catch (e: Exception) {
-                    errors.add("第 ${index + 1} 行解析失败: ${e.message}")
+                    errors.add("第 ${records.size + errors.size + 1} 行解析失败: ${e.message}")
                 }
             }
 
-            CsvImportResult.Success(records)
+            CsvImportResult.Success(records, warnings = errors)
         }
     }
 
@@ -218,8 +222,10 @@ class CsvExportImportService @Inject constructor() {
                     append(recordsCsv)
                 }
 
-                context.contentResolver.openOutputStream(uri)?.use { outputStream ->
-                    outputStream.write(combinedContent.toByteArray(Charsets.UTF_8))
+                val outputStream = context.contentResolver.openOutputStream(uri)
+                    ?: return@withContext false
+                outputStream.use { stream ->
+                    stream.write(combinedContent.toByteArray(Charsets.UTF_8))
                 }
                 true
             } catch (e: Exception) {
@@ -278,11 +284,21 @@ class CsvExportImportService @Inject constructor() {
                                         "CYCLES" -> cyclesLines.add(line)
                                         "DAILY_RECORDS" -> recordsLines.add(line)
                                         null -> {
-                                            // 没有标记时，检查是否是周期表头
-                                            if (cyclesLines.isEmpty() && line.contains("start_date")) {
-                                                currentSection = "CYCLES"
+                                            // 没有标记时，根据表头判断所属数据段
+                                            when {
+                                                line.contains("start_date") && line.contains("end_date") -> {
+                                                    currentSection = "CYCLES"
+                                                    cyclesLines.add(line)
+                                                }
+                                                line.contains("is_period") -> {
+                                                    currentSection = "DAILY_RECORDS"
+                                                    recordsLines.add(line)
+                                                }
+                                                else -> {
+                                                    currentSection = "CYCLES"
+                                                    cyclesLines.add(line)
+                                                }
                                             }
-                                            cyclesLines.add(line)
                                         }
                                     }
                                 }
@@ -464,6 +480,10 @@ class CsvExportImportService @Inject constructor() {
  * CSV 导入结果
  */
 sealed class CsvImportResult<out T> {
-    data class Success<out T>(val data: T) : CsvImportResult<T>()
+    data class Success<out T>(
+        val data: T,
+        val warnings: List<String> = emptyList()
+    ) : CsvImportResult<T>()
+
     data class Failure(val errorMessage: String) : CsvImportResult<Nothing>()
 }

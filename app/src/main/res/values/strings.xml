@@ -190,6 +190,8 @@
     <string name="set_import_failed_with_reason">导入失败: %1$s - %2$s</string>
     <string name="set_import_failed_simple">导入失败: %1$s</string>
     <string name="set_no_pending_import">没有待导入的数据</string>
+    <string name="set_no_data_to_import">文件中没有可导入的数据</string>
+    <string name="set_import_warnings">部分数据解析失败已被跳过：\n%1$s</string>
 
     <!-- 设置对话框 -->
     <string name="dlg_confirm_action">确认操作</string>

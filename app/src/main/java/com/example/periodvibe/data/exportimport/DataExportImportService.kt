@@ -114,8 +114,9 @@ class DataExportImportService @Inject constructor(
                     return@withContext ImportResult.Failure(validationErrors.joinToString("\n"))
                 }
 
-                // 转换为实体
+                // 转换为实体 - 先赋临时唯一 ID，确保日常记录能关联到正确的周期
                 val cycles = data.cycles.map { dtoToCycle(it) }
+                    .mapIndexed { index, cycle -> cycle.copy(id = index + 1L) }
                 val dailyRecords = data.dailyRecords.map { dtoToDailyRecord(it, cycles) }
 
                 ImportResult.Success(cycles, dailyRecords)
@@ -131,8 +132,10 @@ class DataExportImportService @Inject constructor(
     suspend fun writeToFile(context: Context, uri: Uri, content: String): Boolean {
         return withContext(Dispatchers.IO) {
             try {
-                context.contentResolver.openOutputStream(uri)?.use { outputStream ->
-                    outputStream.write(content.toByteArray(Charsets.UTF_8))
+                val outputStream = context.contentResolver.openOutputStream(uri)
+                    ?: return@withContext false
+                outputStream.use { stream ->
+                    stream.write(content.toByteArray(Charsets.UTF_8))
                 }
                 true
             } catch (e: Exception) {
@@ -190,9 +193,10 @@ class DataExportImportService @Inject constructor(
     }
 
     private fun dtoToCycle(dto: CycleDto): Cycle {
+        val startDate = requireNotNull(dto.startDate) { "周期缺少 start_date 字段" }
         return Cycle(
             id = 0, // 导入时使用 0，让数据库自动生成 ID
-            startDate = dto.startDate,
+            startDate = startDate,
             endDate = dto.endDate,
             cycleLength = dto.cycleLength,
             periodLength = dto.periodLength,
@@ -204,6 +208,8 @@ class DataExportImportService @Inject constructor(
     }
 
     private fun dtoToDailyRecord(dto: DailyRecordDto, cycles: List<Cycle>): DailyRecord {
+        val date = requireNotNull(dto.date) { "日常记录缺少 date 字段" }
+
         // 根据周期开始日期找到对应的周期 ID（导入后生成的新 ID）
         val cycleId = dto.cycleDate?.let { cycleDate ->
             cycles.find { it.startDate == cycleDate }?.id
@@ -211,7 +217,7 @@ class DataExportImportService @Inject constructor(
 
         return DailyRecord(
             id = 0,
-            date = dto.date,
+            date = date,
             cycleId = cycleId,
             isPeriod = dto.isPeriod,
             flowLevel = dto.flowLevel?.let { FlowLevel.valueOf(it) },
@@ -230,16 +236,23 @@ class DataExportImportService @Inject constructor(
 
         // 验证周期数据
         val cycleDates = mutableSetOf<LocalDate>()
-        data.cycles.forEachIndexed { index, cycle ->
+        data.cycles.forEach { cycle ->
             if (cycleDates.contains(cycle.startDate)) {
                 errors.add("周期数据重复: ${cycle.startDate}")
             }
             cycleDates.add(cycle.startDate)
+
+            // 验证 FlowLevel
+            cycle.averageFlowLevel?.let { flowLevelName ->
+                if (!isValidFlowLevel(flowLevelName)) {
+                    errors.add("无效的经量值: $flowLevelName (周期开始日期: ${cycle.startDate})")
+                }
+            }
         }
 
         // 验证日常记录数据
         val recordDates = mutableSetOf<LocalDate>()
-        data.dailyRecords.forEachIndexed { index, record ->
+        data.dailyRecords.forEach { record ->
             if (recordDates.contains(record.date)) {
                 errors.add("日常记录数据重复: ${record.date}")
             }
@@ -247,15 +260,17 @@ class DataExportImportService @Inject constructor(
 
             // 验证 FlowLevel
             record.flowLevel?.let { flowLevelName ->
-                try {
-                    FlowLevel.valueOf(flowLevelName)
-                } catch (e: IllegalArgumentException) {
+                if (!isValidFlowLevel(flowLevelName)) {
                     errors.add("无效的经量值: $flowLevelName (记录日期: ${record.date})")
                 }
             }
         }
 
         return errors
+    }
+
+    private fun isValidFlowLevel(flowLevelName: String): Boolean {
+        return runCatching { FlowLevel.valueOf(flowLevelName) }.isSuccess
     }
 }
 
@@ -265,7 +280,8 @@ class DataExportImportService @Inject constructor(
 sealed class ImportResult {
     data class Success(
         val cycles: List<Cycle>,
-        val dailyRecords: List<DailyRecord>
+        val dailyRecords: List<DailyRecord>,
+        val warnings: List<String> = emptyList()
     ) : ImportResult()
 
     data class Failure(val errorMessage: String) : ImportResult()

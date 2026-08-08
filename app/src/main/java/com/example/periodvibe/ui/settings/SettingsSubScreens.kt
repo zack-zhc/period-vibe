@@ -95,6 +95,7 @@ import com.example.periodvibe.ui.settings.components.ImportResultDialog
 import com.example.periodvibe.ui.settings.components.NotificationTimeDialog
 import com.example.periodvibe.ui.settings.components.VerifyPinDialog
 import com.example.periodvibe.ui.theme.PeriodVibeTheme
+import com.example.periodvibe.util.AppLockGuard
 import com.example.periodvibe.utils.AppUtils
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -1111,6 +1112,8 @@ fun DataManagementScreen(
     val exportFileLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("*/*")
     ) { uri ->
+        // 返回时清除豁免标记（ON_START 已清除，这里作为双保险）
+        AppLockGuard.isSystemPickerActive = false
         uri?.let {
             viewModel.exportData(it)
         }
@@ -1120,6 +1123,8 @@ fun DataManagementScreen(
     val importFileLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
+        // 返回时清除豁免标记（ON_START 已清除，这里作为双保险）
+        AppLockGuard.isSystemPickerActive = false
         uri?.let {
             // 获取持久化权限（部分 provider 不支持时忽略，仅影响下次直接读取）
             try {
@@ -1143,7 +1148,11 @@ fun DataManagementScreen(
     DataManagementContent(
         onNavigateBack = onNavigateBack,
         onExportDataClick = { viewModel.showExportFormatDialog() },
-        onImportDataClick = { importFileLauncher.launch(arrayOf("*/*")) },
+        onImportDataClick = {
+            // 豁免自动锁定：系统文件选择器打开期间切回 app 不要求重新解锁
+            AppLockGuard.isSystemPickerActive = true
+            importFileLauncher.launch(arrayOf("*/*"))
+        },
         onClearDataClick = { viewModel.showClearDataConfirmationDialog() },
         isProcessing = isProcessing,
         snackbarHostState = snackbarHostState,
@@ -1173,7 +1182,15 @@ fun DataManagementScreen(
     if (showImportResultDialog && importResult != null) {
         val result = importResult
         val (success, message) = when (result) {
-            is com.example.periodvibe.data.exportimport.ImportResult.Success -> Pair(true, stringResource(R.string.dlg_import_success_message, result.cycles.size, result.dailyRecords.size))
+            is com.example.periodvibe.data.exportimport.ImportResult.Success -> {
+                val baseMessage = stringResource(R.string.dlg_import_success_message, result.cycles.size, result.dailyRecords.size)
+                val fullMessage = if (result.warnings.isNotEmpty()) {
+                    baseMessage + "\n" + stringResource(R.string.set_import_warnings, result.warnings.joinToString("\n"))
+                } else {
+                    baseMessage
+                }
+                Pair(true, fullMessage)
+            }
             is com.example.periodvibe.data.exportimport.ImportResult.Failure -> Pair(false, result.errorMessage)
             null -> Pair(false, stringResource(R.string.dlg_unknown_error))
         }
@@ -1198,6 +1215,8 @@ fun DataManagementScreen(
             onDismiss = { viewModel.hideExportFormatDialog() },
             onFormatSelected = { format ->
                 viewModel.setSelectedExportFormat(format)
+                // 豁免自动锁定：系统文件选择器打开期间切回 app 不要求重新解锁
+                AppLockGuard.isSystemPickerActive = true
                 exportFileLauncher.launch(generateExportFileName())
             }
         )

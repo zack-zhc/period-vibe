@@ -65,6 +65,7 @@ import com.example.periodvibe.ui.settings.SettingsScreen
 import com.example.periodvibe.ui.settings.ThemeScreen
 import com.example.periodvibe.ui.setup.InitialSetupScreen
 import com.example.periodvibe.ui.viewmodel.MainViewModel
+import com.example.periodvibe.util.AppLockGuard
 import kotlinx.coroutines.launch
 
 /**
@@ -206,13 +207,18 @@ fun PeriodVibeNavHost(
                 Lifecycle.Event.ON_STOP -> {
                     lastStoppedAt = SystemClock.elapsedRealtime()
                     // 切后台立即锁定：导航在后台即切换到锁屏，
-                    // 回前台时锁屏已就位，避免"先闪旧页面再出锁屏"
-                    if (isUnlocked && settingsUpdated?.appLockEnabled == true) {
+                    // 回前台时锁屏已就位，避免"先闪旧页面再出锁屏"。
+                    // 系统文件选择器打开期间豁免（返回后不要求重新解锁）
+                    if (AppLockGuard.shouldLockOnStop(isUnlocked, settingsUpdated?.appLockEnabled == true)) {
                         isUnlocked = false
                         autoLocked = true
                     }
                 }
                 Lifecycle.Event.ON_START -> {
+                    // 从文件选择器返回时清除豁免标记（launcher 回调清除作为双保险），
+                    // 确保选择器打开期间再次切后台仍会正常锁定
+                    AppLockGuard.isSystemPickerActive = false
+
                     // 自动锁定宽限期：解锁后 delay 分钟内切回，自动恢复解锁（免重新输入）
                     val delayMinutes = settingsUpdated?.appLockDelayMinutes ?: 0
                     val elapsedSinceUnlock = SystemClock.elapsedRealtime() - lastUnlockedAt
