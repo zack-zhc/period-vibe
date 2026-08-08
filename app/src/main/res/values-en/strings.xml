@@ -1,0 +1,250 @@
+<resources>
+    <string name="app_name">Period Vibe</string>
+
+    <!-- Calendar -->
+    <string name="cal_prev_month">Previous month</string>
+    <string name="cal_next_month">Next month</string>
+    <string name="cal_title">Calendar</string>
+    <string name="cal_today_fab">Today</string>
+    <string name="cal_month_title">%2$s %1$d</string>
+    <string name="cal_today">Today</string>
+    <string name="cal_recorded">Recorded</string>
+    <string name="cal_recorded_flow">Recorded · %1$s</string>
+    <string name="cal_period">Period</string>
+    <string name="cal_predicted_period">Predicted period</string>
+    <string name="cal_ovulation_short">Ovulation</string>
+    <string name="cal_fertile_short">Fertile</string>
+    <string name="cal_cycle_day">Cycle day %1$d</string>
+    <string name="cal_current_phase">Currently in %1$s</string>
+    <string name="cal_record_today">Record today</string>
+    <string name="cal_edit_record">Edit record</string>
+    <string name="cal_end_cycle">End cycle</string>
+    <string name="cal_start_cycle">Start cycle</string>
+    <string name="cal_end_cycle_message">End the current cycle? This will mark the end date of the current cycle.</string>
+    <string name="cal_confirm">Confirm</string>
+    <string name="cal_cancel">Cancel</string>
+    <string name="cal_empty_title">Select a date</string>
+    <string name="cal_empty_hint">Tap any date on the calendar to view details and log</string>
+    <string name="cal_cycle_start_hint">Choose an action below to start logging</string>
+    <string name="cal_legend_title">Legend</string>
+    <string name="cal_legend_today_selected">Today / Selected</string>
+    <string name="cal_legend_recorded_period">Logged period</string>
+    <string name="cal_legend_predicted_period">Predicted period</string>
+    <string name="cal_legend_ovulation">Ovulation</string>
+    <string name="cal_legend_fertile">Fertile window</string>
+    <string name="cal_legend_hint">Tip: a checkmark in the corner means the date has a record</string>
+    <string name="cal_legend_ok">Got it</string>
+    <string-array name="cal_weekdays_cn">
+        <item>日</item>
+        <item>一</item>
+        <item>二</item>
+        <item>三</item>
+        <item>四</item>
+        <item>五</item>
+        <item>六</item>
+    </string-array>
+    <string-array name="cal_weekdays_en">
+        <item>S</item>
+        <item>M</item>
+        <item>T</item>
+        <item>W</item>
+        <item>T</item>
+        <item>F</item>
+        <item>S</item>
+    </string-array>
+
+    <!-- Error messages -->
+    <string name="error_save_failed">Save failed, please try again</string>
+    <string name="error_end_cycle_failed">Failed to end cycle, please try again</string>
+    <string name="error_delete_failed">Delete failed, please try again</string>
+    <string name="error_clear_data_failed">Failed to clear data, please try again</string>
+    <string name="set_processing">Processing data…</string>
+
+    <!-- App lock -->
+    <string name="set_app_lock_delay">Auto lock timing</string>
+    <string name="set_app_lock_delay_immediate">Immediately</string>
+    <string name="set_app_lock_delay_1min">1 minute</string>
+    <string name="set_app_lock_delay_5min">5 minutes</string>
+    <string name="set_change_pin">Change PIN</string>
+    <string name="set_verify_pin_title">Verify PIN</string>
+    <string name="set_verify_pin_message">Verify your current PIN before disabling app lock</string>
+    <string name="applock_enter_pin_title">Enter PIN</string>
+    <string name="applock_lockout_message">Too many attempts, try again in %1$d seconds</string>
+    <string name="applock_wrong_pin">Wrong PIN</string>
+    <string name="pin_verify_title">Verify current PIN</string>
+    <string name="pin_set_title">Set PIN</string>
+    <string name="pin_new_title">Enter new PIN</string>
+    <string name="pin_confirm_title">Confirm PIN</string>
+
+    <!-- Home info cards -->
+    <string name="home_next_phase">Next phase</string>
+    <string name="home_pregnancy_status">Pregnancy status</string>
+    <string name="home_today_tip">Tip of the day</string>
+    <string name="home_days_later">in %1$d days</string>
+
+    <!-- History -->
+    <string name="history_title">History</string>
+    <string name="history_back">Back</string>
+    <string name="history_edit">Edit</string>
+    <string name="history_cancel">Cancel</string>
+    <string name="history_delete">Delete</string>
+    <string name="history_delete_cycle_title">Delete cycle</string>
+    <string name="history_delete_cycle_message">Delete this cycle record? This action cannot be undone.</string>
+    <string name="history_delete_selected_message">Delete the %1$d selected cycles? This action cannot be undone.</string>
+    <string name="history_delete_record_title">Delete record</string>
+    <string name="history_delete_record_message">Delete this record? This action cannot be undone.</string>
+    <string name="history_empty_title">No records yet</string>
+    <string name="history_empty_message">Log your first period to start tracking your journey and discover your personal cycle pattern.</string>
+    <string name="history_go_record">Go to log</string>
+    <string name="history_daily_records">Daily records</string>
+    <string name="history_expand">Expand</string>
+    <string name="history_collapse">Collapse</string>
+    <string name="history_total_cycles">Total cycles</string>
+    <string name="history_unit_count">cycles</string>
+    <string name="history_avg_cycle">Average cycle</string>
+    <string name="history_avg_period">Average period</string>
+    <string name="history_cycle_range">Cycle range</string>
+    <string name="history_unit_days">days</string>
+    <string name="history_period_days">%1$d days</string>
+    <string name="history_cycle_length">%1$d-day cycle</string>
+    <string name="history_cycle_in_progress">In progress</string>
+    <string name="history_flow_light">Light</string>
+    <string name="history_flow_medium">Medium</string>
+    <string name="history_flow_heavy">Heavy</string>
+    <string name="history_selected_count">%1$d cycles selected</string>
+
+    <!-- Settings common -->
+    <string name="set_title">Settings</string>
+    <string name="set_back">Back</string>
+    <string name="set_confirm">Confirm</string>
+    <string name="set_cancel">Cancel</string>
+    <string name="set_save">Save</string>
+    <string name="set_close">Close</string>
+
+    <!-- Cycle parameters -->
+    <string name="set_cycle_parameters">Cycle parameters</string>
+    <string name="set_auto_calculate_cycle">Auto-calculate cycle</string>
+    <string name="set_auto_calculate_description">Calculated automatically from history</string>
+    <string name="set_manual_values_description">Use manually set values</string>
+    <string name="set_avg_cycle_days">Average cycle length</string>
+    <string name="set_avg_period_days">Average period length</string>
+    <string name="set_days">%1$d d</string>
+    <string name="set_days_with_space">%1$d days</string>
+
+    <!-- Reminders -->
+    <string name="set_reminders">Reminders</string>
+    <string name="set_exact_alarm_title">Reminders may be late</string>
+    <string name="set_exact_alarm_message">Android 12+ requires the "Exact alarm" permission for on-time reminders. Enable it in system settings.</string>
+    <string name="set_exact_alarm_action">Enable</string>
+    <string name="set_period_reminder">Period reminder</string>
+    <string name="set_period_reminder_description">Remind you before your period</string>
+    <string name="set_all_notifications_off">All reminders off</string>
+    <string name="set_period_start_reminder">Period start reminder</string>
+    <string name="set_period_start_reminder_description">Remind before the expected period start</string>
+    <string name="set_days_before">Days before</string>
+    <string name="set_ovulation_reminder">Ovulation reminder</string>
+    <string name="set_ovulation_reminder_description">Remind before the expected ovulation</string>
+    <string name="set_reminder_time">Reminder time</string>
+
+    <!-- Theme -->
+    <string name="set_theme">Theme</string>
+    <string name="set_theme_preference_hint">Choose your preference</string>
+    <string name="set_theme_light">Light</string>
+    <string name="set_theme_dark">Dark</string>
+    <string name="set_theme_system">System</string>
+    <string name="set_theme_dynamic">Dynamic color</string>
+
+    <!-- Local data privacy note -->
+    <string name="set_local_data_privacy">All data is stored locally on your device for maximum privacy.</string>
+
+    <!-- Notifications -->
+    <string name="notif_channel_name">Period reminders</string>
+    <string name="notif_channel_description">Channel for period and ovulation reminders</string>
+    <string name="notif_period_title">Period reminder</string>
+    <string name="notif_period_message">Your period is expected to start in %1$d days!</string>
+    <string name="notif_period_message_default">Your period is coming soon!</string>
+    <string name="notif_ovulation_title">Ovulation reminder</string>
+    <string name="notif_ovulation_message">Your ovulation period is coming soon!</string>
+    <string name="notif_privacy_title">Reminder</string>
+    <string name="notif_privacy_message">You have a new notification.</string>
+
+    <!-- Developer options -->
+    <string name="dev_test_notification_title">Test notification</string>
+    <string name="dev_test_notification_message">A test notification from Period Vibe.</string>
+    <string name="dev_test_delayed_title">Test delayed notification</string>
+    <string name="dev_test_delayed_message">A delayed test notification from Period Vibe, firing in %1$d seconds.</string>
+
+    <!-- Privacy -->
+    <string name="set_privacy">Privacy</string>
+    <string name="set_app_lock">App lock</string>
+    <string name="set_app_lock_description">Protect the app with fingerprint or PIN</string>
+    <string name="set_privacy_mode">Privacy mode</string>
+    <string name="set_privacy_mode_description">Hide notification content and period details from the lock screen</string>
+
+    <!-- Data management -->
+    <string name="set_data_management">Data management</string>
+    <string name="set_export_data">Export data</string>
+    <string name="set_export_format_hint">Choose format</string>
+    <string name="set_import_data">Import data</string>
+    <string name="set_import_description">Restore from backup</string>
+    <string name="set_clear_data">Clear data</string>
+    <string name="set_clear_data_description">Delete all records</string>
+
+    <!-- About -->
+    <string name="set_about">About</string>
+    <string name="set_app_intro">About the app</string>
+    <string name="set_version_info">Version info</string>
+    <string name="set_version_prefix">v%1$s</string>
+    <string name="set_version_format">Version %1$s</string>
+    <string name="set_about_description">A lightweight, simple period tracking tool</string>
+    <string name="set_feature_cycle_prediction">Cycle prediction</string>
+    <string name="set_feature_smart_reminders">Smart reminders</string>
+    <string name="set_feature_privacy">Privacy protection</string>
+    <string name="set_feature_data_export">Data export</string>
+
+    <!-- Import/export messages -->
+    <string name="set_export_success">Exported %1$d cycles and %2$d daily records (%3$s format)</string>
+    <string name="set_write_file_failed">Failed to write file</string>
+    <string name="set_export_failed_with_reason">Export failed: %1$s</string>
+    <string name="set_read_file_failed">Cannot read file</string>
+    <string name="set_json_parse_failed">JSON parse failed: %1$s</string>
+    <string name="set_csv_parse_failed">CSV parse failed: %1$s</string>
+    <string name="set_unrecognized_format">Unrecognized file format\nPlease use a JSON or CSV backup file\nDetected extension: %1$s\nFile size: %2$d characters</string>
+    <string name="set_unknown">Unknown</string>
+    <string name="set_import_failed_with_reason">Import failed: %1$s - %2$s</string>
+    <string name="set_import_failed_simple">Import failed: %1$s</string>
+    <string name="set_no_pending_import">No pending import data</string>
+    <string name="set_no_data_to_import">No importable data in the file</string>
+    <string name="set_import_warnings">Some data failed to parse and was skipped:\n%1$s</string>
+
+    <!-- Settings dialogs -->
+    <string name="dlg_confirm_action">Confirm action</string>
+    <string name="dlg_disable_app_lock_message">Disable app lock?</string>
+    <string name="dlg_cycle_parameters_title">Cycle parameters</string>
+    <string name="dlg_cycle_length_label">Average cycle length (%1$s)</string>
+    <string name="dlg_period_length_label">Average period length (%1$s)</string>
+    <string name="dlg_range_input_error">Enter an integer between %1$s</string>
+    <string name="dlg_notification_time_title">Reminder time</string>
+    <string name="dlg_clear_data_title">Clear data?</string>
+    <string name="dlg_clear_data_message">This will permanently delete all cycle records and daily data. This cannot be undone. Continue?</string>
+    <string name="dlg_confirm_clear">Clear</string>
+    <string name="dlg_import_confirm_title">Import data?</string>
+    <string name="dlg_import_summary">About to import:\n• %1$d cycle records\n• %2$d daily records\n</string>
+    <string name="dlg_import_mode_title">Import mode</string>
+    <string name="dlg_import_mode_overwrite">Overwrite</string>
+    <string name="dlg_import_mode_merge">Merge</string>
+    <string name="dlg_import_overwrite_hint">All existing data will be deleted before importing. Make sure you have a backup.</string>
+    <string name="dlg_import_merge_hint">Existing dates will be skipped and only new data added.</string>
+    <string name="dlg_confirm_import">Import</string>
+    <string name="dlg_import_success_title">Import successful</string>
+    <string name="dlg_import_failure_title">Import failed</string>
+    <string name="dlg_import_success_message">Successfully imported %1$d cycle records and %2$d daily records</string>
+    <string name="dlg_export_success_title">Export successful</string>
+    <string name="dlg_export_failure_title">Export failed</string>
+    <string name="dlg_export_format_title">Choose export format</string>
+    <string name="dlg_export_format_json">JSON format</string>
+    <string name="dlg_export_format_json_hint">Recommended, preserves all data</string>
+    <string name="dlg_export_format_csv">CSV format</string>
+    <string name="dlg_export_format_csv_hint">Opens in Excel for easy viewing</string>
+    <string name="dlg_unknown_error">Unknown error</string>
+</resources>

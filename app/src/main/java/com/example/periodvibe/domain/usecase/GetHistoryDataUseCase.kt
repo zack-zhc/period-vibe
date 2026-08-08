@@ -101,15 +101,28 @@ data class CycleWithRecords(
     val records: List<DailyRecord>,
     val calculatedCycleLength: Int? = null
 ) {
+    // 跟随系统语言格式化日期（语言切换机制落地后改为跟随应用语言）
+    private val locale: Locale = Locale.getDefault()
+    private val isChinese: Boolean get() = locale.language == Locale.CHINESE.language
+
     val startDateFormatted: String
         get() = cycle.startDate.format(
-            DateTimeFormatter.ofPattern("yyyy年MM月dd日", Locale.CHINA)
+            DateTimeFormatter.ofPattern(
+                if (isChinese) "yyyy年MM月dd日" else "MMM d, yyyy",
+                locale
+            )
         )
 
     val dateRangeFormatted: String
         get() {
-            val monthDayFormatter = DateTimeFormatter.ofPattern("M月d日", Locale.CHINA)
-            val yearFormatter = DateTimeFormatter.ofPattern("yyyy年", Locale.CHINA)
+            val monthDayFormatter = DateTimeFormatter.ofPattern(
+                if (isChinese) "M月d日" else "MMM d",
+                locale
+            )
+            val yearFormatter = DateTimeFormatter.ofPattern(
+                if (isChinese) "yyyy年" else "yyyy",
+                locale
+            )
 
             val periodRecords = records.filter { it.isPeriod }.sortedBy { it.date }
             val startDisplay = periodRecords.firstOrNull()?.date ?: cycle.startDate
@@ -123,7 +136,11 @@ data class CycleWithRecords(
             val endMonthDay = endDisplay.format(monthDayFormatter)
             val year = startDisplay.format(yearFormatter)
 
-            return "${startMonthDay}-${endMonthDay}，${year}"
+            return if (isChinese) {
+                "${startMonthDay}-${endMonthDay}，${year}"
+            } else {
+                "${startMonthDay} - ${endMonthDay}, ${year}"
+            }
         }
 
     val durationDays: Int
@@ -149,8 +166,14 @@ data class CycleWithRecords(
 
     val dateRangeWithoutYear: String
         get() {
-            val monthDayFormatter = DateTimeFormatter.ofPattern("M月d日", Locale.CHINA)
-            val yearFormatter = DateTimeFormatter.ofPattern("yyyy年", Locale.CHINA)
+            val monthDayFormatter = DateTimeFormatter.ofPattern(
+                if (isChinese) "M月d日" else "MMM d",
+                locale
+            )
+            val yearFormatter = DateTimeFormatter.ofPattern(
+                if (isChinese) "yyyy年" else "yyyy",
+                locale
+            )
             val periodRecords = records.filter { it.isPeriod }.sortedBy { it.date }
             val startDisplay = periodRecords.firstOrNull()?.date ?: cycle.startDate
             val endDisplay = if (cycle.endDate != null) {
@@ -162,7 +185,11 @@ data class CycleWithRecords(
             val endMonthDay = endDisplay.format(monthDayFormatter)
             // 跨年周期补充结束年份，避免 "12月30日 - 1月3日" 歧义
             val endWithYear = if (startDisplay.year != endDisplay.year) {
-                "${endMonthDay}（${endDisplay.format(yearFormatter)}）"
+                if (isChinese) {
+                    "${endMonthDay}（${endDisplay.format(yearFormatter)}）"
+                } else {
+                    "${endMonthDay} (${endDisplay.format(yearFormatter)})"
+                }
             } else {
                 endMonthDay
             }

@@ -17,10 +17,10 @@ class NotificationManager(private val context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                CHANNEL_NAME,
+                context.getString(R.string.notif_channel_name),
                 NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
-                description = "Channel for period reminders"
+                description = context.getString(R.string.notif_channel_description)
             }
             notificationManager.createNotificationChannel(channel)
         }
@@ -34,8 +34,8 @@ class NotificationManager(private val context: Context) {
     ) {
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle(if (isPrivacyMode) "Reminder" else title)
-            .setContentText(if (isPrivacyMode) "You have a new notification." else message)
+            .setContentTitle(if (isPrivacyMode) context.getString(R.string.notif_privacy_title) else title)
+            .setContentText(if (isPrivacyMode) context.getString(R.string.notif_privacy_message) else message)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
 
         notificationManager.notify(id, builder.build())
@@ -43,17 +43,12 @@ class NotificationManager(private val context: Context) {
 
     companion object {
         const val CHANNEL_ID = "period_reminder_channel"
-        const val CHANNEL_NAME = "Period Reminders"
         const val NOTIFICATION_ID = 1
 
         fun notificationIdFor(type: String?): Int {
             return when (type) {
                 "PERIOD_START" -> 1
-                "PERIOD_END" -> 2
                 "OVULATION" -> 3
-                "FERTILE" -> 4
-                "DAILY_RECORD" -> 5
-                "CYCLE_SUMMARY" -> 6
                 else -> NOTIFICATION_ID
             }
         }

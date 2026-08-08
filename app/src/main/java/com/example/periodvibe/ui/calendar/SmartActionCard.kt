@@ -35,6 +35,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.unit.dp
 import com.example.periodvibe.R
 import com.example.periodvibe.domain.model.Cycle
@@ -84,7 +85,14 @@ fun SmartActionCard(
 
 @Composable
 private fun DateHeader(day: CalendarDay.Data) {
-    val dateFormatter = remember { DateTimeFormatter.ofPattern("M月d日") }
+    val locale = LocalLocale.current.platformLocale
+    val isChinese = locale.language == java.util.Locale.CHINESE.language
+    val dateFormatter = remember(locale) {
+        DateTimeFormatter.ofPattern(
+            if (isChinese) "M月d日" else "MMM d",
+            locale
+        )
+    }
 
     Row(
         modifier = Modifier.fillMaxWidth(),

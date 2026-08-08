@@ -7,7 +7,6 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.periodvibe.data.local.AppDatabase
 import com.example.periodvibe.data.local.dao.CycleDao
 import com.example.periodvibe.data.local.dao.DailyRecordDao
-import com.example.periodvibe.data.local.dao.NotificationDao
 import com.example.periodvibe.data.local.dao.SettingsDao
 import dagger.Module
 import dagger.Provides
@@ -126,6 +125,13 @@ object DatabaseModule {
         }
     }
 
+    private val MIGRATION_7_8 = object : Migration(7, 8) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            // 通知类型精简后移除废弃的 notifications 表（原表及其 DAO/Mapper 均为死代码）
+            database.execSQL("DROP TABLE IF EXISTS notifications")
+        }
+    }
+
     @Provides
     @Singleton
     fun provideAppDatabase(
@@ -136,7 +142,7 @@ object DatabaseModule {
             AppDatabase::class.java,
             "period_vibe_database"
         ).addMigrations(
-            MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7
+            MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8
         ).build()
     }
 
@@ -148,11 +154,6 @@ object DatabaseModule {
     @Provides
     fun provideDailyRecordDao(database: AppDatabase): DailyRecordDao {
         return database.dailyRecordDao()
-    }
-
-    @Provides
-    fun provideNotificationDao(database: AppDatabase): NotificationDao {
-        return database.notificationDao()
     }
 
     @Provides

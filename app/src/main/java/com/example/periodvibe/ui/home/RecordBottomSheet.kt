@@ -38,6 +38,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.periodvibe.domain.model.FlowLevel
@@ -59,7 +60,14 @@ fun RecordBottomSheetContent(
     var flowLevel by remember { mutableStateOf(existingRecord?.flowLevel ?: initialFlowLevel) }
     var showDatePicker by remember { mutableStateOf(false) }
 
-    val dateFormatter = remember { DateTimeFormatter.ofPattern("yyyy年MM月dd日") }
+    val locale = LocalLocale.current.platformLocale
+    val isChinese = locale.language == java.util.Locale.CHINESE.language
+    val dateFormatter = remember(locale) {
+        DateTimeFormatter.ofPattern(
+            if (isChinese) "yyyy年MM月dd日" else "MMM d, yyyy",
+            locale
+        )
+    }
 
     Column(
         modifier = Modifier

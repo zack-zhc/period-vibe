@@ -86,9 +86,13 @@ class MainActivity : FragmentActivity() {
                 Settings.ThemeMode.LIGHT -> false
                 Settings.ThemeMode.DARK -> true
                 Settings.ThemeMode.SYSTEM -> isSystemInDarkTheme()
+                Settings.ThemeMode.DYNAMIC -> isSystemInDarkTheme()
             }
 
-            PeriodVibeTheme(darkTheme = darkTheme) {
+            PeriodVibeTheme(
+                darkTheme = darkTheme,
+                dynamicColor = themeMode == Settings.ThemeMode.DYNAMIC
+            ) {
                 PeriodVibeNavHost(
                     mainViewModel = mainViewModel,
                     modifier = Modifier.fillMaxSize()

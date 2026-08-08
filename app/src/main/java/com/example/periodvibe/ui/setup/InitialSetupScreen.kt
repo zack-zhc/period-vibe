@@ -281,7 +281,12 @@ private fun DatePickerField(
     modifier: Modifier = Modifier,
     onClear: (() -> Unit)? = null
 ) {
-    val dateFormatter = DateTimeFormatter.ofPattern("yyyy年MM月dd日")
+    val locale = androidx.compose.ui.platform.LocalLocale.current.platformLocale
+    val isChinese = locale.language == java.util.Locale.CHINESE.language
+    val dateFormatter = DateTimeFormatter.ofPattern(
+        if (isChinese) "yyyy年MM月dd日" else "MMM d, yyyy",
+        locale
+    )
 
     Column(modifier = modifier) {
         Text(

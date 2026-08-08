@@ -152,6 +152,27 @@
     <string name="set_theme_light">浅色</string>
     <string name="set_theme_dark">深色</string>
     <string name="set_theme_system">系统</string>
+    <string name="set_theme_dynamic">动态取色</string>
+
+    <!-- 设置页本地数据隐私说明 -->
+    <string name="set_local_data_privacy">所有数据都存储在您的设备本地，最大限度保护您的隐私。</string>
+
+    <!-- 通知 -->
+    <string name="notif_channel_name">经期提醒</string>
+    <string name="notif_channel_description">经期与排卵提醒通知渠道</string>
+    <string name="notif_period_title">经期提醒</string>
+    <string name="notif_period_message">您的经期预计将在 %1$d 天后开始！</string>
+    <string name="notif_period_message_default">您的经期即将到来！</string>
+    <string name="notif_ovulation_title">排卵提醒</string>
+    <string name="notif_ovulation_message">您的排卵期即将到来！</string>
+    <string name="notif_privacy_title">提醒</string>
+    <string name="notif_privacy_message">您有一条新通知。</string>
+
+    <!-- 开发者选项 -->
+    <string name="dev_test_notification_title">测试通知</string>
+    <string name="dev_test_notification_message">来自 Period Vibe 的测试通知。</string>
+    <string name="dev_test_delayed_title">测试延迟通知</string>
+    <string name="dev_test_delayed_message">来自 Period Vibe 的延迟测试通知，将在 %1$d 秒后发出。</string>
 
     <!-- 隐私设置 -->
     <string name="set_privacy">隐私设置</string>
@@ -203,7 +224,6 @@
     <string name="dlg_cycle_length_label">平均周期长度 (%1$s)</string>
     <string name="dlg_period_length_label">平均经期天数 (%1$s)</string>
     <string name="dlg_range_input_error">请输入 %1$s 之间的整数</string>
-    <string name="dlg_days_before_title">提前天数设置</string>
     <string name="dlg_notification_time_title">提醒时间设置</string>
     <string name="dlg_clear_data_title">确认清除数据</string>
     <string name="dlg_clear_data_message">此操作将永久删除所有周期记录和日常数据，且无法恢复。确定要继续吗？</string>

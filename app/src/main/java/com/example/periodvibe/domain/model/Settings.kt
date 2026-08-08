@@ -23,7 +23,7 @@ data class Settings(
     val ovulationNotificationDaysBefore: Int = 1
 ) {
     enum class ThemeMode {
-        LIGHT, DARK, SYSTEM
+        LIGHT, DARK, SYSTEM, DYNAMIC
     }
 
     fun updateNotificationSettings(

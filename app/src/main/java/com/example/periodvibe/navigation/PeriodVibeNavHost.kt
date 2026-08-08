@@ -243,6 +243,7 @@ fun PeriodVibeNavHost(
         Settings.ThemeMode.LIGHT -> false
         Settings.ThemeMode.DARK -> true
         Settings.ThemeMode.SYSTEM -> androidx.compose.foundation.isSystemInDarkTheme()
+        Settings.ThemeMode.DYNAMIC -> androidx.compose.foundation.isSystemInDarkTheme()
     }
 
     // 更新主题模式

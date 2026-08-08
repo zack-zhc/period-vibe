@@ -14,6 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -33,7 +34,14 @@ fun DailyRecordRow(
     darkTheme: Boolean = isSystemInDarkTheme(),
     modifier: Modifier = Modifier
 ) {
-    val formatter = remember { DateTimeFormatter.ofPattern("MM月dd日", Locale.CHINA) }
+    val locale = LocalLocale.current.platformLocale
+    val isChinese = locale.language == Locale.CHINESE.language
+    val formatter = remember(locale) {
+        DateTimeFormatter.ofPattern(
+            if (isChinese) "MM月dd日" else "MMM d",
+            locale
+        )
+    }
     val periodColor = if (darkTheme) CalendarPeriodDark else CalendarPeriodLight
 
     Row(

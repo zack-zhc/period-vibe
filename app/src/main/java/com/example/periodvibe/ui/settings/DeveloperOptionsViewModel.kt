@@ -27,7 +27,10 @@ class DeveloperOptionsViewModel @Inject constructor(
     private val viewModelScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     fun sendTestNotification() {
-        notificationManager.showNotification("Test Notification", "This is a test notification from Period Vibe.")
+        notificationManager.showNotification(
+            context.getString(com.example.periodvibe.R.string.dev_test_notification_title),
+            context.getString(com.example.periodvibe.R.string.dev_test_notification_message)
+        )
     }
 
     fun sendTestPrivacyNotification() {
@@ -35,8 +38,8 @@ class DeveloperOptionsViewModel @Inject constructor(
             val settings = settingsRepository.getSettingsSync()
             val isPrivacyMode = settings?.privacyModeEnabled ?: false
             notificationManager.showNotification(
-                "Period Reminder",
-                "Your period is coming soon!",
+                context.getString(com.example.periodvibe.R.string.notif_period_title),
+                context.getString(com.example.periodvibe.R.string.notif_period_message_default),
                 isPrivacyMode
             )
         }
@@ -46,8 +49,8 @@ class DeveloperOptionsViewModel @Inject constructor(
         alarmScheduler.scheduleInSeconds(
             NotificationType.PERIOD_START,
             seconds,
-            "Test Delayed Notification",
-            "This is a delayed test notification from Period Vibe. It will fire in $seconds seconds."
+            context.getString(com.example.periodvibe.R.string.dev_test_delayed_title),
+            context.getString(com.example.periodvibe.R.string.dev_test_delayed_message, seconds)
         )
     }
 
@@ -55,8 +58,8 @@ class DeveloperOptionsViewModel @Inject constructor(
         alarmScheduler.scheduleInSeconds(
             NotificationType.OVULATION,
             seconds,
-            "Ovulation Reminder",
-            "Your ovulation period is coming soon!"
+            context.getString(com.example.periodvibe.R.string.notif_ovulation_title),
+            context.getString(com.example.periodvibe.R.string.notif_ovulation_message)
         )
     }
 

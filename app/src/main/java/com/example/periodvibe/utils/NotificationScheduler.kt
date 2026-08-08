@@ -72,14 +72,14 @@ class NotificationScheduler @Inject constructor(
 
             if (notificationDateTime.isAfter(now)) {
                 val message = if (settings.privacyModeEnabled) {
-                    "You have a new notification."
+                    context.getString(com.example.periodvibe.R.string.notif_privacy_message)
                 } else {
-                    "Your period is expected to start in ${settings.notificationDaysBefore} days!"
+                    context.getString(com.example.periodvibe.R.string.notif_period_message, settings.notificationDaysBefore)
                 }
                 alarmScheduler.schedule(
                     NotificationType.PERIOD_START,
                     notificationDateTime,
-                    "Period Reminder",
+                    context.getString(com.example.periodvibe.R.string.notif_period_title),
                     message
                 )
             } else {
@@ -123,14 +123,14 @@ class NotificationScheduler @Inject constructor(
 
             if (notificationDateTime.isAfter(now)) {
                 val message = if (settings.privacyModeEnabled) {
-                    "You have a new notification."
+                    context.getString(com.example.periodvibe.R.string.notif_privacy_message)
                 } else {
-                    "Your ovulation period is coming soon!"
+                    context.getString(com.example.periodvibe.R.string.notif_ovulation_message)
                 }
                 alarmScheduler.schedule(
                     NotificationType.OVULATION,
                     notificationDateTime,
-                    "Ovulation Reminder",
+                    context.getString(com.example.periodvibe.R.string.notif_ovulation_title),
                     message
                 )
             } else {

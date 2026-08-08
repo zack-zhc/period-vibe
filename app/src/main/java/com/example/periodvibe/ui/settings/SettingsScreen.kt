@@ -41,9 +41,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.periodvibe.R
 import com.example.periodvibe.ui.theme.PeriodVibeTheme
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -105,12 +107,12 @@ private fun SettingsContent(
                     .padding(16.dp)
             ) {
                 val settingsItems = listOf(
-                    Pair(Icons.Default.DateRange, "周期参数"),
-                    Pair(Icons.Default.Notifications, "提醒设置"),
-                    Pair(Icons.Default.Palette, "主题设置"),
-                    Pair(Icons.Default.Lock, "隐私设置"),
-                    Pair(Icons.Default.Folder, "数据管理"),
-                    Pair(Icons.Default.Info, "关于")
+                    Pair(Icons.Default.DateRange, stringResource(R.string.set_cycle_parameters)),
+                    Pair(Icons.Default.Notifications, stringResource(R.string.set_reminders)),
+                    Pair(Icons.Default.Palette, stringResource(R.string.set_theme)),
+                    Pair(Icons.Default.Lock, stringResource(R.string.set_privacy)),
+                    Pair(Icons.Default.Folder, stringResource(R.string.set_data_management)),
+                    Pair(Icons.Default.Info, stringResource(R.string.set_about))
                 )
 
                 val onClicks = listOf(
@@ -195,7 +197,7 @@ private fun SettingsContent(
                             )
                         }
                         Text(
-                            text = "所有数据都存储在您的设备本地，最大限度保护您的隐私。",
+                            text = stringResource(R.string.set_local_data_privacy),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

@@ -54,6 +54,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -278,9 +279,14 @@ private fun HomeContent(
 @Composable
 private fun GreetingSection(modifier: Modifier = Modifier) {
     val greeting = getGreeting()
-    val dateText = remember {
+    val locale = LocalLocale.current.platformLocale
+    val isChinese = locale.language == java.util.Locale.CHINESE.language
+    val dateText = remember(locale) {
         java.time.LocalDate.now().format(
-            java.time.format.DateTimeFormatter.ofPattern("M月d日 · EEEE", java.util.Locale.CHINESE)
+            java.time.format.DateTimeFormatter.ofPattern(
+                if (isChinese) "M月d日 · EEEE" else "MMM d · EEEE",
+                locale
+            )
         )
     }
     Column(

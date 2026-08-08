@@ -28,6 +28,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DarkMode
@@ -825,6 +826,22 @@ private fun ThemeContent(
                             Spacer(Modifier.size(ToggleButtonDefaults.IconSpacing))
                             Text(label)
                         }
+                    }
+                }
+                // 动态取色（Material You）仅 Android 12+ 可用，单独一行避免 4 个选项挤在一行放不下
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    ToggleButton(
+                        checked = state.themeMode == com.example.periodvibe.domain.model.Settings.ThemeMode.DYNAMIC,
+                        onCheckedChange = { onUpdateThemeMode(com.example.periodvibe.domain.model.Settings.ThemeMode.DYNAMIC) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 48.dp)
+                            .semantics { role = Role.RadioButton }
+                    ) {
+                        Icon(Icons.Default.Brush, contentDescription = null)
+                        Spacer(Modifier.size(ToggleButtonDefaults.IconSpacing))
+                        Text(stringResource(R.string.set_theme_dynamic))
                     }
                 }
             }

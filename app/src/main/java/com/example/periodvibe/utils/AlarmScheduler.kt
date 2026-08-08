@@ -87,11 +87,7 @@ class AlarmScheduler(private val context: Context) {
         private fun getRequestCodeForType(type: NotificationType): Int {
             return when (type) {
                 NotificationType.PERIOD_START -> 1001
-                NotificationType.PERIOD_END -> 1002
                 NotificationType.OVULATION -> 1003
-                NotificationType.FERTILE -> 1004
-                NotificationType.DAILY_RECORD -> 1005
-                NotificationType.CYCLE_SUMMARY -> 1006
             }
         }
     }
