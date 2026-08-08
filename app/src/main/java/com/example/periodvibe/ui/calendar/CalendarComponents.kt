@@ -46,6 +46,11 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import com.example.periodvibe.R
 import com.example.periodvibe.domain.usecase.CalendarDay
@@ -161,16 +166,22 @@ private fun WeekdayHeader(modifier: Modifier = Modifier) {
     } else {
         stringArrayResource(R.array.cal_weekdays_en).toList()
     }
+    // 周日：中文数组首位（日），英文数组末位（S）
+    val sundayIndex = if (isChinese) 0 else weekdays.lastIndex
 
     Row(
         modifier = modifier.fillMaxWidth()
     ) {
-        weekdays.forEach { weekday ->
+        weekdays.forEachIndexed { index, weekday ->
             Text(
                 text = weekday,
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                color = if (index == sundayIndex) {
+                    MaterialTheme.colorScheme.error.copy(alpha = 0.75f)
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                },
                 modifier = Modifier.weight(1f),
                 textAlign = TextAlign.Center
             )
@@ -247,6 +258,11 @@ private fun DayContent(
     modifier: Modifier = Modifier
 ) {
     val cellColors = getCellColors(day, isSelected, darkTheme)
+    // 无障碍描述（今天/经期状态），在组合上下文解析资源
+    val stateDescriptionText = listOfNotNull(
+        if (day.isToday) stringResource(R.string.cal_today) else null,
+        if (day.record?.flowLevel != null) stringResource(R.string.cal_period) else null
+    ).takeIf { it.isNotEmpty() }?.joinToString("，").orEmpty()
     val scale by animateFloatAsState(
         targetValue = if (isSelected) 1.05f else 1f,
         animationSpec = tween(durationMillis = 200),
@@ -297,6 +313,11 @@ private fun DayContent(
                     Modifier
                 }
             )
+            .semantics {
+                role = Role.Button
+                selected = isSelected
+                stateDescription = stateDescriptionText
+            }
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = androidx.compose.material3.ripple(),
@@ -316,8 +337,8 @@ private fun DayContent(
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(top = 4.dp, end = 4.dp)
-                    .size(12.dp)
+                    .padding(top = 3.dp, end = 3.dp)
+                    .size(14.dp)
                     .clip(CircleShape)
                     .background(
                         if (day.isToday) MaterialTheme.colorScheme.onPrimary
@@ -330,7 +351,7 @@ private fun DayContent(
                     contentDescription = stringResource(R.string.cal_recorded),
                     tint = if (day.isToday) MaterialTheme.colorScheme.primary
                     else MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(8.dp)
+                    modifier = Modifier.size(10.dp)
                 )
             }
         }
@@ -365,7 +386,7 @@ private fun getCellColors(
     val baseState = when {
         day.dayType == CalendarDayType.PERIOD -> {
             CellColors(
-                container = periodColor.copy(alpha = 0.3f),
+                container = periodColor.copy(alpha = 0.42f),
                 text = onSurface,
                 border = Color.Transparent,
                 borderWidth = 0.dp,
@@ -413,29 +434,33 @@ private fun getCellColors(
     // 叠加今天和选中状态
     return when {
         day.isToday && isSelected -> {
-            // 今天 + 选中：Primary背景 + Primary边框 + 阴影
+            // 今天 + 选中：Primary实底 + 白色描边 ring + 阴影，与未选中的今天区分明显
             CellColors(
                 container = primary,
                 text = onPrimary,
-                border = primary,
+                border = onPrimary,
                 borderWidth = 2.dp,
                 hasShadow = true
             )
         }
         day.isToday -> {
-            // 今天：Primary背景 + 阴影
+            // 今天（未选中）：透明底 + Primary边框（outline 风格），选中时才有实底填充
             CellColors(
-                container = primary,
-                text = onPrimary,
-                border = Color.Transparent,
-                borderWidth = 0.dp,
-                hasShadow = true
+                container = Color.Transparent,
+                text = primary,
+                border = primary,
+                borderWidth = 2.dp,
+                hasShadow = false
             )
         }
         isSelected -> {
-            // 选中（非今天）：保持原背景 + Primary边框，无阴影
+            // 选中（非今天）：普通日叠加 Primary 淡填充，有色底保持原背景 + Primary 边框
             CellColors(
-                container = baseState.container,
+                container = if (baseState.container == Color.Transparent) {
+                    primary.copy(alpha = 0.15f)
+                } else {
+                    baseState.container
+                },
                 text = baseState.text,
                 border = primary,
                 borderWidth = 2.dp,

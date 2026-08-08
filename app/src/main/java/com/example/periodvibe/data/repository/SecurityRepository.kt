@@ -29,6 +29,7 @@ class SecurityRepository @Inject constructor(
 ) {
 
     private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    private val lockPrefs = context.getSharedPreferences(LOCK_PREFS_NAME, Context.MODE_PRIVATE)
     private val keyStore = KeyStore.getInstance(KEYSTORE_PROVIDER).apply { load(null) }
     private val keyAlias = "period_vibe_master_key"
 
@@ -55,6 +56,49 @@ class SecurityRepository @Inject constructor(
 
     fun deletePin() {
         prefs.edit().remove(KEY_PIN).apply()
+    }
+
+    // ==================== PIN 失败计数与递增锁定 ====================
+
+    /**
+     * 记录一次 PIN 验证失败。
+     * 连续失败达到阈值后进入锁定，锁定时间随失败次数递增（60s → 120s → 240s…，封顶 30 分钟）。
+     * @return 当前剩余锁定毫秒数（0 表示未在锁定中）
+     */
+    fun recordFailedAttempt(): Long {
+        val attempts = lockPrefs.getInt(KEY_FAILED_ATTEMPTS, 0) + 1
+        lockPrefs.edit().putInt(KEY_FAILED_ATTEMPTS, attempts).apply()
+        if (attempts >= MAX_ATTEMPTS_BEFORE_LOCKOUT) {
+            val power = attempts - MAX_ATTEMPTS_BEFORE_LOCKOUT + 1
+            val lockSeconds = minOf(
+                BASE_LOCKOUT_SECONDS * (1L shl (power - 1)),
+                MAX_LOCKOUT_SECONDS
+            )
+            val until = System.currentTimeMillis() + lockSeconds * 1000L
+            lockPrefs.edit().putLong(KEY_LOCKOUT_UNTIL, until).apply()
+        }
+        return getLockoutRemainingMillis()
+    }
+
+    /**
+     * @return 当前剩余锁定毫秒数；锁定已过期时自动清理并返回 0
+     */
+    fun getLockoutRemainingMillis(): Long {
+        val until = lockPrefs.getLong(KEY_LOCKOUT_UNTIL, 0L)
+        if (until <= 0L) return 0L
+        val remaining = until - System.currentTimeMillis()
+        if (remaining <= 0L) {
+            resetFailedAttempts()
+            return 0L
+        }
+        return remaining
+    }
+
+    fun resetFailedAttempts() {
+        lockPrefs.edit()
+            .remove(KEY_FAILED_ATTEMPTS)
+            .remove(KEY_LOCKOUT_UNTIL)
+            .apply()
     }
 
     // ==================== Keystore AES/GCM 加解密 ====================
@@ -118,5 +162,12 @@ class SecurityRepository @Inject constructor(
         const val KEYSTORE_PROVIDER = "AndroidKeyStore"
         const val TRANSFORMATION = "AES/GCM/NoPadding"
         const val IV_SIZE = 12
+
+        const val LOCK_PREFS_NAME = "lock_state"
+        const val KEY_FAILED_ATTEMPTS = "failed_attempts"
+        const val KEY_LOCKOUT_UNTIL = "lockout_until"
+        const val MAX_ATTEMPTS_BEFORE_LOCKOUT = 5
+        const val BASE_LOCKOUT_SECONDS = 60L
+        const val MAX_LOCKOUT_SECONDS = 1800L
     }
 }

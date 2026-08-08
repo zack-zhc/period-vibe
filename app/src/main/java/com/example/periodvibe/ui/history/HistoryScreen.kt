@@ -24,7 +24,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -657,12 +656,11 @@ private fun CycleCard(
             ),
         shape = RoundedCornerShape(16.dp),
         color = when {
-            isSelected -> periodColor.copy(alpha = 0.1f)
+            isSelected -> periodColor.copy(alpha = 0.16f)
             else -> MaterialTheme.colorScheme.surfaceContainerLowest
         },
         tonalElevation = if (isSelected) 2.dp else 1.dp,
-        shadowElevation = 1.dp,
-        border = if (isSelected) BorderStroke(1.dp, periodColor) else null
+        shadowElevation = 1.dp
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Row(

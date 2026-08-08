@@ -112,12 +112,12 @@ private fun SettingsContent(
                     .padding(16.dp)
             ) {
                 val settingsItems = listOf(
-                    Triple(Icons.Default.DateRange, "周期参数", MaterialTheme.colorScheme.primary),
-                    Triple(Icons.Default.Notifications, "提醒设置", MaterialTheme.colorScheme.tertiary),
-                    Triple(Icons.Default.Palette, "主题设置", MaterialTheme.colorScheme.secondary),
-                    Triple(Icons.Default.Lock, "隐私设置", MaterialTheme.colorScheme.error),
-                    Triple(Icons.Default.Folder, "数据管理", MaterialTheme.colorScheme.tertiary),
-                    Triple(Icons.Default.Info, "关于", MaterialTheme.colorScheme.primary)
+                    Pair(Icons.Default.DateRange, "周期参数"),
+                    Pair(Icons.Default.Notifications, "提醒设置"),
+                    Pair(Icons.Default.Palette, "主题设置"),
+                    Pair(Icons.Default.Lock, "隐私设置"),
+                    Pair(Icons.Default.Folder, "数据管理"),
+                    Pair(Icons.Default.Info, "关于")
                 )
 
                 val onClicks = listOf(
@@ -140,7 +140,7 @@ private fun SettingsContent(
                                 Icon(
                                     imageVector = item.first,
                                     contentDescription = null,
-                                    tint = item.third
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             },
                             trailingContent = {
@@ -245,6 +245,7 @@ private fun SettingsScreenPreview() {
                     notificationTime = java.time.LocalTime.of(9, 0),
                     themeMode = com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM,
                     appLockEnabled = false,
+                    appLockDelayMinutes = 0,
                     privacyModeEnabled = false,
     
                     periodNotificationEnabled = true,

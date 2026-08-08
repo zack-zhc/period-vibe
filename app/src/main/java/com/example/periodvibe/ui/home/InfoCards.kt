@@ -1,9 +1,12 @@
 package com.example.periodvibe.ui.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
@@ -24,13 +27,17 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.periodvibe.R
 import com.example.periodvibe.domain.model.CyclePhase
 import com.example.periodvibe.ui.theme.HomeCardShape
 import com.example.periodvibe.ui.theme.cardBorderStroke
@@ -96,7 +103,7 @@ fun getTodayTip(phase: CyclePhase): String {
     }
 }
 
-// 合并信息卡片：怀孕几率 + 今日贴士
+// 合并信息卡片：下一阶段 + 受孕状态 + 今日贴士
 @Composable
 fun CombinedInfoCard(
     phase: CyclePhase,
@@ -105,7 +112,8 @@ fun CombinedInfoCard(
     modifier: Modifier = Modifier
 ) {
     val pregnancyInfo = getPregnancyInfo(phase)
-    val todayTip = getTodayTip(phase)
+    // 同阶段内贴士保持稳定，避免重组时随机跳变
+    val todayTip = remember(phase) { getTodayTip(phase) }
 
     Card(
         modifier = modifier,
@@ -120,135 +128,177 @@ fun CombinedInfoCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // 下一阶段部分
-            if (nextPhaseName.isNotEmpty()) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+            // 上半：两栏信息 tile（无下一阶段时受孕状态 tile 自动全宽）
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Min),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                if (nextPhaseName.isNotEmpty()) {
+                    InfoTile(
+                        icon = Icons.Rounded.EventRepeat,
+                        iconColor = MaterialTheme.colorScheme.primary,
+                        gradientColors = listOf(
+                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
+                            MaterialTheme.colorScheme.surfaceContainerLow
+                        ),
+                        title = stringResource(R.string.home_next_phase),
+                        modifier = Modifier.weight(1f)
                     ) {
-                        Icon(
-                            imageVector = Icons.Rounded.AutoAwesome,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Text(
-                            text = "下一阶段".uppercase(),
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            letterSpacing = 0.5.sp
-                        )
-                    }
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = nextPhaseName,
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Surface(
-                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
-                            contentColor = MaterialTheme.colorScheme.primary,
-                            shape = RoundedCornerShape(50),
-                            tonalElevation = 0.dp
+                        // 阶段名与天数 pill 同一行，控制 tile 高度与右栏一致
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = if (daysUntilNextPhase == 0) "今天" else "$daysUntilNextPhase 天后",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.SemiBold,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                text = nextPhaseName,
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.Black,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                                softWrap = false
                             )
+                            Spacer(modifier = Modifier.weight(1f))
+                            Surface(
+                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                                contentColor = MaterialTheme.colorScheme.primary,
+                                shape = RoundedCornerShape(50),
+                                tonalElevation = 0.dp
+                            ) {
+                                Text(
+                                    text = if (daysUntilNextPhase == 0) {
+                                        stringResource(R.string.cal_today)
+                                    } else {
+                                        stringResource(R.string.home_days_later, daysUntilNextPhase)
+                                    },
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                )
+                            }
                         }
                     }
                 }
-            }
-
-            // 分隔线
-            if (nextPhaseName.isNotEmpty()) {
-                Spacer(
-                    modifier = Modifier
-                        .height(1.dp)
-                        .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-                )
-            }
-
-            // 怀孕几率部分
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.BubbleChart,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.tertiary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Text(
-                        text = "怀孕几率".uppercase(),
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        letterSpacing = 0.5.sp
-                    )
-                }
-                Text(
-                    text = pregnancyInfo.label,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = if (pregnancyInfo.isFertile) {
-                        MaterialTheme.colorScheme.tertiary
+                InfoTile(
+                    icon = Icons.Rounded.BubbleChart,
+                    iconColor = MaterialTheme.colorScheme.tertiary,
+                    gradientColors = if (pregnancyInfo.isFertile) {
+                        listOf(
+                            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.35f),
+                            MaterialTheme.colorScheme.surfaceContainerLow
+                        )
                     } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    }
-                )
+                        listOf(
+                            MaterialTheme.colorScheme.surfaceContainerHigh,
+                            MaterialTheme.colorScheme.surfaceContainerLow
+                        )
+                    },
+                    title = stringResource(R.string.home_pregnancy_status),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = pregnancyInfo.label,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Black,
+                        color = if (pregnancyInfo.isFertile) {
+                            MaterialTheme.colorScheme.tertiary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        }
+                    )
+                }
             }
 
             // 分隔线
-            Spacer(
-                modifier = Modifier
-                    .height(1.dp)
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-            )
+            SectionDivider()
 
-            // 今日贴士部分
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.AutoAwesome,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Text(
-                        text = "今日贴士".uppercase(),
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        letterSpacing = 0.5.sp
-                    )
-                }
+            // 今日贴士
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Lightbulb,
+                    contentDescription = stringResource(R.string.home_today_tip),
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
                 Text(
                     text = todayTip,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    lineHeight = 20.sp
+                    lineHeight = 22.sp
                 )
             }
         }
     }
+}
+
+@Composable
+private fun InfoTile(
+    icon: ImageVector,
+    iconColor: Color,
+    gradientColors: List<Color>,
+    title: String,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    val tileShape = RoundedCornerShape(28.dp)
+    Column(
+        modifier = modifier
+            .clip(tileShape)
+            .background(Brush.verticalGradient(gradientColors))
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                shape = tileShape
+            )
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(iconColor.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = iconColor,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        content()
+    }
+}
+
+@Composable
+private fun SectionDivider() {
+    Spacer(
+        modifier = Modifier
+            .height(1.dp)
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+    )
 }
 
 // 空状态功能预告卡片

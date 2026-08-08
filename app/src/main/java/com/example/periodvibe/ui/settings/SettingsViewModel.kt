@@ -107,6 +107,7 @@ class SettingsViewModel @Inject constructor(
                         notificationTime = settings.notificationTime,
                         themeMode = settings.themeMode,
                         appLockEnabled = settings.appLockEnabled,
+                        appLockDelayMinutes = settings.appLockDelayMinutes,
                         privacyModeEnabled = settings.privacyModeEnabled,
                         periodNotificationEnabled = settings.periodNotificationEnabled,
                         ovulationNotificationEnabled = settings.ovulationNotificationEnabled,
@@ -125,6 +126,7 @@ class SettingsViewModel @Inject constructor(
                         notificationTime = java.time.LocalTime.of(9, 0),
                         themeMode = com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM,
                         appLockEnabled = false,
+                        appLockDelayMinutes = 0,
                         privacyModeEnabled = false,
                         periodNotificationEnabled = true,
                         ovulationNotificationEnabled = true,
@@ -558,6 +560,27 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun updateAppLockDelay(minutes: Int) {
+        viewModelScope.launch {
+            val currentSettings = settingsRepository.getSettingsSync()
+            currentSettings?.let {
+                val updatedSettings = it.copy(appLockDelayMinutes = minutes)
+                settingsRepository.updateSettings(updatedSettings)
+            }
+        }
+    }
+
+    /** 验证当前 PIN（关闭应用锁等场景），失败计入递增锁定计数 */
+    fun verifyCurrentPin(pin: String): Boolean {
+        val matches = securityRepository.getPin() == pin
+        if (!matches) {
+            securityRepository.recordFailedAttempt()
+        } else {
+            securityRepository.resetFailedAttempts()
+        }
+        return matches
+    }
+
     fun togglePrivacyMode(enabled: Boolean) {
         viewModelScope.launch {
             val currentSettings = settingsRepository.getSettingsSync()
@@ -673,6 +696,7 @@ sealed class SettingsUiState {
         val notificationTime: LocalTime,
         val themeMode: com.example.periodvibe.domain.model.Settings.ThemeMode,
         val appLockEnabled: Boolean,
+        val appLockDelayMinutes: Int,
         val privacyModeEnabled: Boolean,
         val periodNotificationEnabled: Boolean,
         val ovulationNotificationEnabled: Boolean,

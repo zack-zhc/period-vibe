@@ -39,7 +39,8 @@ private val KeySpacing = 8.dp
 @Composable
 fun PinKeyboard(
     onNumberClick: (Int) -> Unit,
-    onBackspaceClick: () -> Unit
+    onBackspaceClick: () -> Unit,
+    enabled: Boolean = true
 ) {
     BoxWithConstraints(
         modifier = Modifier
@@ -58,25 +59,25 @@ fun PinKeyboard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                PinKey(size = keySize, number = 1, onClick = { onNumberClick(1) })
-                PinKey(size = keySize, number = 2, onClick = { onNumberClick(2) })
-                PinKey(size = keySize, number = 3, onClick = { onNumberClick(3) })
+                PinKey(size = keySize, number = 1, enabled = enabled, onClick = { onNumberClick(1) })
+                PinKey(size = keySize, number = 2, enabled = enabled, onClick = { onNumberClick(2) })
+                PinKey(size = keySize, number = 3, enabled = enabled, onClick = { onNumberClick(3) })
             }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                PinKey(size = keySize, number = 4, onClick = { onNumberClick(4) })
-                PinKey(size = keySize, number = 5, onClick = { onNumberClick(5) })
-                PinKey(size = keySize, number = 6, onClick = { onNumberClick(6) })
+                PinKey(size = keySize, number = 4, enabled = enabled, onClick = { onNumberClick(4) })
+                PinKey(size = keySize, number = 5, enabled = enabled, onClick = { onNumberClick(5) })
+                PinKey(size = keySize, number = 6, enabled = enabled, onClick = { onNumberClick(6) })
             }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                PinKey(size = keySize, number = 7, onClick = { onNumberClick(7) })
-                PinKey(size = keySize, number = 8, onClick = { onNumberClick(8) })
-                PinKey(size = keySize, number = 9, onClick = { onNumberClick(9) })
+                PinKey(size = keySize, number = 7, enabled = enabled, onClick = { onNumberClick(7) })
+                PinKey(size = keySize, number = 8, enabled = enabled, onClick = { onNumberClick(8) })
+                PinKey(size = keySize, number = 9, enabled = enabled, onClick = { onNumberClick(9) })
             }
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -84,9 +85,10 @@ fun PinKeyboard(
             ) {
                 // 空白占位，让 0 居中于 8 下方
                 Spacer(modifier = Modifier.size(keySize))
-                PinKey(size = keySize, number = 0, onClick = { onNumberClick(0) })
+                PinKey(size = keySize, number = 0, enabled = enabled, onClick = { onNumberClick(0) })
                 FilledTonalButton(
                     onClick = onBackspaceClick,
+                    enabled = enabled,
                     modifier = Modifier.size(keySize),
                     colors = ButtonDefaults.filledTonalButtonColors()
                 ) {
@@ -101,13 +103,14 @@ fun PinKeyboard(
 }
 
 @Composable
-private fun PinKey(size: Dp, number: Int, onClick: () -> Unit) {
+private fun PinKey(size: Dp, number: Int, enabled: Boolean, onClick: () -> Unit) {
     val haptic = LocalHapticFeedback.current
     FilledTonalButton(
         onClick = {
             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
             onClick()
         },
+        enabled = enabled,
         modifier = Modifier.size(size),
         colors = ButtonDefaults.filledTonalButtonColors()
     ) {

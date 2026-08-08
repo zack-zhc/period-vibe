@@ -23,6 +23,7 @@ class PinSetupViewModel @Inject constructor(
 
     val pin = mutableStateOf("")
     val confirmPin = mutableStateOf("")
+    val verifyPin = mutableStateOf("")
 
     fun onPinChange(newPin: String) {
         if (newPin.length <= 4) {
@@ -35,6 +36,19 @@ class PinSetupViewModel @Inject constructor(
             confirmPin.value = newPin
         }
     }
+
+    fun onVerifyPinChange(newPin: String) {
+        if (newPin.length <= 4) {
+            verifyPin.value = newPin
+        }
+    }
+
+    fun resetVerifyPin() {
+        verifyPin.value = ""
+    }
+
+    /** 验证当前 PIN（修改 PIN / 关闭应用锁场景），同步返回是否匹配 */
+    fun verifyCurrentPin(): Boolean = securityRepository.getPin() == verifyPin.value
 
     fun onSetPin() {
         if (pin.value.length < 4) {

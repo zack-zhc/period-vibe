@@ -93,6 +93,7 @@ import com.example.periodvibe.ui.settings.components.ExportResultDialog
 import com.example.periodvibe.ui.settings.components.ImportConfirmationDialog
 import com.example.periodvibe.ui.settings.components.ImportResultDialog
 import com.example.periodvibe.ui.settings.components.NotificationTimeDialog
+import com.example.periodvibe.ui.settings.components.VerifyPinDialog
 import com.example.periodvibe.ui.theme.PeriodVibeTheme
 import com.example.periodvibe.utils.AppUtils
 import java.time.LocalDateTime
@@ -835,7 +836,7 @@ private fun ThemeContent(
 @Composable
 fun PrivacyScreen(
     onNavigateBack: () -> Unit,
-    onNavigateToPinSetup: () -> Unit,
+    onNavigateToPinSetup: (com.example.periodvibe.ui.applock.PinSetupMode) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
@@ -851,6 +852,8 @@ fun PrivacyScreen(
         onShowDisableAppLockDialog = { viewModel.showDisableAppLockDialog() },
         onHideDisableAppLockDialog = { viewModel.hideDisableAppLockDialog() },
         onToggleAppLock = { viewModel.toggleAppLock(it) },
+        onUpdateAppLockDelay = { viewModel.updateAppLockDelay(it) },
+        onVerifyCurrentPin = { viewModel.verifyCurrentPin(it) },
         modifier = modifier
     )
 }
@@ -861,11 +864,13 @@ private fun PrivacyContent(
     uiState: SettingsUiState,
     showDisableAppLockDialog: Boolean,
     onNavigateBack: () -> Unit,
-    onNavigateToPinSetup: () -> Unit,
+    onNavigateToPinSetup: (com.example.periodvibe.ui.applock.PinSetupMode) -> Unit,
     onTogglePrivacyMode: (Boolean) -> Unit,
     onShowDisableAppLockDialog: () -> Unit,
     onHideDisableAppLockDialog: () -> Unit,
     onToggleAppLock: (Boolean) -> Unit,
+    onUpdateAppLockDelay: (Int) -> Unit,
+    onVerifyCurrentPin: (String) -> Boolean,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -904,6 +909,12 @@ private fun PrivacyContent(
             }
             if (uiState is SettingsUiState.Success) {
                 val state = uiState
+
+                // 分段列表的实际条目数与索引随应用锁开关动态变化
+                val totalCount = 2 + (if (state.appLockEnabled) 2 else 0)
+                val privacyModeIndex = if (state.appLockEnabled) 2 else 1
+                val changePinIndex = if (state.appLockEnabled) 3 else -1
+
                 Column(
                     verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)
                 ) {
@@ -912,10 +923,10 @@ private fun PrivacyContent(
                             if (state.appLockEnabled) {
                                 onShowDisableAppLockDialog()
                             } else {
-                                onNavigateToPinSetup()
+                                onNavigateToPinSetup(com.example.periodvibe.ui.applock.PinSetupMode.SETUP)
                             }
                         },
-                        shapes = ListItemDefaults.segmentedShapes(index = 0, count = 2),
+                        shapes = ListItemDefaults.segmentedShapes(index = 0, count = totalCount),
                         supportingContent = {
                             Text(
                                 text = stringResource(R.string.set_app_lock_description),
@@ -928,7 +939,7 @@ private fun PrivacyContent(
                                 checked = state.appLockEnabled,
                                 onCheckedChange = { enabled ->
                                     if (enabled) {
-                                        onNavigateToPinSetup()
+                                        onNavigateToPinSetup(com.example.periodvibe.ui.applock.PinSetupMode.SETUP)
                                     } else {
                                         onShowDisableAppLockDialog()
                                     }
@@ -946,9 +957,49 @@ private fun PrivacyContent(
                         )
                     }
 
+                    // 自动锁定时机（仅应用锁开启时显示）
+                    if (state.appLockEnabled) {
+                        SegmentedListItem(
+                            onClick = { },
+                            shapes = ListItemDefaults.segmentedShapes(index = 1, count = totalCount),
+                            supportingContent = {
+                                SingleChoiceSegmentedButtonRow(
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    val delayOptions = listOf(
+                                        0 to stringResource(R.string.set_app_lock_delay_immediate),
+                                        1 to stringResource(R.string.set_app_lock_delay_1min),
+                                        5 to stringResource(R.string.set_app_lock_delay_5min)
+                                    )
+                                    delayOptions.forEachIndexed { index, (minutes, label) ->
+                                        SegmentedButton(
+                                            selected = state.appLockDelayMinutes == minutes,
+                                            onClick = { onUpdateAppLockDelay(minutes) },
+                                            shape = SegmentedButtonDefaults.itemShape(
+                                                index = index,
+                                                count = delayOptions.size
+                                            )
+                                        ) {
+                                            Text(label)
+                                        }
+                                    }
+                                }
+                            },
+                            colors = ListItemDefaults.colors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainer
+                            )
+                        ) {
+                            Text(
+                                text = stringResource(R.string.set_app_lock_delay),
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+
                     SegmentedListItem(
                         onClick = { onTogglePrivacyMode(!state.privacyModeEnabled) },
-                        shapes = ListItemDefaults.segmentedShapes(index = 1, count = 2),
+                        shapes = ListItemDefaults.segmentedShapes(index = privacyModeIndex, count = totalCount),
                         supportingContent = {
                             Text(
                                 text = stringResource(R.string.set_privacy_mode_description),
@@ -972,15 +1023,56 @@ private fun PrivacyContent(
                             color = MaterialTheme.colorScheme.onSurface
                         )
                     }
+
+                    // 修改 PIN（仅应用锁开启时显示）
+                    if (state.appLockEnabled) {
+                        SegmentedListItem(
+                            onClick = { onNavigateToPinSetup(com.example.periodvibe.ui.applock.PinSetupMode.CHANGE) },
+                            shapes = ListItemDefaults.segmentedShapes(index = changePinIndex, count = totalCount),
+                            trailingContent = {
+                                Icon(
+                                    imageVector = Icons.Default.ChevronRight,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            },
+                            colors = ListItemDefaults.colors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainer
+                            )
+                        ) {
+                            Text(
+                                text = stringResource(R.string.set_change_pin),
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
                 }
             }
         }
     }
 
+    var showVerifyPinDialog by remember { mutableStateOf(false) }
+
     if (showDisableAppLockDialog) {
         DisableAppLockConfirmationDialog(
             onDismiss = { onHideDisableAppLockDialog() },
-            onConfirm = { onToggleAppLock(false) }
+            onConfirm = {
+                onHideDisableAppLockDialog()
+                // 关闭应用锁前需验证当前 PIN
+                showVerifyPinDialog = true
+            }
+        )
+    }
+
+    if (showVerifyPinDialog) {
+        VerifyPinDialog(
+            verify = onVerifyCurrentPin,
+            onVerified = {
+                showVerifyPinDialog = false
+                onToggleAppLock(false)
+            },
+            onDismiss = { showVerifyPinDialog = false }
         )
     }
 }
@@ -1427,6 +1519,7 @@ private fun RemindersScreenEnabledPreview() {
                 notificationTime = LocalTime.of(9, 0),
                 themeMode = com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM,
                 appLockEnabled = false,
+                appLockDelayMinutes = 0,
                 privacyModeEnabled = false,
 
                 periodNotificationEnabled = true,
@@ -1463,6 +1556,7 @@ private fun RemindersScreenDisabledPreview() {
                 notificationTime = LocalTime.of(9, 0),
                 themeMode = com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM,
                 appLockEnabled = false,
+                appLockDelayMinutes = 0,
                 privacyModeEnabled = false,
 
                 periodNotificationEnabled = true,
@@ -1499,6 +1593,7 @@ private fun CycleParametersScreenAutoPreview() {
                 notificationTime = LocalTime.of(9, 0),
                 themeMode = com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM,
                 appLockEnabled = false,
+                appLockDelayMinutes = 0,
                 privacyModeEnabled = false,
 
                 periodNotificationEnabled = true,
@@ -1529,6 +1624,7 @@ private fun CycleParametersScreenManualPreview() {
                 notificationTime = LocalTime.of(9, 0),
                 themeMode = com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM,
                 appLockEnabled = false,
+                appLockDelayMinutes = 0,
                 privacyModeEnabled = false,
 
                 periodNotificationEnabled = true,
@@ -1559,6 +1655,7 @@ private fun ThemeScreenPreview() {
                 notificationTime = LocalTime.of(9, 0),
                 themeMode = com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM,
                 appLockEnabled = false,
+                appLockDelayMinutes = 0,
                 privacyModeEnabled = false,
 
                 periodNotificationEnabled = true,
@@ -1587,6 +1684,7 @@ private fun PrivacyScreenPreview() {
                 notificationTime = LocalTime.of(9, 0),
                 themeMode = com.example.periodvibe.domain.model.Settings.ThemeMode.SYSTEM,
                 appLockEnabled = true,
+                appLockDelayMinutes = 0,
                 privacyModeEnabled = true,
 
                 periodNotificationEnabled = true,
@@ -1599,7 +1697,9 @@ private fun PrivacyScreenPreview() {
             onTogglePrivacyMode = { },
             onShowDisableAppLockDialog = { },
             onHideDisableAppLockDialog = { },
-            onToggleAppLock = { }
+            onToggleAppLock = { },
+            onUpdateAppLockDelay = { },
+            onVerifyCurrentPin = { false }
         )
     }
 }

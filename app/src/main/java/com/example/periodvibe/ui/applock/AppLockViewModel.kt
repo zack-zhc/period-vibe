@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.periodvibe.data.repository.SecurityRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,6 +24,10 @@ class AppLockViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<AppLockUiState>(AppLockUiState.Idle)
     val uiState: StateFlow<AppLockUiState> = _uiState.asStateFlow()
 
+    // 锁定倒计时（秒），0 表示未在锁定中
+    private val _lockoutRemainingSeconds = MutableStateFlow(0L)
+    val lockoutRemainingSeconds: StateFlow<Long> = _lockoutRemainingSeconds.asStateFlow()
+
     val pin = mutableStateOf("")
 
     fun onPinChange(newPin: String) {
@@ -31,17 +36,42 @@ class AppLockViewModel @Inject constructor(
 
     fun onPinEntered() {
         viewModelScope.launch {
+            // 锁定期间忽略输入
+            if (securityRepository.getLockoutRemainingMillis() > 0) return@launch
             val storedPin = securityRepository.getPin()
             if (pin.value == storedPin) {
+                securityRepository.resetFailedAttempts()
                 _uiState.value = AppLockUiState.Unlocked
             } else {
+                securityRepository.recordFailedAttempt()
                 _uiState.value = AppLockUiState.Error("PIN 码错误")
+                startLockoutTicker()
+            }
+        }
+    }
+
+    private fun startLockoutTicker() {
+        viewModelScope.launch {
+            while (true) {
+                val remainingMillis = securityRepository.getLockoutRemainingMillis()
+                _lockoutRemainingSeconds.value = (remainingMillis + 999L) / 1000L
+                if (remainingMillis <= 0L) {
+                    _lockoutRemainingSeconds.value = 0L
+                    break
+                }
+                delay(1000)
             }
         }
     }
 
     fun clearError() {
         _uiState.value = AppLockUiState.Idle
+    }
+
+    /** 重置为初始状态（进入锁屏页时调用，防止复用旧 ViewModel 的 Unlocked 残留导致自动解锁） */
+    fun resetToIdle() {
+        _uiState.value = AppLockUiState.Idle
+        pin.value = ""
     }
 
     fun hasPin(): Boolean {

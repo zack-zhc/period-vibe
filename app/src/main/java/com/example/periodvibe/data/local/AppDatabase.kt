@@ -21,7 +21,7 @@ import com.example.periodvibe.data.local.entity.SettingsEntity
         NotificationEntity::class,
         SettingsEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 @TypeConverters(

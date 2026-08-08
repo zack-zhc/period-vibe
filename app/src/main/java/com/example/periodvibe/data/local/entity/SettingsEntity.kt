@@ -45,6 +45,9 @@ data class SettingsEntity(
     @ColumnInfo(name = "app_lock_enabled")
     val appLockEnabled: Boolean,
 
+    @ColumnInfo(name = "app_lock_delay_minutes")
+    val appLockDelayMinutes: Int,
+
     @ColumnInfo(name = "privacy_mode_enabled")
     val privacyModeEnabled: Boolean,
 

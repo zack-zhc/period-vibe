@@ -3,6 +3,7 @@ package com.example.periodvibe
 import android.Manifest
 import android.os.Build
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -38,19 +39,6 @@ class MainActivity : FragmentActivity() {
 
     private val activityScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    // 会话级别的解锁状态 - 使用 savedInstanceState 保存
-    private var isUnlockedState = mutableStateOf(false)
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        outState.putBoolean("isUnlocked", isUnlockedState.value)
-    }
-
-    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
-        super.onRestoreInstanceState(savedInstanceState)
-        isUnlockedState.value = savedInstanceState.getBoolean("isUnlocked", false)
-    }
-
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { _ ->
@@ -62,8 +50,6 @@ class MainActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // 恢复解锁状态
-        isUnlockedState.value = savedInstanceState?.getBoolean("isUnlocked", false) ?: false
         enableEdgeToEdge()
 
         // 请求通知权限 (Android 13+)
@@ -84,6 +70,14 @@ class MainActivity : FragmentActivity() {
                 mainViewModel.getSettings().collect { settings ->
                     settings?.let {
                         themeMode = it.themeMode
+                        // 应用锁开启时 FLAG_SECURE 常驻：最近任务预览始终模糊/隐藏。
+                        // 不做动态 addFlags/clearFlags 切换——同一会话内多次切换后
+                        // 部分系统版本不再更新 recents 预览，模糊会失效。
+                        if (it.appLockEnabled) {
+                            window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                        } else {
+                            window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                        }
                     }
                 }
             }
@@ -97,8 +91,6 @@ class MainActivity : FragmentActivity() {
             PeriodVibeTheme(darkTheme = darkTheme) {
                 PeriodVibeNavHost(
                     mainViewModel = mainViewModel,
-                    isUnlocked = isUnlockedState.value,
-                    onUnlock = { isUnlockedState.value = true },
                     modifier = Modifier.fillMaxSize()
                 )
             }

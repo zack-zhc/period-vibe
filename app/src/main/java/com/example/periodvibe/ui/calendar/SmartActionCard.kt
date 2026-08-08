@@ -58,15 +58,15 @@ fun SmartActionCard(
 
     Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.secondaryContainer,
-        tonalElevation = 2.dp
+        shape = RoundedCornerShape(24.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        tonalElevation = 0.dp
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             DateHeader(day = day)
             StatusInfo(context = context, day = day, activeCycle = activeCycle)
@@ -95,65 +95,44 @@ private fun DateHeader(day: CalendarDay.Data) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+            Text(
+                text = day.date.format(dateFormatter),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            // 相位 pill
+            Surface(
+                shape = RoundedCornerShape(50),
+                color = MaterialTheme.colorScheme.primaryContainer,
+                tonalElevation = 0.dp
             ) {
                 Text(
-                    text = day.date.format(dateFormatter),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    text = day.phase.displayName,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                 )
-                if (day.isToday) {
-                    Surface(
-                        shape = RoundedCornerShape(50),
-                        color = MaterialTheme.colorScheme.primary,
-                        tonalElevation = 0.dp
-                    ) {
-                        Text(
-                            text = stringResource(R.string.cal_today),
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                        )
-                    }
-                }
-            }
-            if (day.record?.flowLevel != null) {
-                Surface(
-                    shape = RoundedCornerShape(50),
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    tonalElevation = 0.dp
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Check,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Text(
-                            text = stringResource(R.string.cal_recorded),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
             }
         }
 
-        Text(
-            text = day.phase.displayName,
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.primary
-        )
+        if (day.isToday) {
+            Surface(
+                shape = RoundedCornerShape(50),
+                color = MaterialTheme.colorScheme.primary,
+                tonalElevation = 0.dp
+            ) {
+                Text(
+                    text = stringResource(R.string.cal_today),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                )
+            }
+        }
     }
 }
 
@@ -164,9 +143,7 @@ private fun StatusInfo(
     activeCycle: Cycle?
 ) {
     when (context) {
-        ActionContext.IN_CYCLE_WITH_RECORD -> {
-            CycleStatusInfo(day = day, activeCycle = activeCycle)
-        }
+        ActionContext.IN_CYCLE_WITH_RECORD,
         ActionContext.IN_CYCLE_NO_RECORD -> {
             CycleStatusInfo(day = day, activeCycle = activeCycle)
         }
@@ -174,7 +151,10 @@ private fun StatusInfo(
             RecordInfo(day = day)
         }
         ActionContext.OUT_CYCLE_NO_RECORD -> {
-            NoCycleInfo(day = day)
+            StatusLine(
+                dotColor = MaterialTheme.colorScheme.outline,
+                text = stringResource(R.string.cal_cycle_start_hint)
+            )
         }
     }
 }
@@ -190,122 +170,47 @@ private fun CycleStatusInfo(
         null
     }
 
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.primaryContainer),
-            contentAlignment = Alignment.Center
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(10.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary)
-            )
+    StatusLine(
+        dotColor = MaterialTheme.colorScheme.primary,
+        text = if (cycleDay != null) {
+            "${stringResource(R.string.cal_cycle_day, cycleDay)} · ${stringResource(R.string.cal_current_phase, day.phase.displayName)}"
+        } else {
+            day.phase.displayName
         }
-        Column(
-            verticalArrangement = Arrangement.spacedBy(2.dp)
-        ) {
-            if (cycleDay != null) {
-                Text(
-                    text = stringResource(R.string.cal_cycle_day, cycleDay),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = stringResource(R.string.cal_current_phase, day.phase.displayName),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
+    )
 }
 
 @Composable
 private fun RecordInfo(day: CalendarDay.Data) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.primaryContainer),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.WaterDrop,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(20.dp)
-            )
-        }
-        Column(
-            verticalArrangement = Arrangement.spacedBy(2.dp)
-        ) {
-            if (day.record?.isPeriod == true) {
-                Text(
-                    text = stringResource(R.string.cal_period),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = day.record?.flowLevel?.displayName ?: "",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
+    StatusLine(
+        dotColor = MaterialTheme.colorScheme.primary,
+        text = day.record?.flowLevel?.let { flowLevel ->
+            stringResource(R.string.cal_recorded_flow, flowLevel.displayName)
+        } ?: stringResource(R.string.cal_recorded)
+    )
 }
 
 @Composable
-private fun NoCycleInfo(day: CalendarDay.Data) {
+private fun StatusLine(
+    dotColor: Color,
+    text: String
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.secondaryContainer),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.WaterDrop,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.secondary,
-                modifier = Modifier.size(20.dp)
-            )
-        }
-        Column(
-            verticalArrangement = Arrangement.spacedBy(2.dp)
-        ) {
-            Text(
-                text = day.phase.displayName,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = stringResource(R.string.cal_cycle_start_hint),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
+                .size(8.dp)
+                .clip(CircleShape)
+                .background(dotColor)
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
@@ -326,28 +231,48 @@ private fun ActionButtons(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         when {
-            // 只要有经期记录，就显示编辑按钮（周期内还显示结束周期按钮）
+            // 有经期记录：编辑 + 结束周期并排（周期内才显示结束周期）
             hasPeriodRecord -> {
-                EditButton(onClick = onEditClick)
                 if (hasActiveCycle) {
-                    EndCycleButton(onClick = onEndCycleClick)
+                    SecondaryActionsRow(
+                        onEditClick = onEditClick,
+                        onEndCycleClick = onEndCycleClick
+                    )
+                } else {
+                    EditButton(onClick = onEditClick, modifier = Modifier.fillMaxWidth())
                 }
             }
             // 周期内、无记录：记录 + 结束周期
             context == ActionContext.IN_CYCLE_NO_RECORD -> {
                 RecordButton(text = stringResource(R.string.cal_record_today), onClick = onRecordClick)
-                EndCycleButton(onClick = onEndCycleClick)
+                EndCycleButton(onClick = onEndCycleClick, modifier = Modifier.fillMaxWidth())
             }
-            // 周期内、有非经期记录：编辑 + 结束周期
+            // 周期内、有非经期记录：编辑 + 结束周期并排
             context == ActionContext.IN_CYCLE_WITH_RECORD -> {
-                EditButton(onClick = onEditClick)
-                EndCycleButton(onClick = onEndCycleClick)
+                SecondaryActionsRow(
+                    onEditClick = onEditClick,
+                    onEndCycleClick = onEndCycleClick
+                )
             }
             // 周期外、无记录：开始周期
             context == ActionContext.OUT_CYCLE_NO_RECORD -> {
                 NewCycleButton(onClick = onNewCycleClick)
             }
         }
+    }
+}
+
+@Composable
+private fun SecondaryActionsRow(
+    onEditClick: () -> Unit,
+    onEndCycleClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        EditButton(onClick = onEditClick, modifier = Modifier.weight(1f))
+        EndCycleButton(onClick = onEndCycleClick, modifier = Modifier.weight(1f))
     }
 }
 
@@ -378,10 +303,13 @@ private fun RecordButton(text: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun EditButton(onClick: () -> Unit) {
+private fun EditButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     TextButton(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier,
         shape = RoundedCornerShape(12.dp)
     ) {
         Icon(
@@ -399,11 +327,17 @@ private fun EditButton(onClick: () -> Unit) {
 }
 
 @Composable
-private fun EndCycleButton(onClick: () -> Unit) {
+private fun EndCycleButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     TextButton(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp)
+        modifier = modifier,
+        shape = RoundedCornerShape(12.dp),
+        colors = ButtonDefaults.textButtonColors(
+            contentColor = MaterialTheme.colorScheme.error
+        )
     ) {
         Icon(
             imageVector = Icons.Rounded.Stop,

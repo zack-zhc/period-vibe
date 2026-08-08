@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -221,15 +222,18 @@ private fun HomeContent(
 ) {
     val phaseData = getPhaseData(phase, darkTheme)
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp, vertical = 16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        GreetingSection()
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .fillMaxWidth()
+                .widthIn(max = 560.dp)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp, vertical = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            GreetingSection()
 
         MainStatusCard(
             cycleDay = cycleDay,
@@ -251,6 +255,7 @@ private fun HomeContent(
         )
 
         Spacer(modifier = Modifier.height(80.dp))
+        }
     }
 }
 
@@ -293,9 +298,6 @@ private fun MainStatusCard(
     ovulationDate: java.time.LocalDate?,
     modifier: Modifier = Modifier
 ) {
-    val phaseTip = getPhaseTip(phase)
-    // 有进行中周期：以真实记录天数计算进度
-    // 无进行中周期（预测模式）：以距下次月经的天数反推预测周期内位置
     val progress = if (hasCurrentCycle) {
         cycleDay.toFloat() / cycleLength.toFloat()
     } else {
@@ -433,28 +435,8 @@ private fun MainStatusCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-
-        // Phase tip
-        Text(
-            text = phaseTip,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 32.dp)
-        )
             }
         }
-    }
-}
-
-private fun getPhaseTip(phase: CyclePhase): String {
-    return when (phase) {
-        CyclePhase.MENSTRATION -> "记得多休息，补充铁质，注意保暖"
-        CyclePhase.FOLLICULAR -> "能量正在回升，适合开始新计划或运动"
-        CyclePhase.OVULATION -> "精力最旺盛的时期，好好把握"
-        CyclePhase.FERTILE -> "注意身体变化，保持轻松心情"
-        CyclePhase.LUTEAL -> "可能会有情绪波动，尝试放松活动"
-        CyclePhase.SAFE -> "享受这段平稳的时光"
     }
 }
 

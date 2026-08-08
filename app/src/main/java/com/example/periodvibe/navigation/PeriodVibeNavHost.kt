@@ -1,5 +1,6 @@
 package com.example.periodvibe.navigation
 
+import android.os.SystemClock
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
@@ -22,6 +23,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -32,8 +34,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.entryProvider
@@ -41,6 +46,7 @@ import androidx.navigation3.runtime.metadata
 import androidx.navigation3.ui.NavDisplay
 import com.example.periodvibe.domain.model.Settings
 import com.example.periodvibe.ui.applock.AppLockScreen
+import com.example.periodvibe.ui.applock.PinSetupMode
 import com.example.periodvibe.ui.applock.PinSetupScreen
 import com.example.periodvibe.ui.applock.PinSetupViewModel
 import com.example.periodvibe.ui.calendar.CalendarScreen
@@ -108,6 +114,29 @@ private val SlideInFromRightMetadata = metadata {
 }
 
 /**
+ * 应用锁页面的淡入淡出过渡：锁定淡入锁屏，解锁淡出到正常页面
+ */
+private val LockTransitionMetadata = metadata {
+    // 锁定：锁屏淡入，旧页面淡出
+    put(NavDisplay.TransitionKey) {
+        fadeIn(animationSpec = tween(ANIMATION_DURATION)) togetherWith
+                fadeOut(animationSpec = tween(ANIMATION_DURATION))
+    }
+
+    // 解锁：锁屏淡出，正常页面淡入
+    put(NavDisplay.PopTransitionKey) {
+        fadeIn(animationSpec = tween(ANIMATION_DURATION)) togetherWith
+                fadeOut(animationSpec = tween(ANIMATION_DURATION))
+    }
+
+    // 预测性返回
+    put(NavDisplay.PredictivePopTransitionKey) {
+        fadeIn(animationSpec = tween(ANIMATION_DURATION)) togetherWith
+                fadeOut(animationSpec = tween(ANIMATION_DURATION))
+    }
+}
+
+/**
  * 创建并记住 TopLevelBackStack 实例
  */
 @Composable
@@ -121,8 +150,6 @@ fun rememberPeriodVibeNavState(
 @Composable
 fun PeriodVibeNavHost(
     mainViewModel: MainViewModel,
-    isUnlocked: Boolean,
-    onUnlock: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val showOnboarding by mainViewModel.showOnboarding.collectAsStateWithLifecycle()
@@ -131,6 +158,9 @@ fun PeriodVibeNavHost(
     var themeMode by remember { mutableStateOf(Settings.ThemeMode.SYSTEM) }
 
     var showPinSetupSheet by remember { mutableStateOf(false) }
+    var pinSetupMode by remember { mutableStateOf(PinSetupMode.SETUP) }
+    // 锁定发生前的当前返回栈（含二级页面），解锁后恢复到原位置
+    var preLockBackStack by remember { mutableStateOf<List<Screen>?>(null) }
     var showLegendDialog by remember { mutableStateOf(false) }
     var showRecordSheetOnHome by remember { mutableStateOf(false) }
     val pinSetupViewModel: PinSetupViewModel = hiltViewModel()
@@ -141,7 +171,63 @@ fun PeriodVibeNavHost(
     val navStateUpdated by androidx.compose.runtime.rememberUpdatedState(navState)
     val showOnboardingUpdated by androidx.compose.runtime.rememberUpdatedState(showOnboarding)
     val settingsUpdated by androidx.compose.runtime.rememberUpdatedState(settings)
-    val isUnlockedUpdated by androidx.compose.runtime.rememberUpdatedState(isUnlocked)
+
+    // ==================== 应用锁状态（组合内管理，避免跨组合传播时序问题） ====================
+    // 冷启动默认未解锁（false），应用锁开启时进入 AppLock
+    var isUnlocked by remember { mutableStateOf(false) }
+    // 本次锁定是否由自动锁定（切后台）触发：
+    // 自动锁定不自动弹生物识别（设备刚解锁时 DEVICE_CREDENTIAL 会秒过，锁屏一闪而过），直接显示 PIN 页
+    var autoLocked by remember { mutableStateOf(false) }
+    // 上次离开前台的时间（elapsedRealtime）
+    var lastStoppedAt by remember { mutableStateOf(0L) }
+    // 上次解锁的时间（elapsedRealtime），用于自动锁定宽限期判断
+    var lastUnlockedAt by remember { mutableStateOf(0L) }
+
+    // 解锁：恢复导航到原位置（冷启动锁定则回首页）。
+    // FLAG_SECURE 由 MainActivity 按应用锁开关常驻管理（不做动态切换，避免 recents 预览失效）
+    val unlockAndRestore: () -> Unit = {
+        isUnlocked = true
+        autoLocked = false
+        lastUnlockedAt = SystemClock.elapsedRealtime()
+        lastStoppedAt = 0L
+        val restoreStack = preLockBackStack
+        preLockBackStack = null
+        if (showOnboardingUpdated == true) {
+            navState.resetTo(Screen.Onboarding)
+        } else {
+            navState.restoreCurrentStack(restoreStack ?: listOf(Screen.Home))
+        }
+    }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_STOP -> {
+                    lastStoppedAt = SystemClock.elapsedRealtime()
+                    // 切后台立即锁定：导航在后台即切换到锁屏，
+                    // 回前台时锁屏已就位，避免"先闪旧页面再出锁屏"
+                    if (isUnlocked && settingsUpdated?.appLockEnabled == true) {
+                        isUnlocked = false
+                        autoLocked = true
+                    }
+                }
+                Lifecycle.Event.ON_START -> {
+                    // 自动锁定宽限期：解锁后 delay 分钟内切回，自动恢复解锁（免重新输入）
+                    val delayMinutes = settingsUpdated?.appLockDelayMinutes ?: 0
+                    val elapsedSinceUnlock = SystemClock.elapsedRealtime() - lastUnlockedAt
+                    if (!isUnlocked && lastUnlockedAt > 0L &&
+                        elapsedSinceUnlock < delayMinutes * 60_000L
+                    ) {
+                        unlockAndRestore()
+                    }
+                }
+                else -> {}
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     val darkTheme = when (themeMode) {
         Settings.ThemeMode.LIGHT -> false
@@ -163,7 +249,7 @@ fun PeriodVibeNavHost(
             val currentDest = navStateUpdated.backStack.firstOrNull()
 
             // 计算是否需要 AppLock
-            val needsAppLock = currentSettings.appLockEnabled && !isUnlockedUpdated
+            val needsAppLock = currentSettings.appLockEnabled && !isUnlocked
 
             // 计算目标页面
             val targetDestination = when {
@@ -178,7 +264,8 @@ fun PeriodVibeNavHost(
                     navStateUpdated.replaceWith(targetDestination)
                 }
                 needsAppLock && currentDest !is Screen.AppLock -> {
-                    // 需要 AppLock 但不在 AppLock 页面：强制去 AppLock
+                    // 需要 AppLock 但不在 AppLock 页面：强制去 AppLock，并记住锁定前的当前返回栈（含二级页面）
+                    preLockBackStack = navStateUpdated.getCurrentStack()
                     navStateUpdated.replaceWith(Screen.AppLock)
                 }
             }
@@ -212,17 +299,10 @@ fun PeriodVibeNavHost(
             // 加载页面 - 简单的占位
         }
 
-        entry<Screen.AppLock> {
+        entry<Screen.AppLock>(metadata = LockTransitionMetadata) {
             AppLockScreen(
-                onUnlock = {
-                    onUnlock()
-                    val destination = if (showOnboarding == true) {
-                        Screen.Onboarding
-                    } else {
-                        Screen.Home
-                    }
-                    resetTo(destination)
-                }
+                autoPromptBiometric = !autoLocked,
+                onUnlock = unlockAndRestore
             )
         }
 
@@ -435,7 +515,10 @@ fun PeriodVibeNavHost(
         entry<Screen.Privacy>(metadata = SlideInFromRightMetadata) {
             PrivacyScreen(
                 onNavigateBack = goBack,
-                onNavigateToPinSetup = { showPinSetupSheet = true }
+                onNavigateToPinSetup = { mode ->
+                    pinSetupMode = mode
+                    showPinSetupSheet = true
+                }
             )
         }
 
@@ -494,7 +577,8 @@ fun PeriodVibeNavHost(
                         }
                     }
                 },
-                viewModel = pinSetupViewModel
+                viewModel = pinSetupViewModel,
+                mode = pinSetupMode
             )
         }
     }

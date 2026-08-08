@@ -13,6 +13,8 @@ data class Settings(
     val notificationTime: LocalTime = LocalTime.of(9, 0),
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val appLockEnabled: Boolean = false,
+    // 应用锁自动锁定时机（分钟）：0=立即，1=1分钟后，5=5分钟后
+    val appLockDelayMinutes: Int = 0,
     val privacyModeEnabled: Boolean = false,
     val language: String = "zh",
     val onboardingVersion: Int = 0,

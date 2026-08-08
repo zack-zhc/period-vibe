@@ -67,6 +67,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.periodvibe.R
+import com.example.periodvibe.ui.applock.PIN_LENGTH
+import com.example.periodvibe.ui.applock.PinDotRow
+import com.example.periodvibe.ui.applock.PinKeyboard
 import com.example.periodvibe.utils.AppUtils
 import java.time.LocalTime
 
@@ -430,13 +433,15 @@ fun AboutDialog(
         Card(
             shape = RoundedCornerShape(28.dp),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
+                // M3 规范：对话框容器用 elevation surface token，从压暗背景中浮起
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
             ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
                     .padding(28.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -450,7 +455,8 @@ fun AboutDialog(
                     Box(contentAlignment = Alignment.Center) {
                         Image(
                             painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                            contentDescription = stringResource(R.string.set_app_icon_desc),
+                            // 图标旁紧邻应用名文本，属装饰性元素，避免无障碍重复朗读
+                            contentDescription = null,
                             modifier = Modifier
                                 .size(72.dp)
                                 .clip(CircleShape)
@@ -590,6 +596,83 @@ private fun AboutFeatureItem(
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSurface
         )
+    }
+}
+
+// ======================= 验证 PIN 对话框 =======================
+
+/**
+ * 验证当前 PIN（关闭应用锁场景）。验证通过回调 [onVerified]，失败提示并清空可重试。
+ */
+@Composable
+fun VerifyPinDialog(
+    verify: (String) -> Boolean,
+    onVerified: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    var pin by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf<String?>(null) }
+    val wrongPinText = stringResource(R.string.applock_wrong_pin)
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(dismissOnBackPress = true, dismissOnClickOutside = false)
+    ) {
+        Surface(
+            shape = RoundedCornerShape(28.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            tonalElevation = 3.dp
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.set_verify_pin_title),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = stringResource(R.string.set_verify_pin_message),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
+                PinDotRow(entered = pin.length)
+                Box(modifier = Modifier.height(20.dp)) {
+                    error?.let {
+                        Text(
+                            text = it,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+                PinKeyboard(
+                    onNumberClick = { digit ->
+                        if (pin.length < PIN_LENGTH) {
+                            pin += digit
+                            if (pin.length == PIN_LENGTH) {
+                                if (verify(pin)) {
+                                    onVerified()
+                                } else {
+                                    error = wrongPinText
+                                    pin = ""
+                                }
+                            }
+                        }
+                    },
+                    onBackspaceClick = { pin = pin.dropLast(1) }
+                )
+                TextButton(onClick = onDismiss) {
+                    Text(stringResource(R.string.set_cancel))
+                }
+            }
+        }
     }
 }
 

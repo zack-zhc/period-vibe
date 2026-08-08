@@ -120,6 +120,28 @@ class TopLevelBackStack<T : Any>(startKey: T) {
     }
 
     /**
+     * 获取当前顶部级路由的返回栈（含二级页面）
+     * 注意：backStack 是所有栈的拍平结果，锁定/恢复必须用本方法，不能直接拍平
+     */
+    fun getCurrentStack(): List<T> =
+        topLevelStacks[topLevelKey]?.toList() ?: listOf(topLevelKey)
+
+    /**
+     * 恢复当前顶部级路由的返回栈（用于解锁后回到锁定前的位置）
+     * 首个元素作为顶部级路由，其余作为其二级页面。
+     * 锁定期间 replaceWith(AppLock) 留下的栈必须先清空，否则 backStack 会残留 AppLock，
+     * 导致导航块误判"已在锁屏"而跳过 replaceWith。
+     */
+    fun restoreCurrentStack(keys: List<T>) {
+        if (keys.isEmpty()) return
+        val firstKey = keys.first()
+        topLevelStacks.clear()
+        topLevelStacks[firstKey] = mutableStateListOf<T>().apply { addAll(keys) }
+        topLevelKey = firstKey
+        updateBackStack()
+    }
+
+    /**
      * 获取当前顶部级路由的返回栈大小
      */
     val currentStackSize: Int
