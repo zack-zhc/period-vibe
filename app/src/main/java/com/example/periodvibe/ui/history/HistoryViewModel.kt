@@ -176,9 +176,7 @@ class HistoryViewModel @Inject constructor(
         viewModelScope.launch {
             val targets = _selectedCycles.value
             try {
-                targets.forEach { cycleId ->
-                    getHistoryDataUseCase.deleteCycle(cycleId)
-                }
+                getHistoryDataUseCase.deleteCycles(targets.toList())
             } catch (e: Exception) {
                 e.printStackTrace()
                 _errorMessage.value = com.example.periodvibe.R.string.error_delete_failed

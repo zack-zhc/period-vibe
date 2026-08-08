@@ -73,7 +73,6 @@ import com.example.periodvibe.domain.usecase.CycleWithRecords
 import com.example.periodvibe.ui.history.components.DailyRecordRow
 import com.example.periodvibe.ui.history.components.EditModeBottomBar
 import com.example.periodvibe.ui.home.RecordBottomSheetContent
-import com.example.periodvibe.ui.home.RecordMode
 import com.example.periodvibe.ui.theme.CalendarPeriodDark
 import com.example.periodvibe.ui.theme.CalendarPeriodLight
 import kotlinx.coroutines.launch
@@ -246,7 +245,6 @@ fun HistoryScreen(
             RecordBottomSheetContent(
                 initialDate = showEditDialog!!.date,
                 initialFlowLevel = showEditDialog!!.flowLevel,
-                recordMode = RecordMode.AUTO,
                 hasCurrentCycle = true,
                 existingRecord = showEditDialog,
                 onDismiss = {

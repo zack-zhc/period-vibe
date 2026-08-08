@@ -50,7 +50,6 @@ import java.time.format.DateTimeFormatter
 fun RecordBottomSheetContent(
     initialDate: LocalDate = LocalDate.now(),
     initialFlowLevel: FlowLevel? = FlowLevel.LIGHT,
-    recordMode: RecordMode = RecordMode.AUTO,
     hasCurrentCycle: Boolean = false,
     existingRecord: com.example.periodvibe.domain.model.DailyRecord? = null,
     onDismiss: () -> Unit,

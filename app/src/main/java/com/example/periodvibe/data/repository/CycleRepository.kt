@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.Period
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -182,8 +183,30 @@ class CycleRepository @Inject constructor(
     }
 
     suspend fun getActiveCycleBeforeDate(endDate: LocalDate): Cycle? {
-        val entity = cycleDao.getActiveCycleBeforeDate(endDate.toString())
+        val entity = cycleDao.getActiveCycleBeforeDate(endDate)
         return entity?.let { cycleMapper.toDomain(it) }
+    }
+
+    /**
+     * 获取覆盖指定日期（start_date <= date <= end_date，未完成周期视为无限延伸）的最新周期
+     */
+    suspend fun getCycleForDate(date: LocalDate): Cycle? {
+        val entity = cycleDao.getCycleForDate(date)
+        return entity?.let { cycleMapper.toDomain(it) }
+    }
+
+    /**
+     * 按日期重新归属记录到对应周期；找不到时保留原 cycleId
+     */
+    suspend fun reassignCycleForDate(record: com.example.periodvibe.domain.model.DailyRecord): com.example.periodvibe.domain.model.DailyRecord {
+        val newCycleId = getAllCyclesOnce()
+            .firstOrNull { cycle ->
+                !record.date.isBefore(cycle.startDate) &&
+                    (cycle.endDate == null || !record.date.isAfter(cycle.endDate))
+            }
+            ?.id
+            ?: record.cycleId
+        return record.copy(cycleId = newCycleId)
     }
 
     fun getAllDailyRecords(): Flow<List<com.example.periodvibe.domain.model.DailyRecord>> {
@@ -193,7 +216,7 @@ class CycleRepository @Inject constructor(
     }
 
     suspend fun getDailyRecordByDate(date: java.time.LocalDate): com.example.periodvibe.domain.model.DailyRecord? {
-        val entity = dailyRecordDao.getDailyRecordByDate(date.toString())
+        val entity = dailyRecordDao.getDailyRecordByDate(date)
         return entity?.let { dailyRecordMapper.toDomain(it) }
     }
 
@@ -214,13 +237,18 @@ class CycleRepository @Inject constructor(
     }
 
     suspend fun updateDailyRecord(record: com.example.periodvibe.domain.model.DailyRecord) {
-        val entity = dailyRecordMapper.toEntity(record)
+        val entity = dailyRecordMapper.toEntity(record.copy(updatedAt = LocalDateTime.now()))
         dailyRecordDao.updateDailyRecord(entity)
     }
 
     suspend fun deleteDailyRecord(record: com.example.periodvibe.domain.model.DailyRecord) {
         val entity = dailyRecordMapper.toEntity(record)
         dailyRecordDao.deleteDailyRecord(entity)
+    }
+
+    suspend fun deleteCycles(cycles: List<Cycle>): Int {
+        val entities = cycles.map { cycleMapper.toEntity(it) }
+        return cycleDao.deleteCycles(entities)
     }
 
     suspend fun deleteAllDailyRecords() {

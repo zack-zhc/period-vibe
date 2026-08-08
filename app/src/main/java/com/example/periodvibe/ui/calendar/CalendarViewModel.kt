@@ -3,6 +3,9 @@ package com.example.periodvibe.ui.calendar
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.periodvibe.data.repository.CycleRepository
+import com.example.periodvibe.domain.model.DailyRecord
+import com.example.periodvibe.domain.model.FlowLevel
+import com.example.periodvibe.domain.model.RecordMode
 import com.example.periodvibe.domain.usecase.GetCalendarDataUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -12,6 +15,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.YearMonth
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 
 @HiltViewModel
@@ -36,6 +40,13 @@ class CalendarViewModel @Inject constructor(
     private val _showEndCycleDialog = MutableStateFlow(false)
     val showEndCycleDialog: StateFlow<Boolean> = _showEndCycleDialog.asStateFlow()
 
+    // 新周期确认弹窗（与首页行为一致，避免误触直接结束当前周期）
+    private val _showNewCycleConfirmation = MutableStateFlow(false)
+    val showNewCycleConfirmation: StateFlow<Boolean> = _showNewCycleConfirmation.asStateFlow()
+
+    private var pendingNewCycleDate: LocalDate? = null
+    private var pendingNewCycleFlowLevel: FlowLevel? = null
+
     private val _activeCycle = MutableStateFlow<com.example.periodvibe.domain.model.Cycle?>(null)
     val activeCycle: StateFlow<com.example.periodvibe.domain.model.Cycle?> = _activeCycle.asStateFlow()
 
@@ -52,8 +63,9 @@ class CalendarViewModel @Inject constructor(
     // 离当前月份超过该距离的月份会被移出缓存并取消加载，防止订阅和内存无限增长
     private val maxCachedDistance = preloadCount + 2
 
-    // 各月份的加载 Job，用于滑动远离后取消订阅
-    private val loadJobs = mutableMapOf<YearMonth, Job>()
+    // 各月份的加载 Job，用于滑动远离后取消订阅。
+    // 使用线程安全容器：collect 回调（Room 后台线程）与 invokeOnCompletion 可能并发访问
+    private val loadJobs = ConcurrentHashMap<YearMonth, Job>()
 
     init {
         loadActiveCycle()
@@ -191,20 +203,54 @@ class CalendarViewModel @Inject constructor(
 
     fun saveRecord(
         date: LocalDate,
-        mode: com.example.periodvibe.ui.home.RecordMode,
-        flowLevel: com.example.periodvibe.domain.model.FlowLevel?
+        mode: RecordMode,
+        flowLevel: FlowLevel?,
+        existingRecord: DailyRecord? = null
     ) {
         viewModelScope.launch {
-            saveRecordUseCase(date, mode, flowLevel)
-                .onSuccess {
-                    loadActiveCycle()
-                    refreshAllCachedMonths()
-                }
-                .onFailure { e ->
-                    e.printStackTrace()
-                    _errorMessage.value = com.example.periodvibe.R.string.error_save_failed
-                }
+            // 与首页一致：存在活动周期时，开始新周期需用户确认（会结束当前周期）
+            if (mode == RecordMode.NEW_CYCLE && cycleRepository.getActiveCycle() != null) {
+                pendingNewCycleDate = date
+                pendingNewCycleFlowLevel = flowLevel
+                _showNewCycleConfirmation.value = true
+                return@launch
+            }
+            doSaveRecord(date, mode, flowLevel, existingRecord)
         }
+    }
+
+    fun confirmNewCycle() {
+        val date = pendingNewCycleDate ?: return
+        val flowLevel = pendingNewCycleFlowLevel
+        viewModelScope.launch {
+            doSaveRecord(date, RecordMode.NEW_CYCLE, flowLevel, null)
+            _showNewCycleConfirmation.value = false
+            pendingNewCycleDate = null
+            pendingNewCycleFlowLevel = null
+        }
+    }
+
+    fun cancelNewCycle() {
+        _showNewCycleConfirmation.value = false
+        pendingNewCycleDate = null
+        pendingNewCycleFlowLevel = null
+    }
+
+    private suspend fun doSaveRecord(
+        date: LocalDate,
+        mode: RecordMode,
+        flowLevel: FlowLevel?,
+        existingRecord: DailyRecord?
+    ) {
+        saveRecordUseCase(date, mode, flowLevel, existingRecord)
+            .onSuccess {
+                loadActiveCycle()
+                refreshAllCachedMonths()
+            }
+            .onFailure { e ->
+                e.printStackTrace()
+                _errorMessage.value = com.example.periodvibe.R.string.error_save_failed
+            }
     }
 
     fun consumeError() {
@@ -213,10 +259,13 @@ class CalendarViewModel @Inject constructor(
 
     // 取消所有订阅并重新加载缓存窗口内的月份，保证数据最新
     // 保留已有 Success 数据，新数据到达后再替换，避免整页 Loading 闪烁
-    private fun refreshAllCachedMonths() {
+    fun refreshAllCachedMonths() {
         val monthsToReload = _calendarPages.value.keys.toList()
-        loadJobs.values.forEach { it.cancel() }
+        // 先快照再取消：cancel() 可能让协程在 Room 后台线程完成取消，
+        // invokeOnCompletion 会在该线程修改 loadJobs，迭代中取消会抛 ConcurrentModificationException
+        val jobsToCancel = loadJobs.values.toList()
         loadJobs.clear()
+        jobsToCancel.forEach { it.cancel() }
         monthsToReload.forEach { yearMonth ->
             loadMonthData(yearMonth, forceReload = true)
         }

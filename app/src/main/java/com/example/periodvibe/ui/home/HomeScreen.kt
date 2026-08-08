@@ -35,6 +35,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
@@ -50,6 +52,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -94,8 +97,8 @@ fun HomeScreen(
     val showEndCycleMenu by viewModel.showEndCycleMenu.collectAsState()
     val showNewCycleConfirmation by viewModel.showNewCycleConfirmation.collectAsState()
     val selectedDate by viewModel.selectedDate.collectAsState()
-    val recordMode by viewModel.recordMode.collectAsState()
     val existingRecord by viewModel.existingRecord.collectAsState()
+    val errorMessageRes by viewModel.errorMessage.collectAsState()
 
     val hasCurrentCycle = when (val state = homeData) {
         is HomeUiState.Success -> state.hasCurrentCycle
@@ -104,6 +107,15 @@ fun HomeScreen(
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    val errorMessageText = errorMessageRes?.let { stringResource(it) }
+    LaunchedEffect(errorMessageText) {
+        errorMessageText?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            viewModel.consumeError()
+        }
+    }
 
     // 如果需要在启动时显示记录弹窗
     LaunchedEffect(showRecordSheetOnStart) {
@@ -158,6 +170,11 @@ fun HomeScreen(
                 }
             )
         }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
     }
 
     if (showRecordSheet || showNewCycleSheet) {
@@ -171,7 +188,6 @@ fun HomeScreen(
         ) {
             RecordBottomSheetContent(
                 initialDate = selectedDate,
-                recordMode = if (showNewCycleSheet) RecordMode.NEW_CYCLE else recordMode,
                 hasCurrentCycle = hasCurrentCycle,
                 existingRecord = existingRecord,
                 onDismiss = {
@@ -633,7 +649,7 @@ private fun EndCycleConfirmationDialog(
 }
 
 @Composable
-private fun NewCycleConfirmationDialog(
+internal fun NewCycleConfirmationDialog(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
     modifier: Modifier = Modifier

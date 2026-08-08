@@ -3,6 +3,8 @@ package com.example.periodvibe.ui.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.periodvibe.data.repository.CycleRepository
+import com.example.periodvibe.domain.model.FlowLevel
+import com.example.periodvibe.domain.model.RecordMode
 import com.example.periodvibe.domain.usecase.GetHomeDataUseCase
 import com.example.periodvibe.utils.NotificationScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -11,15 +13,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import com.example.periodvibe.domain.model.FlowLevel
 import java.time.LocalDate
 import javax.inject.Inject
-
-enum class RecordMode {
-    AUTO,
-    NEW_CYCLE,
-    EDIT
-}
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
@@ -58,6 +53,10 @@ class HomeViewModel @Inject constructor(
     private var pendingNewCycleFlowLevel: FlowLevel? = null
 
     private var loadJob: Job? = null
+
+    // 错误消息资源 ID，用于 Snackbar 反馈
+    private val _errorMessage = MutableStateFlow<Int?>(null)
+    val errorMessage: StateFlow<Int?> = _errorMessage.asStateFlow()
 
     init {
         loadHomeData()
@@ -118,7 +117,7 @@ class HomeViewModel @Inject constructor(
         flowLevel: com.example.periodvibe.domain.model.FlowLevel?
     ) {
         viewModelScope.launch {
-            saveRecordUseCase(date, _recordMode.value, flowLevel)
+            saveRecordUseCase(date, _recordMode.value, flowLevel, _existingRecord.value)
                 .onSuccess {
                     hideRecordSheet()
                     refresh()
@@ -126,6 +125,7 @@ class HomeViewModel @Inject constructor(
                 }
                 .onFailure { e ->
                     e.printStackTrace()
+                    _errorMessage.value = com.example.periodvibe.R.string.error_save_failed
                 }
         }
     }
@@ -175,6 +175,7 @@ class HomeViewModel @Inject constructor(
             }
             .onFailure { e ->
                 e.printStackTrace()
+                _errorMessage.value = com.example.periodvibe.R.string.error_save_failed
             }
     }
 
@@ -202,6 +203,10 @@ class HomeViewModel @Inject constructor(
 
     fun refresh() {
         loadHomeData()
+    }
+
+    fun consumeError() {
+        _errorMessage.value = null
     }
 }
 

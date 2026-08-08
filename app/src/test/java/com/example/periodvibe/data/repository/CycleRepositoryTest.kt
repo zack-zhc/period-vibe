@@ -1,4 +1,4 @@
-package com.example.periodvibe.data.repository
+﻿package com.example.periodvibe.data.repository
 
 import com.example.periodvibe.data.local.dao.CycleDao
 import com.example.periodvibe.data.local.dao.DailyRecordDao
@@ -230,7 +230,7 @@ class CycleRepositoryTest {
         val activeCycleEntity = cycleMapper.toEntity(activeCycle)
         val existingRecordEntities = existingRecords.map { dailyRecordMapper.toEntity(it) }
 
-        coEvery { cycleDao.getActiveCycleBeforeDate(endDate.toString()) } returns activeCycleEntity
+        coEvery { cycleDao.getActiveCycleBeforeDate(endDate) } returns activeCycleEntity
         coEvery { dailyRecordDao.getDailyRecordsByCycleId(cycleId) } returns flowOf(existingRecordEntities)
         coEvery { dailyRecordDao.insertDailyRecord(any()) } returns 0L
         coEvery { cycleDao.updateCycle(any()) } returns Unit
@@ -258,7 +258,7 @@ class CycleRepositoryTest {
 
         val activeCycleEntity = cycleMapper.toEntity(activeCycle)
 
-        coEvery { cycleDao.getActiveCycleBeforeDate(endDate.toString()) } returns activeCycleEntity
+        coEvery { cycleDao.getActiveCycleBeforeDate(endDate) } returns activeCycleEntity
         coEvery { dailyRecordDao.getDailyRecordsByCycleId(cycleId) } returns flowOf(emptyList())
         coEvery { dailyRecordDao.insertDailyRecord(any()) } returns 0L
         coEvery { cycleDao.updateCycle(any()) } returns Unit
@@ -273,7 +273,7 @@ class CycleRepositoryTest {
     fun `endCurrentCycle does nothing when no active cycle`() = runTest {
         val endDate = LocalDate.of(2024, 1, 5)
 
-        coEvery { cycleDao.getActiveCycleBeforeDate(endDate.toString()) } returns null
+        coEvery { cycleDao.getActiveCycleBeforeDate(endDate) } returns null
 
         repository.endCurrentCycle(endDate)
 
@@ -303,7 +303,7 @@ class CycleRepositoryTest {
         val activeCycleEntity = cycleMapper.toEntity(activeCycle)
         val existingRecordEntities = existingRecords.map { dailyRecordMapper.toEntity(it) }
 
-        coEvery { cycleDao.getActiveCycleBeforeDate(endDate.toString()) } returns activeCycleEntity
+        coEvery { cycleDao.getActiveCycleBeforeDate(endDate) } returns activeCycleEntity
         coEvery { dailyRecordDao.getDailyRecordsByCycleId(cycleId) } returns flowOf(existingRecordEntities)
         coEvery { dailyRecordDao.insertDailyRecord(any()) } returns 2L
         coEvery { cycleDao.updateCycle(any()) } returns Unit
@@ -335,20 +335,27 @@ class CycleRepositoryTest {
     }
 
     @Test
-    fun `updateDailyRecord updates record via dao`() = runTest {
+    fun `updateDailyRecord updates record via dao and stamps updatedAt`() = runTest {
         val record = DailyRecord(
             id = 1,
             date = LocalDate.of(2024, 1, 1),
             cycleId = 1L,
             isPeriod = true
         )
-        val entity = dailyRecordMapper.toEntity(record)
 
-        coEvery { dailyRecordDao.updateDailyRecord(entity) } returns Unit
+        coEvery { dailyRecordDao.updateDailyRecord(any()) } returns Unit
 
         repository.updateDailyRecord(record)
 
-        coVerify { dailyRecordDao.updateDailyRecord(entity) }
+        coVerify {
+            dailyRecordDao.updateDailyRecord(
+                match {
+                    it.id == 1L &&
+                        it.date == LocalDate.of(2024, 1, 1) &&
+                        !it.updatedAt.isBefore(record.updatedAt)
+                }
+            )
+        }
     }
 
     @Test
@@ -381,5 +388,72 @@ class CycleRepositoryTest {
         val result = repository.getLatestCycle()
 
         assertNull(result)
+    }
+
+    @Test
+    fun `reassignCycleForDate assigns record to the cycle covering its date`() = runTest {
+        val cycle1 = CycleEntity(
+            id = 1,
+            startDate = LocalDate.of(2024, 1, 1),
+            endDate = LocalDate.of(2024, 1, 5),
+            cycleLength = null,
+            periodLength = null,
+            averageFlowLevel = null,
+            isCompleted = true,
+            createdAt = LocalDateTime.now(),
+            updatedAt = LocalDateTime.now()
+        )
+        val cycle2 = CycleEntity(
+            id = 2,
+            startDate = LocalDate.of(2024, 2, 1),
+            endDate = null,
+            cycleLength = null,
+            periodLength = null,
+            averageFlowLevel = null,
+            isCompleted = false,
+            createdAt = LocalDateTime.now(),
+            updatedAt = LocalDateTime.now()
+        )
+        // 与 DAO 的 ORDER BY start_date DESC 一致
+        coEvery { cycleDao.getAllCycles() } returns flowOf(listOf(cycle2, cycle1))
+
+        val record = DailyRecord(
+            id = 1,
+            date = LocalDate.of(2024, 1, 3),
+            cycleId = 99,
+            isPeriod = true
+        )
+
+        val result = repository.reassignCycleForDate(record)
+
+        assertEquals(1L, result.cycleId)
+        assertEquals(record.id, result.id)
+    }
+
+    @Test
+    fun `reassignCycleForDate keeps original cycle when date is not covered by any cycle`() = runTest {
+        val cycle2 = CycleEntity(
+            id = 2,
+            startDate = LocalDate.of(2024, 2, 1),
+            endDate = null,
+            cycleLength = null,
+            periodLength = null,
+            averageFlowLevel = null,
+            isCompleted = false,
+            createdAt = LocalDateTime.now(),
+            updatedAt = LocalDateTime.now()
+        )
+        coEvery { cycleDao.getAllCycles() } returns flowOf(listOf(cycle2))
+
+        val record = DailyRecord(
+            id = 1,
+            date = LocalDate.of(2024, 1, 3),
+            cycleId = 99,
+            isPeriod = true
+        )
+
+        val result = repository.reassignCycleForDate(record)
+
+        assertEquals(99L, result.cycleId)
     }
 }

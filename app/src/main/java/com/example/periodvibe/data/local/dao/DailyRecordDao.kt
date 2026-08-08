@@ -8,6 +8,7 @@ import androidx.room.Query
 import androidx.room.Update
 import com.example.periodvibe.data.local.entity.DailyRecordEntity
 import kotlinx.coroutines.flow.Flow
+import java.time.LocalDate
 
 @Dao
 interface DailyRecordDao {
@@ -18,7 +19,7 @@ interface DailyRecordDao {
     suspend fun getDailyRecordById(id: Long): DailyRecordEntity?
 
     @Query("SELECT * FROM daily_records WHERE date = :date")
-    suspend fun getDailyRecordByDate(date: String): DailyRecordEntity?
+    suspend fun getDailyRecordByDate(date: LocalDate): DailyRecordEntity?
 
     @Query("SELECT * FROM daily_records WHERE cycle_id = :cycleId")
     fun getDailyRecordsByCycleId(cycleId: Long): Flow<List<DailyRecordEntity>>

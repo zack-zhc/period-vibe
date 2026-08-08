@@ -72,16 +72,17 @@ class GetHistoryDataUseCase @Inject constructor(
         cycleRepository.deleteDailyRecord(record)
     }
 
+    suspend fun deleteCycles(cycleIds: List<Long>) {
+        val cycles = cycleIds.mapNotNull { cycleRepository.getCycleById(it) }
+        if (cycles.isNotEmpty()) {
+            // 批量删除在单个事务中执行，避免中途失败残留部分数据
+            cycleRepository.deleteCycles(cycles)
+        }
+    }
+
     suspend fun updateDailyRecord(record: DailyRecord) {
         // 编辑时日期可能被修改，需按新日期重新归属周期，避免记录出现在错误的周期中
-        val newCycleId = cycleRepository.getAllCyclesOnce()
-            .firstOrNull { cycle ->
-                !record.date.isBefore(cycle.startDate) &&
-                    (cycle.endDate == null || !record.date.isAfter(cycle.endDate))
-            }
-            ?.id
-            ?: record.cycleId
-        cycleRepository.updateDailyRecord(record.copy(cycleId = newCycleId))
+        cycleRepository.updateDailyRecord(cycleRepository.reassignCycleForDate(record))
     }
 }
 

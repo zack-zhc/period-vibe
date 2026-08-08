@@ -52,10 +52,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.example.periodvibe.R
+import com.example.periodvibe.domain.model.RecordMode
 import com.example.periodvibe.domain.usecase.CalendarDay
+import com.example.periodvibe.ui.home.NewCycleConfirmationDialog
 import com.example.periodvibe.ui.home.RecordBottomSheetContent
-import com.example.periodvibe.ui.home.RecordMode
 import com.example.periodvibe.ui.theme.CalendarFertileDark
 import com.example.periodvibe.ui.theme.CalendarFertileLight
 import com.example.periodvibe.ui.theme.CalendarOvulationDark
@@ -84,6 +86,7 @@ fun CalendarScreen(
     val selectedDate by viewModel.selectedDate.collectAsState()
     val activeCycle by viewModel.activeCycle.collectAsState()
     val showEndCycleDialog by viewModel.showEndCycleDialog.collectAsState()
+    val showNewCycleConfirmation by viewModel.showNewCycleConfirmation.collectAsState()
     val errorMessageRes by viewModel.errorMessage.collectAsState()
     var showRecordSheet by remember { mutableStateOf(false) }
     var recordDate by remember { mutableStateOf(java.time.LocalDate.now()) }
@@ -100,6 +103,12 @@ fun CalendarScreen(
             snackbarHostState.showSnackbar(message)
             viewModel.consumeError()
         }
+    }
+
+    // 回到前台时刷新缓存的月份数据，避免其他页面（如历史页）修改后被旧缓存覆盖
+    LifecycleResumeEffect(Unit) {
+        viewModel.refreshAllCachedMonths()
+        onPauseOrDispose { }
     }
 
     // 生成一个足够大的月份范围作为 Pager 的页面
@@ -250,6 +259,13 @@ fun CalendarScreen(
         )
     }
 
+    if (showNewCycleConfirmation) {
+        NewCycleConfirmationDialog(
+            onDismiss = { viewModel.cancelNewCycle() },
+            onConfirm = { viewModel.confirmNewCycle() }
+        )
+    }
+
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
 
@@ -279,7 +295,6 @@ fun CalendarScreen(
         ) {
             RecordBottomSheetContent(
                 initialDate = recordDate,
-                recordMode = recordMode,
                 hasCurrentCycle = hasCurrentCycle,
                 existingRecord = selectedDateRecord,
                 onDismiss = {
@@ -289,7 +304,7 @@ fun CalendarScreen(
                 },
                 onSave = { date, flowLevel ->
                     scope.launch { sheetState.hide() }.invokeOnCompletion {
-                        viewModel.saveRecord(date, recordMode, flowLevel)
+                        viewModel.saveRecord(date, recordMode, flowLevel, selectedDateRecord)
                         showRecordSheet = false
                     }
                 }
