@@ -1,6 +1,7 @@
 package com.example.periodvibe
 
 import android.app.Application
+import com.example.periodvibe.ui.widget.WidgetUpdater
 import com.example.periodvibe.utils.NotificationManager
 import com.example.periodvibe.utils.NotificationScheduler
 import dagger.hilt.android.HiltAndroidApp
@@ -16,6 +17,9 @@ class PeriodVibeApplication : Application() {
     @Inject
     lateinit var notificationScheduler: NotificationScheduler
 
+    @Inject
+    lateinit var widgetUpdater: WidgetUpdater
+
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onCreate() {
@@ -23,9 +27,10 @@ class PeriodVibeApplication : Application() {
         val notificationManager = NotificationManager(this)
         notificationManager.createNotificationChannel()
 
-        // 应用启动时重新安排通知
+        // 应用启动时重新安排通知，并刷新桌面小组件（同步日期变化）
         applicationScope.launch {
             notificationScheduler.rescheduleAllNotifications()
+            widgetUpdater.refresh()
         }
     }
 }

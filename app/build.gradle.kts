@@ -14,8 +14,8 @@ android {
         applicationId = "com.example.periodvibe"
         minSdk = 31
         targetSdk = 36
-        versionCode = 11
-        versionName = "1.0.28"
+        versionCode = 12
+        versionName = "1.0.29"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -69,6 +69,8 @@ dependencies {
     implementation("androidx.security:security-crypto:1.1.0")
     implementation("androidx.biometric:biometric:1.1.0")
     implementation(libs.gson)
+    implementation(libs.glance.appwidget)
+    implementation(libs.glance.material3)
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
     testImplementation(libs.junit)
     testImplementation(libs.mockk)

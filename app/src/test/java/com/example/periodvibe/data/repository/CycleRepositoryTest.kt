@@ -9,6 +9,7 @@ import com.example.periodvibe.data.mapper.DailyRecordMapper
 import com.example.periodvibe.domain.model.Cycle
 import com.example.periodvibe.domain.model.DailyRecord
 import com.example.periodvibe.domain.model.FlowLevel
+import com.example.periodvibe.ui.widget.WidgetUpdater
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -26,6 +27,7 @@ class CycleRepositoryTest {
     private lateinit var dailyRecordDao: DailyRecordDao
     private lateinit var cycleMapper: CycleMapper
     private lateinit var dailyRecordMapper: DailyRecordMapper
+    private lateinit var widgetUpdater: WidgetUpdater
     private lateinit var repository: CycleRepository
 
     @Before
@@ -34,7 +36,8 @@ class CycleRepositoryTest {
         dailyRecordDao = mockk()
         cycleMapper = CycleMapper()
         dailyRecordMapper = DailyRecordMapper()
-        repository = CycleRepository(cycleDao, dailyRecordDao, cycleMapper, dailyRecordMapper)
+        widgetUpdater = mockk(relaxed = true)
+        repository = CycleRepository(cycleDao, dailyRecordDao, cycleMapper, dailyRecordMapper, widgetUpdater)
     }
 
     @Test

@@ -174,6 +174,23 @@
     <string name="dev_test_delayed_title">测试延迟通知</string>
     <string name="dev_test_delayed_message">来自 Period Vibe 的延迟测试通知，将在 %1$d 秒后发出。</string>
 
+    <!-- 桌面小组件 -->
+    <string name="widget_description">周期进度小组件：显示当前阶段与下次经期倒计时</string>
+    <string name="widget_empty_title">还没有经期记录</string>
+    <string name="widget_empty_hint">点击开始记录</string>
+    <string name="widget_privacy_masked">周期信息已隐藏</string>
+    <string name="widget_privacy_hint">隐私模式已开启</string>
+    <string name="widget_days_remaining">还有 %1$d 天</string>
+    <string name="widget_period_day">经期第 %1$d 天</string>
+    <string name="widget_cycle_day">周期第 %1$d 天</string>
+    <string name="widget_next_period_date">预计下次经期 %1$s</string>
+    <string name="widget_phase_menstruation">经期</string>
+    <string name="widget_phase_follicular">卵泡期</string>
+    <string name="widget_phase_ovulation">排卵期</string>
+    <string name="widget_phase_luteal">黄体期</string>
+    <string name="widget_phase_fertile">易孕期</string>
+    <string name="widget_phase_safe">安全期</string>
+
     <!-- 隐私设置 -->
     <string name="set_privacy">隐私设置</string>
     <string name="set_app_lock">应用锁</string>

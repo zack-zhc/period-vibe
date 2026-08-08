@@ -5,6 +5,7 @@ import com.example.periodvibe.data.local.dao.DailyRecordDao
 import com.example.periodvibe.data.mapper.CycleMapper
 import com.example.periodvibe.data.mapper.DailyRecordMapper
 import com.example.periodvibe.domain.model.Cycle
+import com.example.periodvibe.ui.widget.WidgetUpdater
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -19,8 +20,14 @@ class CycleRepository @Inject constructor(
     private val cycleDao: CycleDao,
     private val dailyRecordDao: DailyRecordDao,
     private val cycleMapper: CycleMapper,
-    private val dailyRecordMapper: DailyRecordMapper
+    private val dailyRecordMapper: DailyRecordMapper,
+    private val widgetUpdater: WidgetUpdater
 ) {
+
+    /** 数据变更后刷新桌面小组件（内部已容错，不影响主流程） */
+    private suspend fun notifyWidgetChanged() {
+        widgetUpdater.refresh()
+    }
 
     fun getAllCycles(): Flow<List<Cycle>> {
         return cycleDao.getAllCycles().map { entities ->
@@ -45,21 +52,24 @@ class CycleRepository @Inject constructor(
 
     suspend fun insertCycle(cycle: Cycle): Long {
         val entity = cycleMapper.toEntity(cycle)
-        return cycleDao.insertCycle(entity)
+        return cycleDao.insertCycle(entity).also { notifyWidgetChanged() }
     }
 
     suspend fun updateCycle(cycle: Cycle) {
         val entity = cycleMapper.toEntity(cycle)
         cycleDao.updateCycle(entity)
+        notifyWidgetChanged()
     }
 
     suspend fun deleteCycle(cycle: Cycle) {
         val entity = cycleMapper.toEntity(cycle)
         cycleDao.deleteCycle(entity)
+        notifyWidgetChanged()
     }
 
     suspend fun deleteAllCycles() {
         cycleDao.deleteAllCycles()
+        notifyWidgetChanged()
     }
 
     suspend fun getAllCyclesOnce(): List<Cycle> {
@@ -68,7 +78,7 @@ class CycleRepository @Inject constructor(
 
     suspend fun insertAllCycles(cycles: List<Cycle>): List<Long> {
         val entities = cycleMapper.toEntityList(cycles)
-        return cycleDao.insertAllCycles(entities)
+        return cycleDao.insertAllCycles(entities).also { notifyWidgetChanged() }
     }
 
     suspend fun createInitialCycle(
@@ -233,26 +243,29 @@ class CycleRepository @Inject constructor(
 
     suspend fun saveDailyRecord(record: com.example.periodvibe.domain.model.DailyRecord): Long {
         val entity = dailyRecordMapper.toEntity(record)
-        return dailyRecordDao.insertDailyRecord(entity)
+        return dailyRecordDao.insertDailyRecord(entity).also { notifyWidgetChanged() }
     }
 
     suspend fun updateDailyRecord(record: com.example.periodvibe.domain.model.DailyRecord) {
         val entity = dailyRecordMapper.toEntity(record.copy(updatedAt = LocalDateTime.now()))
         dailyRecordDao.updateDailyRecord(entity)
+        notifyWidgetChanged()
     }
 
     suspend fun deleteDailyRecord(record: com.example.periodvibe.domain.model.DailyRecord) {
         val entity = dailyRecordMapper.toEntity(record)
         dailyRecordDao.deleteDailyRecord(entity)
+        notifyWidgetChanged()
     }
 
     suspend fun deleteCycles(cycles: List<Cycle>): Int {
         val entities = cycles.map { cycleMapper.toEntity(it) }
-        return cycleDao.deleteCycles(entities)
+        return cycleDao.deleteCycles(entities).also { notifyWidgetChanged() }
     }
 
     suspend fun deleteAllDailyRecords() {
         dailyRecordDao.deleteAllDailyRecords()
+        notifyWidgetChanged()
     }
 
     suspend fun getAllDailyRecordsOnce(): List<com.example.periodvibe.domain.model.DailyRecord> {
@@ -261,7 +274,7 @@ class CycleRepository @Inject constructor(
 
     suspend fun insertAllDailyRecords(records: List<com.example.periodvibe.domain.model.DailyRecord>): List<Long> {
         val entities = dailyRecordMapper.toEntityList(records)
-        return dailyRecordDao.insertAllDailyRecords(entities)
+        return dailyRecordDao.insertAllDailyRecords(entities).also { notifyWidgetChanged() }
     }
 
     suspend fun getPreviousDayRecord(date: java.time.LocalDate): com.example.periodvibe.domain.model.DailyRecord? {

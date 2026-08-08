@@ -3,6 +3,7 @@ package com.example.periodvibe.data.repository
 import com.example.periodvibe.data.local.dao.SettingsDao
 import com.example.periodvibe.data.mapper.SettingsMapper
 import com.example.periodvibe.domain.model.Settings
+import com.example.periodvibe.ui.widget.WidgetUpdater
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -11,7 +12,8 @@ import javax.inject.Singleton
 @Singleton
 class SettingsRepository @Inject constructor(
     private val settingsDao: SettingsDao,
-    private val settingsMapper: SettingsMapper
+    private val settingsMapper: SettingsMapper,
+    private val widgetUpdater: WidgetUpdater
 ) {
 
     fun getSettings(): Flow<Settings?> {
@@ -28,11 +30,13 @@ class SettingsRepository @Inject constructor(
     suspend fun insertSettings(settings: Settings) {
         val entity = settingsMapper.toEntity(settings)
         settingsDao.insertSettings(entity)
+        widgetUpdater.refresh()
     }
 
     suspend fun updateSettings(settings: Settings) {
         val entity = settingsMapper.toEntity(settings)
         settingsDao.updateSettings(entity)
+        widgetUpdater.refresh()
     }
 
     suspend fun saveInitialSettings(
