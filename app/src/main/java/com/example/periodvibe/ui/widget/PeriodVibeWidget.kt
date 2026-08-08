@@ -94,10 +94,11 @@ private fun DataContent(
     }.getOrDefault(GlanceTheme.colors.primary)
     val phaseName = phaseName(context, cycleInfo.phase)
 
-    val bigText = if (cycleInfo.daysUntilNextPeriod != null && cycleInfo.daysUntilNextPeriod > 0) {
-        context.getString(R.string.widget_days_remaining, cycleInfo.daysUntilNextPeriod)
-    } else if (cycleInfo.phase == CyclePhase.MENSTRATION) {
+    val bigText = if (cycleInfo.phase == CyclePhase.MENSTRATION) {
+        // 经期中优先显示经期第几天，让记录经期后小组件有直观变化
         context.getString(R.string.widget_period_day, cycleInfo.dayInCycle)
+    } else if (cycleInfo.daysUntilNextPeriod != null && cycleInfo.daysUntilNextPeriod > 0) {
+        context.getString(R.string.widget_days_remaining, cycleInfo.daysUntilNextPeriod)
     } else {
         context.getString(R.string.widget_cycle_day, cycleInfo.dayInCycle)
     }
