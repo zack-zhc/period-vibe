@@ -13,14 +13,17 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -35,6 +38,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -364,18 +368,20 @@ fun PeriodVibeNavHost(
 
         // 顶部级路由 - 日历
         entry<Screen.Calendar> {
-            val scrollBehavior = androidx.compose.material3.TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
-                androidx.compose.material3.rememberTopAppBarState()
-            )
             Scaffold(
                 modifier = Modifier.fillMaxSize(),
                 topBar = {
-                    androidx.compose.material3.MediumTopAppBar(
-                        title = { Text("日历") },
+                    TopAppBar(
+                        title = { Text(stringResource(com.example.periodvibe.R.string.cal_title)) },
+                        // 顶栏不单独染色：静止与滚动均与页面背景同色
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            scrolledContainerColor = MaterialTheme.colorScheme.surface
+                        ),
                         actions = {
                             IconButton(onClick = { navigateToDetail(Screen.History) }) {
                                 Icon(
-                                    imageVector = Icons.Default.History,
+                                    imageVector = Icons.Rounded.History,
                                     contentDescription = "历史记录"
                                 )
                             }
@@ -385,8 +391,7 @@ fun PeriodVibeNavHost(
                                     contentDescription = "图例"
                                 )
                             }
-                        },
-                        scrollBehavior = scrollBehavior
+                        }
                     )
                 },
                 bottomBar = {
@@ -401,7 +406,6 @@ fun PeriodVibeNavHost(
                     onNavigateToHistory = { navigateToDetail(Screen.History) },
                     onNavigateToSettings = { navigateToTopLevel(Screen.Settings) },
                     onDateClick = {},
-                    scrollBehavior = scrollBehavior,
                     darkTheme = darkTheme,
                     modifier = Modifier
                         .fillMaxSize()
@@ -419,15 +423,16 @@ fun PeriodVibeNavHost(
 
         // 顶部级路由 - 设置
         entry<Screen.Settings> {
-            val scrollBehavior = androidx.compose.material3.TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
-                androidx.compose.material3.rememberTopAppBarState()
-            )
             Scaffold(
                 modifier = Modifier.fillMaxSize(),
                 topBar = {
-                    androidx.compose.material3.MediumTopAppBar(
-                        title = { Text("设置") },
-                        scrollBehavior = scrollBehavior
+                    TopAppBar(
+                        title = { Text(stringResource(com.example.periodvibe.R.string.set_title)) },
+                        // 顶栏不单独染色：静止与滚动均与页面背景同色
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            scrolledContainerColor = MaterialTheme.colorScheme.surface
+                        )
                     )
                 },
                 bottomBar = {
@@ -444,7 +449,6 @@ fun PeriodVibeNavHost(
                     onNavigateToPrivacy = { navigateToDetail(Screen.Privacy) },
                     onNavigateToDataManagement = { navigateToDetail(Screen.DataManagement) },
                     onNavigateToAbout = { navigateToDetail(Screen.About) },
-                    scrollBehavior = scrollBehavior,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues)

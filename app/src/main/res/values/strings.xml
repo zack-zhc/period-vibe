@@ -4,6 +4,7 @@
     <!-- 日历 -->
     <string name="cal_prev_month">上个月</string>
     <string name="cal_next_month">下个月</string>
+    <string name="cal_title">日历</string>
     <string name="cal_today_fab">今天</string>
     <string name="cal_month_title">%1$d年%2$s</string>
     <string name="cal_today">今天</string>
@@ -113,6 +114,7 @@
     <string name="history_selected_count">已选择 %1$d 个周期</string>
 
     <!-- 设置页通用 -->
+    <string name="set_title">设置</string>
     <string name="set_back">返回</string>
     <string name="set_confirm">确定</string>
     <string name="set_cancel">取消</string>

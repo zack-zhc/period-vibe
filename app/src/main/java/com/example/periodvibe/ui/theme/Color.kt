@@ -30,14 +30,46 @@ val ErrorContainerLight = Color(0xFFFFDAD6)
 val OnErrorContainerLight = Color(0xFF410002)
 
 // 背景和表面
-val BackgroundLight = Color(0xFFFFFBFF)
+val BackgroundLight = Color(0xFFFFF8F9)
 val OnBackgroundLight = Color(0xFF1F1A1B)
-val SurfaceLight = Color(0xFFFFF0F5)
+// M3 规范：surface 与 background 同值；表面色带主色倾向（Expressive 表面染色）
+val SurfaceLight = Color(0xFFFFF8F9)
 val OnSurfaceLight = Color(0xFF1F1A1B)
 val SurfaceVariantLight = Color(0xFFF2DDE0)
 val OnSurfaceVariantLight = Color(0xFF514345)
 val OutlineLight = Color(0xFF837375)
 val OutlineVariantLight = Color(0xFFD5C2C4)
+
+// 浅色表面层级（Expressive：从背景到最高容器逐级加深，均带粉色倾向）
+val SurfaceContainerLowestLight = Color(0xFFFFFFFF)
+val SurfaceContainerLowLight = Color(0xFFFFF2F4)
+val SurfaceContainerLight = Color(0xFFFFECEF)
+val SurfaceContainerHighLight = Color(0xFFFFE6EA)
+val SurfaceContainerHighestLight = Color(0xFFFFE0E5)
+val SurfaceDimLight = Color(0xFFFAD9DE)
+val SurfaceBrightLight = Color(0xFFFFF8F9)
+
+// 反色与 scrim
+val InverseSurfaceLight = Color(0xFF322C2E)
+val InverseOnSurfaceLight = Color(0xFFF5EBED)
+val InversePrimaryLight = Color(0xFFFFB1BF)
+val Scrim = Color(0xFF000000)
+
+// 固定色（Expressive 特征：两主题同值，用于 chips 与选中态容器）
+val PrimaryFixed = Color(0xFFFFD9DE)
+val PrimaryFixedDim = Color(0xFFFFB7C5)
+val OnPrimaryFixed = Color(0xFF3F0014)
+val OnPrimaryFixedVariant = Color(0xFF8E0032)
+
+val SecondaryFixed = Color(0xFFFFD9E3)
+val SecondaryFixedDim = Color(0xFFFFB3CD)
+val OnSecondaryFixed = Color(0xFF3F001E)
+val OnSecondaryFixedVariant = Color(0xFF792848)
+
+val TertiaryFixed = Color(0xFFFFD8EE)
+val TertiaryFixedDim = Color(0xFFF3B5D8)
+val OnTertiaryFixed = Color(0xFF301127)
+val OnTertiaryFixedVariant = Color(0xFF633B55)
 
 // 深色主题
 val PrimaryDark = Color(0xFFFFB1BF)
@@ -62,23 +94,38 @@ val OnErrorContainerDark = Color(0xFFFFDAD6)
 
 val BackgroundDark = Color(0xFF1F1A1B)
 val OnBackgroundDark = Color(0xFFEBE0E1)
-val SurfaceDark = Color(0xFF2A2324)
+// M3 规范：surface 与 background 同值
+val SurfaceDark = Color(0xFF1F1A1B)
 val OnSurfaceDark = Color(0xFFEBE0E1)
 val SurfaceVariantDark = Color(0xFF514345)
 val OnSurfaceVariantDark = Color(0xFFD5C2C4)
 val OutlineDark = Color(0xFF9E8C8E)
 val OutlineVariantDark = Color(0xFF514345)
 
-// 周期阶段颜色 (Material 3 Expressive 风格)
-// 浅色：色相分离保证可区分——月经红粉 / 卵泡绿 / 排卵紫 / 易孕蓝 / 安全蓝绿 / 黄体橙
-val MenstruationColor = Color(0xFFE91E63)
-val FollicularColor = Color(0xFF66BB6A)
-val OvulationColor = Color(0xFF9C27B0)
-val FertileColor = Color(0xFF0288D1)
-val SafeColor = Color(0xFF26A69A)
-val LutealColor = Color(0xFFFFB74D)
+// 深色表面层级（从背景到最高容器逐级提亮，均带粉色倾向）
+val SurfaceContainerLowestDark = Color(0xFF241E20)
+val SurfaceContainerLowDark = Color(0xFF2A2426)
+val SurfaceContainerDark = Color(0xFF2F292B)
+val SurfaceContainerHighDark = Color(0xFF3A3335)
+val SurfaceContainerHighestDark = Color(0xFF453E40)
+val SurfaceDimDark = Color(0xFF1F1A1B)
+val SurfaceBrightDark = Color(0xFF473F42)
 
-// 暗色变体：提高亮度保证深色背景上的对比度（与日历页暗色方案同族）
+// 反色
+val InverseSurfaceDark = Color(0xFFEBE0E1)
+val InverseOnSurfaceDark = Color(0xFF322C2E)
+val InversePrimaryDark = Color(0xFFB82951)
+
+// 周期阶段颜色（Material 3 Expressive 风格）
+// 浅色统一为 M2 500 色板（亮度一致）：月经红 / 卵泡绿 / 排卵紫 / 易孕蓝 / 安全蓝绿 / 黄体橙
+val MenstruationColor = Color(0xFFE91E63)
+val FollicularColor = Color(0xFF4CAF50)
+val OvulationColor = Color(0xFF9C27B0)
+val FertileColor = Color(0xFF2196F3)
+val SafeColor = Color(0xFF009688)
+val LutealColor = Color(0xFFFF9800)
+
+// 暗色变体：统一为 M2 300 色板（提高亮度保证深色背景上的对比度，与浅色 500 成对）
 val MenstruationColorDark = Color(0xFFF06292)
 val FollicularColorDark = Color(0xFF81C784)
 val OvulationColorDark = Color(0xFFCE93D8)

@@ -35,15 +35,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -58,7 +55,6 @@ fun SettingsScreen(
     onNavigateToPrivacy: () -> Unit,
     onNavigateToDataManagement: () -> Unit,
     onNavigateToAbout: () -> Unit,
-    scrollBehavior: TopAppBarScrollBehavior? = null,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
@@ -72,7 +68,6 @@ fun SettingsScreen(
         onNavigateToPrivacy = onNavigateToPrivacy,
         onNavigateToDataManagement = onNavigateToDataManagement,
         onNavigateToAbout = onNavigateToAbout,
-        scrollBehavior = scrollBehavior,
         modifier = modifier
     )
 }
@@ -87,7 +82,6 @@ private fun SettingsContent(
     onNavigateToPrivacy: () -> Unit,
     onNavigateToDataManagement: () -> Unit,
     onNavigateToAbout: () -> Unit,
-    scrollBehavior: TopAppBarScrollBehavior? = null,
     modifier: Modifier = Modifier
 ) {
     when (uiState) {
@@ -107,7 +101,6 @@ private fun SettingsContent(
                     .align(Alignment.TopCenter)
                     .widthIn(max = 560.dp)
                     .fillMaxWidth()
-                    .let { if (scrollBehavior != null) it.nestedScroll(scrollBehavior.nestedScrollConnection) else it }
                     .verticalScroll(rememberScrollState())
                     .padding(16.dp)
             ) {
@@ -221,15 +214,11 @@ private fun SettingsContent(
 @Composable
 private fun SettingsScreenPreview() {
     PeriodVibeTheme {
-        val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
-            androidx.compose.material3.rememberTopAppBarState()
-        )
         androidx.compose.material3.Scaffold(
             modifier = Modifier.fillMaxSize(),
             topBar = {
-                androidx.compose.material3.MediumTopAppBar(
-                    title = { Text("设置") },
-                    scrollBehavior = scrollBehavior
+                androidx.compose.material3.TopAppBar(
+                    title = { Text("设置") }
                 )
             }
         ) { paddingValues ->
@@ -258,7 +247,6 @@ private fun SettingsScreenPreview() {
                 onNavigateToPrivacy = { },
                 onNavigateToDataManagement = { },
                 onNavigateToAbout = { },
-                scrollBehavior = scrollBehavior,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
