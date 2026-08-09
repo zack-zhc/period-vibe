@@ -14,8 +14,8 @@ android {
         applicationId = "com.example.periodvibe"
         minSdk = 31
         targetSdk = 36
-        versionCode = 16
-        versionName = "1.0.33"
+        versionCode = 17
+        versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -59,11 +59,11 @@ dependencies {
     implementation("androidx.compose.material3:material3:1.5.0-alpha18")
     implementation(libs.androidx.material.icons.extended)
     implementation(libs.androidx.foundation)
-    implementation(libs.androidx.navigation.compose)
     implementation(libs.hilt.android)
     implementation(libs.hilt.navigation.compose)
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.navigation3.ui)
+    implementation(libs.androidx.lifecycle.viewmodel.navigation3)
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
     ksp(libs.hilt.compiler)
     implementation(libs.room.runtime)

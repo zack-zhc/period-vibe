@@ -17,11 +17,12 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.periodvibe.navigation.Screen
 
 @Composable
 fun PeriodBottomNavigation(
-    currentRoute: String,
-    onNavigate: (String) -> Unit,
+    currentTopLevel: Screen,
+    onNavigate: (Screen) -> Unit,
     modifier: Modifier = Modifier
 ) {
     // Material 3 Expressive 风格底部导航栏
@@ -39,9 +40,10 @@ fun PeriodBottomNavigation(
         )
 
         items.forEach { item ->
+            val selected = currentTopLevel == item.screen
             NavigationBarItem(
-                selected = currentRoute == item.route,
-                onClick = { onNavigate(item.route) },
+                selected = selected,
+                onClick = { onNavigate(item.screen) },
                 icon = {
                     Icon(
                         imageVector = item.icon,
@@ -52,7 +54,7 @@ fun PeriodBottomNavigation(
                     Text(
                         text = stringResource(item.labelRes),
                         style = MaterialTheme.typography.labelMedium,
-                        fontWeight = if (currentRoute == item.route)
+                        fontWeight = if (selected)
                             FontWeight.SemiBold
                         else
                             FontWeight.Normal
@@ -71,22 +73,22 @@ fun PeriodBottomNavigation(
 }
 
 sealed class BottomNavItem(
-    val route: String,
+    val screen: Screen,
     val labelRes: Int,
     val icon: ImageVector
 ) {
     object Home : BottomNavItem(
-        route = "home",
+        screen = Screen.Home,
         labelRes = com.example.periodvibe.R.string.nav_home,
         icon = Icons.Rounded.Home
     )
     object Calendar : BottomNavItem(
-        route = "calendar",
+        screen = Screen.Calendar,
         labelRes = com.example.periodvibe.R.string.nav_calendar,
         icon = Icons.Rounded.CalendarViewMonth
     )
     object Settings : BottomNavItem(
-        route = "settings",
+        screen = Screen.Settings,
         labelRes = com.example.periodvibe.R.string.nav_settings,
         icon = Icons.Rounded.Settings
     )

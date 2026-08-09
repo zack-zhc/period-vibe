@@ -44,9 +44,11 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.metadata
+import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.example.periodvibe.domain.model.Settings
 import com.example.periodvibe.ui.applock.AppLockScreen
@@ -143,15 +145,8 @@ private val LockTransitionMetadata = metadata {
 }
 
 /**
- * 创建并记住 TopLevelBackStack 实例
+ * 创建并记住 TopLevelBackStack 实例（状态可跨配置变更与进程死亡保存）
  */
-@Composable
-fun rememberPeriodVibeNavState(
-    startKey: Screen = Screen.Loading
-): TopLevelBackStack<Screen> {
-    return remember { TopLevelBackStack(startKey) }
-}
-
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
 @Composable
 fun PeriodVibeNavHost(
@@ -258,7 +253,7 @@ fun PeriodVibeNavHost(
     LaunchedEffect(showOnboarding, settings, isUnlocked) {
         val currentSettings = settingsUpdated ?: return@LaunchedEffect
         if (showOnboardingUpdated != null) {
-            val currentDest = navStateUpdated.backStack.firstOrNull()
+            val currentDest = navStateUpdated.currentDestination
 
             // 计算是否需要 AppLock
             val needsAppLock = currentSettings.appLockEnabled && !isUnlocked
@@ -275,10 +270,14 @@ fun PeriodVibeNavHost(
                     // 初始加载：直接去目标页面
                     navStateUpdated.replaceWith(targetDestination)
                 }
-                needsAppLock && currentDest !is Screen.AppLock -> {
+                needsAppLock && currentDest != Screen.AppLock -> {
                     // 需要 AppLock 但不在 AppLock 页面：强制去 AppLock，并记住锁定前的当前返回栈（含二级页面）
                     preLockBackStack = navStateUpdated.getCurrentStack()
                     navStateUpdated.replaceWith(Screen.AppLock)
+                }
+                !needsAppLock && currentDest == Screen.AppLock -> {
+                    // 已解锁或锁已关闭，但页面仍停在锁屏：跳到目标页，避免停在锁屏
+                    navStateUpdated.replaceWith(targetDestination)
                 }
             }
         }
@@ -349,9 +348,10 @@ fun PeriodVibeNavHost(
             Scaffold(
                 modifier = Modifier.fillMaxSize(),
                 bottomBar = {
-                    PeriodBottomNavigationBar(
+                    PeriodBottomNavigation(
                         currentTopLevel = navState.topLevelKey,
-                        onNavigateToTopLevel = navigateToTopLevel
+                        onNavigate = navigateToTopLevel,
+                        modifier = Modifier.shadow(8.dp)
                     )
                 }
             ) { innerPadding ->
@@ -397,9 +397,10 @@ fun PeriodVibeNavHost(
                     )
                 },
                 bottomBar = {
-                    PeriodBottomNavigationBar(
+                    PeriodBottomNavigation(
                         currentTopLevel = navState.topLevelKey,
-                        onNavigateToTopLevel = navigateToTopLevel
+                        onNavigate = navigateToTopLevel,
+                        modifier = Modifier.shadow(8.dp)
                     )
                 }
             ) { paddingValues ->
@@ -438,9 +439,10 @@ fun PeriodVibeNavHost(
                     )
                 },
                 bottomBar = {
-                    PeriodBottomNavigationBar(
+                    PeriodBottomNavigation(
                         currentTopLevel = navState.topLevelKey,
-                        onNavigateToTopLevel = navigateToTopLevel
+                        onNavigate = navigateToTopLevel,
+                        modifier = Modifier.shadow(8.dp)
                     )
                 }
             ) { paddingValues ->
@@ -562,6 +564,14 @@ fun PeriodVibeNavHost(
         backStack = navState.backStack,
         entryProvider = entryProvider,
         onBack = goBack,
+        // 显式提供装饰器（传了 entryDecorators 就必须包含默认的 SaveableStateHolder）：
+        // - rememberSaveableStateHolderNavEntryDecorator：保留各条目的组合状态（切 tab / 进程恢复）
+        // - rememberViewModelStoreNavEntryDecorator：为每个 NavEntry 提供独立的 ViewModelStore，
+        //   使 hiltViewModel() 按目的地作用域（push 时创建，pop 时清除），而非 Activity 全局单例
+        entryDecorators = listOf(
+            rememberSaveableStateHolderNavEntryDecorator(),
+            rememberViewModelStoreNavEntryDecorator()
+        ),
         // 默认没有动画，子页面通过 metadata 设置自己的动画
         transitionSpec = {
             ContentTransform(EnterTransition.None, ExitTransition.None)
@@ -602,34 +612,4 @@ fun PeriodVibeNavHost(
             )
         }
     }
-}
-
-/**
- * 底部导航栏组件
- */
-@Composable
-private fun PeriodBottomNavigationBar(
-    currentTopLevel: Screen,
-    onNavigateToTopLevel: (Screen) -> Unit
-) {
-    val currentRoute = when (currentTopLevel) {
-        Screen.Home -> "home"
-        Screen.Calendar -> "calendar"
-        Screen.Settings -> "settings"
-        else -> "home"
-    }
-
-    PeriodBottomNavigation(
-        currentRoute = currentRoute,
-        onNavigate = { routeStr ->
-            val route = when (routeStr) {
-                "home" -> Screen.Home
-                "calendar" -> Screen.Calendar
-                "settings" -> Screen.Settings
-                else -> Screen.Home
-            }
-            onNavigateToTopLevel(route)
-        },
-        modifier = Modifier.shadow(8.dp)
-    )
 }

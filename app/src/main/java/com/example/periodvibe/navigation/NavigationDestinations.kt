@@ -1,10 +1,5 @@
 package com.example.periodvibe.navigation
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
 
@@ -26,22 +21,13 @@ sealed interface Screen : NavKey {
 
     // 顶部级路由（底部导航栏）
     @Serializable
-    data object Home : Screen, TopLevelScreen {
-        override val icon: ImageVector = Icons.Default.Home
-        override val label: String = "首页"
-    }
+    data object Home : Screen
 
     @Serializable
-    data object Calendar : Screen, TopLevelScreen {
-        override val icon: ImageVector = Icons.Default.CalendarMonth
-        override val label: String = "日历"
-    }
+    data object Calendar : Screen
 
     @Serializable
-    data object Settings : Screen, TopLevelScreen {
-        override val icon: ImageVector = Icons.Default.Settings
-        override val label: String = "设置"
-    }
+    data object Settings : Screen
 
     // 子页面（从顶部级路由导航到的页面）
     @Serializable
@@ -74,15 +60,7 @@ sealed interface Screen : NavKey {
 }
 
 /**
- * 顶部级屏幕接口（底部导航栏项目）
- */
-interface TopLevelScreen {
-    val icon: ImageVector
-    val label: String
-}
-
-/**
- * 所有顶部级路由的列表
+ * 所有顶部级路由的列表（底部导航栏项目）
  */
 val TopLevelScreens = listOf(
     Screen.Home,

@@ -1,149 +1,170 @@
 package com.example.periodvibe.navigation
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSerializable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.serialization.NavBackStackSerializer
+import androidx.navigation3.runtime.serialization.NavKeySerializer
+
+/**
+ * 创建可保存的多顶部级返回栈导航状态。
+ *
+ * 当前顶部级路由与每个顶部级返回栈均通过 saveable 机制持久化
+ * （rememberSerializable / rememberNavBackStack）：
+ * 配置变更与进程死亡后，导航位置与各 tab 的栈内容可完整恢复。
+ *
+ * @param startKey 起始（退出）顶部级路由，通常是 [Screen.Home]
+ */
+@Composable
+fun rememberPeriodVibeNavState(
+    startKey: Screen = Screen.Home
+): TopLevelBackStack<Screen> {
+    // 当前顶部级路由：可保存（用 rememberSerializable，而非 rememberSaveable）
+    val topLevelKey = rememberSerializable(
+        startKey, TopLevelScreens.toSet()
+    ) { mutableStateOf(startKey) }
+
+    // 每个顶部级路由一个可保存的返回栈。
+    // Home 栈初始放入 Loading 占位：首次启动由导航逻辑 replaceWith 到目标页；
+    // 若存在上次会话的已保存状态，则恢复后直接使用（Loading 不会出现）。
+    val backStacks = TopLevelScreens.associateWith { key ->
+        if (key == Screen.Home) {
+            rememberNavBackStack<Screen>(Screen.Loading)
+        } else {
+            rememberNavBackStack(key)
+        }
+    }
+
+    return remember(startKey, TopLevelScreens) {
+        TopLevelBackStack(
+            startKey = startKey,
+            topLevelKey = topLevelKey,
+            backStacks = backStacks
+        )
+    }
+}
+
+// NavKey 子类型的泛型包装（官方 conditional recipe 的写法）：
+// 库提供的 Android 重载返回 NavBackStack<NavKey>，这里保持具体子类型，
+// 参见 https://issuetracker.google.com/issues/463382671
+@Composable
+fun <T : NavKey> rememberNavBackStack(vararg elements: T): NavBackStack<T> {
+    return rememberSerializable(
+        serializer = NavBackStackSerializer(elementSerializer = NavKeySerializer())
+    ) { NavBackStack(*elements) }
+}
 
 /**
  * 管理多个顶部级返回栈的导航状态
  *
  * 每个顶部级路由（底部导航栏项）都有自己独立的返回栈，
- * 切换标签时会保留各自的导航历史。
+ * 切换标签时保留各自的导航历史。
  *
- * @param startKey 初始顶部级路由
+ * 组合语义与官方 multiple-backstacks 模式一致：只有"起始栈 + 当前栈"
+ * （[stacksInUse]）的条目会被 NavDisplay 组合，其余栈的状态由 NavDisplay
+ * 内部的 SaveableStateHolder 保存，切换回时自动恢复。
+ *
+ * @param startKey 起始（退出）顶部级路由，用户通过它退出应用
+ * @param topLevelKey 当前顶部级路由的 [MutableState]
+ * @param backStacks 每个顶部级路由对应的返回栈
  */
-class TopLevelBackStack<T : Any>(startKey: T) {
+class TopLevelBackStack<T : NavKey>(
+    val startKey: T,
+    topLevelKey: MutableState<T>,
+    val backStacks: Map<T, NavBackStack<T>>
+) {
+    var topLevelKey: T by topLevelKey
+
+    /** 当前使用的顶部级路由：起始栈 + 当前栈 */
+    private val stacksInUse: List<T>
+        get() = if (topLevelKey == startKey) listOf(startKey)
+                else listOf(startKey, topLevelKey)
 
     /**
-     * 为每个顶部级路由维护独立的返回栈
-     * 使用 LinkedHashMap 保持顺序，最后一个是当前活跃的
+     * 扁平化的返回栈，供 NavDisplay 使用。
+     * 仅包含当前使用的栈；内容变更时 NavDisplay 会响应重组。
      */
-    private val topLevelStacks: LinkedHashMap<T, SnapshotStateList<T>> = linkedMapOf(
-        startKey to mutableStateListOf(startKey)
-    )
+    val backStack: List<T>
+        get() = stacksInUse.flatMap { backStacks[it] ?: emptyList() }
 
-    /**
-     * 当前活跃的顶部级路由
-     */
-    var topLevelKey by mutableStateOf(startKey)
-        private set
-
-    /**
-     * 扁平化的返回栈，供 NavDisplay 使用
-     * 包含所有活跃的顶部级栈的内容
-     */
-    val backStack = mutableStateListOf(startKey)
-
-    /**
-     * 更新扁平化的返回栈
-     */
-    private fun updateBackStack() {
-        backStack.apply {
-            clear()
-            addAll(topLevelStacks.flatMap { it.value })
-        }
-    }
+    /** 当前顶部级栈的顶部条目（当前页面） */
+    val currentDestination: T?
+        get() = backStack.lastOrNull()
 
     /**
      * 切换到指定的顶部级路由
-     * 如果该路由不存在，则创建新的返回栈
-     * 如果已存在，则将其移到栈顶（激活）
      */
     fun navigateToTopLevel(key: T) {
-        if (topLevelStacks[key] == null) {
-            // 新的顶部级路由，创建返回栈
-            topLevelStacks[key] = mutableStateListOf(key)
-        } else {
-            // 已存在的顶部级路由，移到最后（激活状态）
-            topLevelStacks.apply {
-                remove(key)?.let {
-                    put(key, it)
-                }
-            }
-        }
         topLevelKey = key
-        updateBackStack()
     }
 
     /**
      * 导航到子页面（添加到当前顶部级路由的返回栈）
      */
     fun navigateToDetail(key: T) {
-        topLevelStacks[topLevelKey]?.add(key)
-        updateBackStack()
+        backStacks[topLevelKey]?.add(key)
     }
 
     /**
-     * 返回上一页
-     * 如果当前栈只剩顶部级路由，则移除该顶部级栈并返回到前一个顶部级路由
+     * 返回上一页。
+     * 若当前栈只剩顶部级路由，则切回起始栈；若已在起始栈根部则不处理（交给系统退出）。
+     * 永不删除最后一个栈，保证 NavDisplay 始终有内容。
      */
     fun goBack() {
-        val currentStack = topLevelStacks[topLevelKey] ?: return
-
+        val currentStack = backStacks[topLevelKey] ?: return
         if (currentStack.size > 1) {
             // 当前栈有子页面，只弹出子页面
             currentStack.removeLastOrNull()
-        } else {
-            // 当前栈只有顶部级路由，移除整个顶部级栈
-            topLevelStacks.remove(topLevelKey)
-            // 切换到前一个顶部级路由
-            topLevelStacks.keys.lastOrNull()?.let {
-                topLevelKey = it
-            }
+        } else if (topLevelKey != startKey) {
+            // 位于非起始栈根部：切回起始栈，保留各栈状态
+            topLevelKey = startKey
         }
-        updateBackStack()
     }
 
     /**
-     * 重置到指定的顶部级路由（清空所有其他栈）
+     * 重置：清空所有栈，仅保留指定页面（非顶部级目标放入起始栈）
      */
     fun resetTo(key: T) {
-        topLevelStacks.clear()
-        topLevelStacks[key] = mutableStateListOf(key)
-        topLevelKey = key
-        updateBackStack()
+        backStacks.values.forEach { it.clear() }
+        val stack = backStacks[key] ?: backStacks[startKey]
+        topLevelKey = if (key in backStacks) key else startKey
+        stack?.add(key)
     }
 
     /**
-     * 完全替换返回栈（用于初始导航）
+     * 完全替换：清空所有栈，替换为指定条目（如 AppLock / Onboarding）
      */
     fun replaceWith(vararg keys: T) {
-        topLevelStacks.clear()
-        if (keys.isNotEmpty()) {
-            val firstKey = keys.first()
-            topLevelStacks[firstKey] = mutableStateListOf(*keys)
-            topLevelKey = firstKey
-        }
-        updateBackStack()
+        if (keys.isEmpty()) return
+        backStacks.values.forEach { it.clear() }
+        val first = keys.first()
+        val stack = backStacks[first] ?: backStacks[startKey]
+        topLevelKey = if (first in backStacks) first else startKey
+        stack?.addAll(keys)
     }
 
     /**
      * 获取当前顶部级路由的返回栈（含二级页面）
-     * 注意：backStack 是所有栈的拍平结果，锁定/恢复必须用本方法，不能直接拍平
      */
     fun getCurrentStack(): List<T> =
-        topLevelStacks[topLevelKey]?.toList() ?: listOf(topLevelKey)
+        backStacks[topLevelKey]?.toList() ?: emptyList()
 
     /**
      * 恢复当前顶部级路由的返回栈（用于解锁后回到锁定前的位置）
      * 首个元素作为顶部级路由，其余作为其二级页面。
-     * 锁定期间 replaceWith(AppLock) 留下的栈必须先清空，否则 backStack 会残留 AppLock，
-     * 导致导航块误判"已在锁屏"而跳过 replaceWith。
      */
     fun restoreCurrentStack(keys: List<T>) {
         if (keys.isEmpty()) return
-        val firstKey = keys.first()
-        topLevelStacks.clear()
-        topLevelStacks[firstKey] = mutableStateListOf<T>().apply { addAll(keys) }
-        topLevelKey = firstKey
-        updateBackStack()
+        backStacks.values.forEach { it.clear() }
+        val first = keys.first()
+        val stack = backStacks[first] ?: backStacks[startKey]
+        topLevelKey = if (first in backStacks) first else startKey
+        stack?.addAll(keys)
     }
-
-    /**
-     * 获取当前顶部级路由的返回栈大小
-     */
-    val currentStackSize: Int
-        get() = topLevelStacks[topLevelKey]?.size ?: 0
 }
