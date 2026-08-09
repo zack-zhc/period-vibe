@@ -394,7 +394,6 @@
 
     <!-- 设置对话框 -->
     <string name="dlg_confirm_action">确认操作</string>
-    <string name="dlg_disable_app_lock_message">确定要关闭应用锁吗？</string>
     <string name="dlg_cycle_parameters_title">周期参数设置</string>
     <string name="dlg_cycle_length_label">平均周期长度 (%1$s)</string>
     <string name="dlg_period_length_label">平均经期天数 (%1$s)</string>

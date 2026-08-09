@@ -48,9 +48,6 @@ class SettingsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<SettingsUiState>(SettingsUiState.Loading)
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
-    private val _showDisableAppLockDialog = MutableStateFlow(false)
-    val showDisableAppLockDialog: StateFlow<Boolean> = _showDisableAppLockDialog.asStateFlow()
-
     private val _showTimeDialog = MutableStateFlow(false)
     val showTimeDialog: StateFlow<Boolean> = _showTimeDialog.asStateFlow()
 
@@ -144,14 +141,6 @@ class SettingsViewModel @Inject constructor(
                 }
             }
         }
-    }
-
-    fun showDisableAppLockDialog() {
-        _showDisableAppLockDialog.value = true
-    }
-
-    fun hideDisableAppLockDialog() {
-        _showDisableAppLockDialog.value = false
     }
 
     fun showTimeDialog() {
@@ -626,7 +615,6 @@ class SettingsViewModel @Inject constructor(
                     settingsRepository.updateSettings(updatedSettings)
                 }
             }
-            hideDisableAppLockDialog()
         }
     }
 

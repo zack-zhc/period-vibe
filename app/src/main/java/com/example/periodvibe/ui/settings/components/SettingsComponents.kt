@@ -32,6 +32,7 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -41,6 +42,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TimePickerState
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -55,12 +57,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import androidx.core.graphics.drawable.toBitmap
 import com.example.periodvibe.R
 import com.example.periodvibe.ui.applock.PIN_LENGTH
@@ -70,28 +69,6 @@ import com.example.periodvibe.utils.AppUtils
 import java.time.LocalTime
 
 // ======================= Dialogs =======================
-
-@Composable
-fun DisableAppLockConfirmationDialog(
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.dlg_confirm_action)) },
-        text = { Text(stringResource(R.string.dlg_disable_app_lock_message)) },
-        confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text(stringResource(R.string.set_confirm))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.set_cancel))
-            }
-        }
-    )
-}
 
 @Composable
 fun CycleParametersDialog(
@@ -510,13 +487,15 @@ private fun AboutFeatureItem(
     }
 }
 
-// ======================= 验证 PIN 对话框 =======================
+// ======================= 验证 PIN 全屏 Sheet =======================
 
 /**
  * 验证当前 PIN（关闭应用锁场景）。验证通过回调 [onVerified]，失败提示并清空可重试。
+ * 与 PIN 设置一致的全屏 ModalBottomSheet 样式。
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun VerifyPinDialog(
+fun VerifyPinSheet(
     verify: (String) -> Boolean,
     onVerified: () -> Unit,
     onDismiss: () -> Unit
@@ -525,63 +504,64 @@ fun VerifyPinDialog(
     var error by remember { mutableStateOf<String?>(null) }
     val wrongPinText = stringResource(R.string.applock_wrong_pin)
 
-    Dialog(
+    val sheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true
+    )
+    ModalBottomSheet(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(dismissOnBackPress = true, dismissOnClickOutside = false)
+        sheetState = sheetState,
+        modifier = Modifier.fillMaxSize()
     ) {
-        Surface(
-            shape = RoundedCornerShape(28.dp),
-            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-            tonalElevation = 3.dp
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.set_verify_pin_title),
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = stringResource(R.string.set_verify_pin_message),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
-                )
-                PinDotRow(entered = pin.length)
-                Box(modifier = Modifier.height(20.dp)) {
-                    error?.let {
-                        Text(
-                            text = it,
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
+            Text(
+                text = stringResource(R.string.set_verify_pin_title),
+                style = MaterialTheme.typography.headlineMedium
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = stringResource(R.string.set_verify_pin_message),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            PinDotRow(entered = pin.length)
+            Spacer(modifier = Modifier.height(16.dp))
+            Box(modifier = Modifier.height(24.dp)) {
+                error?.let {
+                    Text(
+                        text = it,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
                 }
-                PinKeyboard(
-                    onNumberClick = { digit ->
-                        if (pin.length < PIN_LENGTH) {
-                            pin += digit
-                            if (pin.length == PIN_LENGTH) {
-                                if (verify(pin)) {
-                                    onVerified()
-                                } else {
-                                    error = wrongPinText
-                                    pin = ""
-                                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            PinKeyboard(
+                onNumberClick = { digit ->
+                    if (pin.length < PIN_LENGTH) {
+                        pin += digit
+                        if (pin.length == PIN_LENGTH) {
+                            if (verify(pin)) {
+                                onVerified()
+                            } else {
+                                error = wrongPinText
+                                pin = ""
                             }
                         }
-                    },
-                    onBackspaceClick = { pin = pin.dropLast(1) }
-                )
-                TextButton(onClick = onDismiss) {
-                    Text(stringResource(R.string.set_cancel))
-                }
+                    }
+                },
+                onBackspaceClick = { pin = pin.dropLast(1) }
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.set_cancel))
             }
         }
     }

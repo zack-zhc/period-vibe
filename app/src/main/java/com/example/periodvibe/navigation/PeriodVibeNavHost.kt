@@ -311,10 +311,22 @@ fun PeriodVibeNavHost(
         }
 
         entry<Screen.AppLock>(metadata = LockTransitionMetadata) {
-            AppLockScreen(
-                autoPromptBiometric = !autoLocked,
-                onUnlock = unlockAndRestore
+            // 与 PIN 设置页一致的全屏 Modal 样式
+            // 锁定页不可滑动手势/点外部/返回键关闭，必须验证 PIN 或生物识别才能解锁
+            val lockSheetState = rememberModalBottomSheetState(
+                skipPartiallyExpanded = true
             )
+            ModalBottomSheet(
+                onDismissRequest = { /* 禁止关闭：锁定页必须验证 PIN 才能解除 */ },
+                sheetState = lockSheetState,
+                sheetGesturesEnabled = false,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                AppLockScreen(
+                    autoPromptBiometric = !autoLocked,
+                    onUnlock = unlockAndRestore
+                )
+            }
         }
 
         entry<Screen.Onboarding> {

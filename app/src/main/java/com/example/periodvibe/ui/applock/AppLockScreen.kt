@@ -1,5 +1,7 @@
 package com.example.periodvibe.ui.applock
 
+import android.content.Context
+import android.content.ContextWrapper
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,6 +27,20 @@ import androidx.fragment.app.FragmentActivity
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.periodvibe.R
 import kotlinx.coroutines.delay
+
+/**
+ * 沿 ContextWrapper 链向上查找 FragmentActivity。
+ * 全屏 Modal（ModalBottomSheet）会包裹 ContextThemeWrapper，
+ * LocalContext.current 不再是 Activity，直接强转会 ClassCastException。
+ */
+private fun Context.findFragmentActivity(): FragmentActivity? {
+    var current: Context? = this
+    while (current is ContextWrapper) {
+        if (current is FragmentActivity) return current
+        current = current.baseContext
+    }
+    return null
+}
 
 @Composable
 fun AppLockScreen(
@@ -67,7 +83,9 @@ fun AppLockScreen(
             // 设备刚解锁时 DEVICE_CREDENTIAL 会立即通过，锁屏一闪而过，直接显示 PIN 页
             LaunchedEffect(autoPromptBiometric) {
                 if (autoPromptBiometric && viewModel.hasPin()) {
-                    viewModel.showBiometricPrompt(context as FragmentActivity)
+                    context.findFragmentActivity()?.let { activity ->
+                        viewModel.showBiometricPrompt(activity)
+                    }
                 }
             }
 

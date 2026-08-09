@@ -394,7 +394,6 @@
 
     <!-- Settings dialogs -->
     <string name="dlg_confirm_action">Confirm action</string>
-    <string name="dlg_disable_app_lock_message">Disable app lock?</string>
     <string name="dlg_cycle_parameters_title">Cycle parameters</string>
     <string name="dlg_cycle_length_label">Average cycle length (%1$s)</string>
     <string name="dlg_period_length_label">Average period length (%1$s)</string>

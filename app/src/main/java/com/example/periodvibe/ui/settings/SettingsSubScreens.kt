@@ -89,13 +89,12 @@ import com.example.periodvibe.R
 import com.example.periodvibe.ui.settings.components.AboutDialog
 import com.example.periodvibe.ui.settings.components.ClearDataConfirmationDialog
 import com.example.periodvibe.ui.settings.components.CycleParametersDialog
-import com.example.periodvibe.ui.settings.components.DisableAppLockConfirmationDialog
 import com.example.periodvibe.ui.settings.components.ExportFormatDialog
 import com.example.periodvibe.ui.settings.components.ExportResultDialog
 import com.example.periodvibe.ui.settings.components.ImportConfirmationDialog
 import com.example.periodvibe.ui.settings.components.ImportResultDialog
 import com.example.periodvibe.ui.settings.components.NotificationTimeDialog
-import com.example.periodvibe.ui.settings.components.VerifyPinDialog
+import com.example.periodvibe.ui.settings.components.VerifyPinSheet
 import com.example.periodvibe.ui.theme.PeriodVibeTheme
 import com.example.periodvibe.util.AppLockGuard
 import com.example.periodvibe.utils.AppUtils
@@ -974,16 +973,16 @@ fun PrivacyScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val showDisableAppLockDialog by viewModel.showDisableAppLockDialog.collectAsState()
+    var showDisableAppLockSheet by remember { mutableStateOf(false) }
 
     PrivacyContent(
         uiState = uiState,
-        showDisableAppLockDialog = showDisableAppLockDialog,
+        showDisableAppLockSheet = showDisableAppLockSheet,
+        onShowDisableAppLockSheet = { showDisableAppLockSheet = true },
+        onDismissDisableAppLockSheet = { showDisableAppLockSheet = false },
         onNavigateBack = onNavigateBack,
         onNavigateToPinSetup = onNavigateToPinSetup,
         onTogglePrivacyMode = { viewModel.togglePrivacyMode(it) },
-        onShowDisableAppLockDialog = { viewModel.showDisableAppLockDialog() },
-        onHideDisableAppLockDialog = { viewModel.hideDisableAppLockDialog() },
         onToggleAppLock = { viewModel.toggleAppLock(it) },
         onUpdateAppLockDelay = { viewModel.updateAppLockDelay(it) },
         onVerifyCurrentPin = { viewModel.verifyCurrentPin(it) },
@@ -995,12 +994,12 @@ fun PrivacyScreen(
 @Composable
 private fun PrivacyContent(
     uiState: SettingsUiState,
-    showDisableAppLockDialog: Boolean,
+    showDisableAppLockSheet: Boolean,
+    onShowDisableAppLockSheet: () -> Unit,
+    onDismissDisableAppLockSheet: () -> Unit,
     onNavigateBack: () -> Unit,
     onNavigateToPinSetup: (com.example.periodvibe.ui.applock.PinSetupMode) -> Unit,
     onTogglePrivacyMode: (Boolean) -> Unit,
-    onShowDisableAppLockDialog: () -> Unit,
-    onHideDisableAppLockDialog: () -> Unit,
     onToggleAppLock: (Boolean) -> Unit,
     onUpdateAppLockDelay: (Int) -> Unit,
     onVerifyCurrentPin: (String) -> Boolean,
@@ -1054,7 +1053,8 @@ private fun PrivacyContent(
                     SegmentedListItem(
                         onClick = {
                             if (state.appLockEnabled) {
-                                onShowDisableAppLockDialog()
+                                // 关闭应用锁：跳过确认弹窗，直接弹全屏 PIN 验证 Sheet
+                                onShowDisableAppLockSheet()
                             } else {
                                 onNavigateToPinSetup(com.example.periodvibe.ui.applock.PinSetupMode.SETUP)
                             }
@@ -1074,7 +1074,7 @@ private fun PrivacyContent(
                                     if (enabled) {
                                         onNavigateToPinSetup(com.example.periodvibe.ui.applock.PinSetupMode.SETUP)
                                     } else {
-                                        onShowDisableAppLockDialog()
+                                        onShowDisableAppLockSheet()
                                     }
                                 }
                             )
@@ -1185,27 +1185,14 @@ private fun PrivacyContent(
         }
     }
 
-    var showVerifyPinDialog by remember { mutableStateOf(false) }
-
-    if (showDisableAppLockDialog) {
-        DisableAppLockConfirmationDialog(
-            onDismiss = { onHideDisableAppLockDialog() },
-            onConfirm = {
-                onHideDisableAppLockDialog()
-                // 关闭应用锁前需验证当前 PIN
-                showVerifyPinDialog = true
-            }
-        )
-    }
-
-    if (showVerifyPinDialog) {
-        VerifyPinDialog(
+    if (showDisableAppLockSheet) {
+        VerifyPinSheet(
             verify = onVerifyCurrentPin,
             onVerified = {
-                showVerifyPinDialog = false
+                onDismissDisableAppLockSheet()
                 onToggleAppLock(false)
             },
-            onDismiss = { showVerifyPinDialog = false }
+            onDismiss = onDismissDisableAppLockSheet
         )
     }
 }
@@ -1848,12 +1835,12 @@ private fun PrivacyScreenPreview() {
                 ovulationNotificationEnabled = true,
                 ovulationNotificationDaysBefore = 1
             ),
-            showDisableAppLockDialog = false,
+            showDisableAppLockSheet = false,
+            onShowDisableAppLockSheet = { },
+            onDismissDisableAppLockSheet = { },
             onNavigateBack = { },
             onNavigateToPinSetup = { },
             onTogglePrivacyMode = { },
-            onShowDisableAppLockDialog = { },
-            onHideDisableAppLockDialog = { },
             onToggleAppLock = { },
             onUpdateAppLockDelay = { },
             onVerifyCurrentPin = { false }
