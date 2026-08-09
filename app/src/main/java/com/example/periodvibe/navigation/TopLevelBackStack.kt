@@ -89,19 +89,30 @@ class TopLevelBackStack<T : NavKey>(
     /**
      * 扁平化的返回栈，供 NavDisplay 使用。
      * 仅包含当前使用的栈；内容变更时 NavDisplay 会响应重组。
+     *
+     * 起始栈的根元素始终保留（exit-through-home 不变式）：
+     * 即使被 [replaceWith] / [restoreCurrentStack] 清空，也会回退为 [startKey]，
+     * 保证 NavDisplay 的 backStack 永不为空。
      */
     val backStack: List<T>
-        get() = stacksInUse.flatMap { backStacks[it] ?: emptyList() }
+        get() = stacksInUse.flatMap { stackKey ->
+            val stack = backStacks[stackKey] ?: return@flatMap emptyList<T>()
+            if (stack.isEmpty() && stackKey == startKey) listOf(startKey) else stack
+        }
 
     /** 当前顶部级栈的顶部条目（当前页面） */
     val currentDestination: T?
         get() = backStack.lastOrNull()
 
     /**
-     * 切换到指定的顶部级路由
+     * 切换到指定的顶部级路由。
+     *
+     * 若目标栈为空（如被 [replaceWith] / [resetTo] / [restoreCurrentStack] 清空过），
+     * 则重新放入自身作为根，保证 NavDisplay 始终有内容可渲染。
      */
     fun navigateToTopLevel(key: T) {
         topLevelKey = key
+        backStacks[key]?.takeIf { it.isEmpty() }?.add(key)
     }
 
     /**
