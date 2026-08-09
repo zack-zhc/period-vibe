@@ -26,9 +26,6 @@ data class WidgetState(
     val bigText: String = "",
     val subtitle: String = ""
 ) {
-    val isEmpty: Boolean
-        get() = !hasData && phaseName.isEmpty() && bigText.isEmpty()
-
     fun writeTo(prefs: MutablePreferences) {
         prefs[KEY_HAS_DATA] = hasData
         prefs[KEY_PRIVACY] = privacyMode

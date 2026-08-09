@@ -55,10 +55,10 @@ class PeriodVibeWidget : GlanceAppWidget() {
             android.util.Log.e(TAG, "write initial state failed", it)
         }
         android.util.Log.d(TAG, "provideGlance: hasData=${fresh.hasData} phase=${fresh.phaseName} privacy=${fresh.privacyMode}")
+        // 始终渲染 currentState()：状态流推送的新值（含空状态）会触发重绘；
+        // 若此处回退到 fresh 快照，删除后推送的空状态会被旧数据覆盖。
         provideContent {
-            val state = WidgetState.from(currentState<Preferences>())
-            // 状态尚未写入（极端时序）时退回刚读取的数据
-            PeriodVibeWidgetContent(state = if (state.isEmpty) fresh else state)
+            PeriodVibeWidgetContent(state = WidgetState.from(currentState<Preferences>()))
         }
     }
 
