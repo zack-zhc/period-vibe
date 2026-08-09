@@ -16,7 +16,8 @@ data class Settings(
     // 应用锁自动锁定时机（分钟）：0=立即，1=1分钟后，5=5分钟后
     val appLockDelayMinutes: Int = 0,
     val privacyModeEnabled: Boolean = false,
-    val language: String = "zh",
+    // 应用语言：system=跟随系统 / zh=简体中文 / en=English
+    val language: String = "system",
     val onboardingVersion: Int = 0,
     val periodNotificationEnabled: Boolean = true,
     val ovulationNotificationEnabled: Boolean = true,

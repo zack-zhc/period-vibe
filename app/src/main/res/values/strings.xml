@@ -81,6 +81,107 @@
     <string name="home_pregnancy_status">受孕状态</string>
     <string name="home_today_tip">今日贴士</string>
     <string name="home_days_later">%1$d 天后</string>
+    <string name="home_greeting_morning">早上好</string>
+    <string name="home_greeting_afternoon">下午好</string>
+    <string name="home_greeting_evening">晚上好</string>
+    <string name="home_status_period_approaching">月经临近，记得记录开始时间</string>
+    <string name="home_status_predicted">预计下次月经还有 %1$d 天</string>
+    <string name="home_status_today">月经预计今天来</string>
+    <string name="home_status_one_day">距离下次月经还有 1 天</string>
+    <string name="home_status_period_day">本次月经第 %1$d 天</string>
+    <string name="home_status_days_left">距离下次月经还有 %1$d 天</string>
+    <string name="home_cd_cycle_progress">周期进度，第 %1$d 天</string>
+    <string name="home_cd_predicted">预计下次月经还有 %1$d 天</string>
+    <string name="home_ring_day_prefix">第</string>
+    <string name="home_ring_day_unit">天</string>
+    <string name="home_ring_left_prefix">还有</string>
+    <string name="home_ring_left_unit">天</string>
+    <string name="home_ring_today">今天</string>
+    <string name="home_ovulation_date">预计排卵日 %1$s</string>
+    <string name="home_fab_record">记录</string>
+    <string name="home_fab_start">开始</string>
+    <string name="home_loading">加载中…</string>
+    <string name="home_welcome">欢迎！</string>
+    <string name="home_welcome_subtitle">开始记录你的健康旅程。</string>
+    <string name="home_empty_title">一切从今天开始</string>
+    <string name="home_empty_message">记录你的第一次周期，解锁个性化洞察和预测。</string>
+    <string name="home_end_cycle_title">结束周期</string>
+    <string name="home_end_cycle_message">确定要结束当前周期吗？这将标记当前周期的结束日期。</string>
+    <string name="home_new_cycle_title">开始新周期</string>
+    <string name="home_new_cycle_message">这将同时结束上一个周期。上一个周期的结束日期将设为昨天。确定要继续吗？</string>
+    <string name="home_confirm">确定</string>
+    <string name="home_cancel">取消</string>
+    <string name="home_pregnancy_fertile">受孕期</string>
+    <string name="home_pregnancy_not_fertile">非受孕期</string>
+    <string name="home_feature_preview_title">记录后可获得</string>
+    <string name="home_feature_prediction">周期预测</string>
+    <string name="home_feature_prediction_desc">预测下次月经时间</string>
+    <string name="home_feature_tips">个性化贴士</string>
+    <string name="home_feature_tips_desc">根据阶段给出建议</string>
+    <string-array name="home_tips_menstruation">
+        <item>多喝热水，注意保暖</item>
+        <item>避免剧烈运动</item>
+        <item>补充铁质，吃些红肉或菠菜</item>
+        <item>保证充足睡眠</item>
+        <item>可以用暖水袋缓解不适</item>
+    </string-array>
+    <string-array name="home_tips_follicular">
+        <item>能量回升，适合开始新计划</item>
+        <item>新陈代谢加快，是运动好时机</item>
+        <item>皮肤状态变好，注意保湿</item>
+        <item>可以尝试新的食谱</item>
+        <item>精力充沛，适合社交活动</item>
+    </string-array>
+    <string-array name="home_tips_ovulation">
+        <item>精力最旺盛的时期</item>
+        <item>注意避孕（如果需要）</item>
+        <item>性欲可能会增强</item>
+        <item>白带可能增多，注意清洁</item>
+        <item>把握好状态，做重要的事</item>
+    </string-array>
+    <string-array name="home_tips_fertile">
+        <item>处于受孕期，注意身体变化</item>
+        <item>保持轻松心情</item>
+        <item>如果在备孕，可以安排同房</item>
+        <item>注意私处清洁</item>
+        <item>保持规律作息</item>
+    </string-array>
+    <string-array name="home_tips_luteal">
+        <item>可能会有情绪波动</item>
+        <item>注意放松，听听音乐</item>
+        <item>可能出现乳房胀痛</item>
+        <item>饮食清淡，避免过咸</item>
+        <item>可以做些轻度运动缓解压力</item>
+    </string-array>
+    <string-array name="home_tips_safe">
+        <item>享受这段平稳的时光</item>
+        <item>可以安排些轻松的活动</item>
+        <item>保持规律作息</item>
+        <item>是工作学习的好时期</item>
+        <item>好好休息，为下周期做准备</item>
+    </string-array>
+
+    <!-- 记录弹窗 -->
+    <string name="record_edit_title">编辑记录</string>
+    <string name="record_new_cycle_title">开始新周期</string>
+    <string name="record_today_title">记录今日状态</string>
+    <string name="record_close">关闭</string>
+    <string name="record_cancel">取消</string>
+    <string name="record_save">保存</string>
+    <string name="record_confirm">确定</string>
+    <string name="record_date_label">日期</string>
+    <string name="record_flow_label">经量</string>
+
+    <!-- 周期阶段/经量通用名 -->
+    <string name="phase_menstruation">经期</string>
+    <string name="phase_follicular">卵泡期</string>
+    <string name="phase_ovulation">排卵期</string>
+    <string name="phase_luteal">黄体期</string>
+    <string name="phase_fertile">易孕期</string>
+    <string name="phase_safe">安全期</string>
+    <string name="flow_label_light">经量少</string>
+    <string name="flow_label_medium">经量中</string>
+    <string name="flow_label_heavy">经量大</string>
 
     <!-- 历史记录 -->
     <string name="history_title">历史记录</string>
@@ -154,6 +255,13 @@
     <string name="set_theme_system">系统</string>
     <string name="set_theme_dynamic">动态取色</string>
 
+    <!-- 语言设置 -->
+    <string name="set_language">语言</string>
+    <string name="set_language_hint">选择应用显示语言</string>
+    <string name="set_language_system">跟随系统</string>
+    <string name="set_language_zh">简体中文</string>
+    <string name="set_language_en">English</string>
+
     <!-- 设置页本地数据隐私说明 -->
     <string name="set_local_data_privacy">所有数据都存储在您的设备本地，最大限度保护您的隐私。</string>
 
@@ -167,6 +275,62 @@
     <string name="notif_ovulation_message">您的排卵期即将到来！</string>
     <string name="notif_privacy_title">提醒</string>
     <string name="notif_privacy_message">您有一条新通知。</string>
+
+    <!-- 初始设置 -->
+    <string name="setup_title">初始设置</string>
+    <string name="setup_subtitle">请填写以下信息，帮助我们更好地为您服务</string>
+    <string name="setup_last_period_label">上次经期开始日期（可选）</string>
+    <string name="setup_no_date_hint">暂不选择日期，您可以稍后在首页随时记录</string>
+    <string name="setup_cycle_length_label">平均周期长度（天）</string>
+    <string name="setup_cycle_length_hint">请输入21-35之间的数字</string>
+    <string name="setup_period_length_label">平均经期天数（天）</string>
+    <string name="setup_period_length_hint">请输入3-7之间的数字</string>
+    <string name="setup_optional_hint">可选，不输入将根据历史记录自动计算</string>
+    <string name="setup_skip">跳过</string>
+    <string name="setup_done">完成</string>
+    <string name="setup_confirm">确定</string>
+    <string name="setup_cancel">取消</string>
+    <string name="setup_date_placeholder">点击选择日期（可选）</string>
+    <string name="setup_clear_date">清除日期</string>
+    <string name="setup_select_date">选择日期</string>
+    <string name="setup_range_error">请输入%1$s之间的数字</string>
+
+    <!-- 引导页 -->
+    <string name="onb_welcome_title">欢迎使用 Period Vibe</string>
+    <string name="onb_welcome_desc">您的智能经期管理助手，帮助您轻松记录和预测周期</string>
+    <string name="onb_prediction_title">智能预测</string>
+    <string name="onb_prediction_desc">基于您的周期数据，准确预测下次经期和排卵期</string>
+    <string name="onb_health_title">健康追踪</string>
+    <string name="onb_health_desc">记录症状、情绪和身体变化，全面了解身体状况</string>
+    <string name="onb_reminder_title">贴心提醒</string>
+    <string name="onb_reminder_desc">及时提醒您重要日期，让您做好充分准备</string>
+    <string name="onb_previous">上一步</string>
+    <string name="onb_next">下一步</string>
+    <string name="onb_start">开始使用</string>
+
+    <!-- 应用锁 -->
+    <string name="applock_biometric_title">Period Vibe 生物识别登录</string>
+    <string name="applock_biometric_subtitle">使用您的生物识别凭证登录</string>
+    <string name="applock_biometric_negative">使用 PIN 码</string>
+    <string name="applock_auth_failed">认证失败</string>
+    <string name="pin_error_length">PIN 码必须为 4 位数字</string>
+    <string name="pin_error_mismatch">两次输入的 PIN 码不一致</string>
+
+    <!-- 导入导出错误 -->
+    <string name="import_error_parse">数据解析失败: %1$s</string>
+    <string name="import_error_version">不支持的数据格式版本: %1$d</string>
+    <string name="import_error_cycle_duplicate">周期数据重复: %1$s</string>
+    <string name="import_error_record_duplicate">日常记录数据重复: %1$s</string>
+    <string name="import_error_invalid_flow_cycle">无效的经量值: %1$s (周期开始日期: %2$s)</string>
+    <string name="import_error_invalid_flow_record">无效的经量值: %1$s (记录日期: %2$s)</string>
+    <string name="csv_error_empty">CSV 文件为空</string>
+    <string name="csv_error_row_parse">第 %1$d 行解析失败: %2$s</string>
+
+    <!-- 导航 -->
+    <string name="nav_home">首页</string>
+    <string name="nav_calendar">日历</string>
+    <string name="nav_settings">设置</string>
+    <string name="set_dev_options">开发者选项</string>
 
     <!-- 开发者选项 -->
     <string name="dev_test_notification_title">测试通知</string>
@@ -184,12 +348,6 @@
     <string name="widget_period_day">经期第 %1$d 天</string>
     <string name="widget_cycle_day">周期第 %1$d 天</string>
     <string name="widget_next_period_date">预计下次经期 %1$s</string>
-    <string name="widget_phase_menstruation">经期</string>
-    <string name="widget_phase_follicular">卵泡期</string>
-    <string name="widget_phase_ovulation">排卵期</string>
-    <string name="widget_phase_luteal">黄体期</string>
-    <string name="widget_phase_fertile">易孕期</string>
-    <string name="widget_phase_safe">安全期</string>
 
     <!-- 隐私设置 -->
     <string name="set_privacy">隐私设置</string>

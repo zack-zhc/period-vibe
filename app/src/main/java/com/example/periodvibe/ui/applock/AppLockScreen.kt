@@ -102,8 +102,9 @@ fun AppLockScreen(
                             style = MaterialTheme.typography.bodyMedium
                         )
                     } else if (uiState is AppLockUiState.Error) {
+                        val error = uiState as AppLockUiState.Error
                         Text(
-                            text = (uiState as AppLockUiState.Error).message,
+                            text = error.messageRes?.let { stringResource(it) } ?: error.message ?: "",
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodyMedium
                         )

@@ -23,23 +23,23 @@ class OnboardingViewModel @Inject constructor(
 
     val pages = listOf(
         OnboardingPage(
-            title = "欢迎使用 Period Vibe",
-            description = "您的智能经期管理助手，帮助您轻松记录和预测周期",
+            titleRes = com.example.periodvibe.R.string.onb_welcome_title,
+            descriptionRes = com.example.periodvibe.R.string.onb_welcome_desc,
             iconRes = "calendar"
         ),
         OnboardingPage(
-            title = "智能预测",
-            description = "基于您的周期数据，准确预测下次经期和排卵期",
+            titleRes = com.example.periodvibe.R.string.onb_prediction_title,
+            descriptionRes = com.example.periodvibe.R.string.onb_prediction_desc,
             iconRes = "prediction"
         ),
         OnboardingPage(
-            title = "健康追踪",
-            description = "记录症状、情绪和身体变化，全面了解身体状况",
+            titleRes = com.example.periodvibe.R.string.onb_health_title,
+            descriptionRes = com.example.periodvibe.R.string.onb_health_desc,
             iconRes = "health"
         ),
         OnboardingPage(
-            title = "贴心提醒",
-            description = "及时提醒您重要日期，让您做好充分准备",
+            titleRes = com.example.periodvibe.R.string.onb_reminder_title,
+            descriptionRes = com.example.periodvibe.R.string.onb_reminder_desc,
             iconRes = "notification"
         )
     )

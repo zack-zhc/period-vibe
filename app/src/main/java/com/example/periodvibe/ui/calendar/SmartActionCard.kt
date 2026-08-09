@@ -41,6 +41,7 @@ import com.example.periodvibe.R
 import com.example.periodvibe.domain.model.Cycle
 import com.example.periodvibe.domain.model.CyclePhase
 import com.example.periodvibe.domain.usecase.CalendarDay
+import com.example.periodvibe.ui.displayNameRes
 import java.time.LocalDate
 import java.time.Period
 import java.time.format.DateTimeFormatter
@@ -117,7 +118,7 @@ private fun DateHeader(day: CalendarDay.Data) {
                 tonalElevation = 0.dp
             ) {
                 Text(
-                    text = day.phase.displayName,
+                    text = stringResource(day.phase.displayNameRes()),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -177,13 +178,14 @@ private fun CycleStatusInfo(
     } else {
         null
     }
+    val phaseName = stringResource(day.phase.displayNameRes())
 
     StatusLine(
         dotColor = MaterialTheme.colorScheme.primary,
         text = if (cycleDay != null) {
-            "${stringResource(R.string.cal_cycle_day, cycleDay)} · ${stringResource(R.string.cal_current_phase, day.phase.displayName)}"
+            "${stringResource(R.string.cal_cycle_day, cycleDay)} · ${stringResource(R.string.cal_current_phase, phaseName)}"
         } else {
-            day.phase.displayName
+            phaseName
         }
     )
 }
@@ -193,7 +195,7 @@ private fun RecordInfo(day: CalendarDay.Data) {
     StatusLine(
         dotColor = MaterialTheme.colorScheme.primary,
         text = day.record?.flowLevel?.let { flowLevel ->
-            stringResource(R.string.cal_recorded_flow, flowLevel.displayName)
+            stringResource(R.string.cal_recorded_flow, stringResource(flowLevel.displayNameRes()))
         } ?: stringResource(R.string.cal_recorded)
     )
 }

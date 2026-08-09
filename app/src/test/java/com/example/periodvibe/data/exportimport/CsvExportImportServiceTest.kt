@@ -1,8 +1,11 @@
 package com.example.periodvibe.data.exportimport
 
+import android.content.Context
 import com.example.periodvibe.domain.model.Cycle
 import com.example.periodvibe.domain.model.DailyRecord
 import com.example.periodvibe.domain.model.FlowLevel
+import io.mockk.every
+import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -17,7 +20,10 @@ class CsvExportImportServiceTest {
 
     @Before
     fun setup() {
-        service = CsvExportImportService()
+        val context = mockk<Context>(relaxed = true)
+        every { context.getString(com.example.periodvibe.R.string.csv_error_empty) } returns "CSV file is empty"
+        every { context.getString(com.example.periodvibe.R.string.csv_error_row_parse, *anyVararg()) } returns "row parse failed"
+        service = CsvExportImportService(context)
     }
 
     @Test
@@ -226,7 +232,7 @@ class CsvExportImportServiceTest {
         val success = result as CsvImportResult.Success
         assertEquals(1, success.data.size)
         assertEquals(1, success.warnings.size)
-        assertTrue(success.warnings[0].contains("第 2 行解析失败"))
+        assertTrue(success.warnings[0].contains("row parse failed"))
     }
 
     @Test

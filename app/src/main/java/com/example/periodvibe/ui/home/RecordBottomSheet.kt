@@ -39,9 +39,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalLocale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.periodvibe.R
 import com.example.periodvibe.domain.model.FlowLevel
+import com.example.periodvibe.ui.displayNameRes
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -89,11 +92,11 @@ fun RecordBottomSheetContent(
             ) {
                 Text(
                     text = if (existingRecord != null) {
-                        "编辑记录"
+                        stringResource(R.string.record_edit_title)
                     } else if (!hasCurrentCycle) {
-                        "开始新周期"
+                        stringResource(R.string.record_new_cycle_title)
                     } else {
-                        "记录今日状态"
+                        stringResource(R.string.record_today_title)
                     },
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
@@ -112,7 +115,7 @@ fun RecordBottomSheetContent(
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.Close,
-                            contentDescription = "关闭",
+                            contentDescription = stringResource(R.string.record_close),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(24.dp)
                         )
@@ -150,7 +153,7 @@ fun RecordBottomSheetContent(
                     ),
                     shape = RoundedCornerShape(50)
                 ) {
-                    Text("取消", fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.record_cancel), fontWeight = FontWeight.SemiBold)
                 }
                 Button(
                     onClick = { onSave(selectedDate, flowLevel) },
@@ -161,7 +164,7 @@ fun RecordBottomSheetContent(
                     ),
                     shape = RoundedCornerShape(50)
                 ) {
-                    Text("保存", fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.record_save), fontWeight = FontWeight.SemiBold)
                 }
             }
         }
@@ -187,7 +190,7 @@ private fun DateSelector(
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
-            text = "日期",
+            text = stringResource(R.string.record_date_label),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 8.dp)
@@ -229,7 +232,7 @@ private fun FlowLevelSelector(
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
-            text = "经量",
+            text = stringResource(R.string.record_flow_label),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 8.dp)
@@ -307,7 +310,7 @@ private fun FlowLevelButton(
             }
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = level.displayName,
+                text = stringResource(level.displayNameRes()),
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.SemiBold,
                 color = if (isSelected) {
@@ -357,12 +360,12 @@ private fun DatePickerDialog(
                     onDismiss()
                 }
             ) {
-                Text("确定")
+                Text(stringResource(R.string.record_confirm))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("取消")
+                Text(stringResource(R.string.record_cancel))
             }
         }
     ) {

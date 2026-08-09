@@ -39,6 +39,15 @@ class MainActivity : FragmentActivity() {
 
     private val activityScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    override fun attachBaseContext(newBase: android.content.Context) {
+        super.attachBaseContext(
+            com.example.periodvibe.util.LanguageManager.applyToConfiguration(
+                com.example.periodvibe.util.LanguageManager.readStoredLanguage(newBase),
+                newBase
+            )
+        )
+    }
+
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { _ ->

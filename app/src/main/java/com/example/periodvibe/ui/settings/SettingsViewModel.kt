@@ -15,8 +15,10 @@ import com.example.periodvibe.data.repository.SecurityRepository
 import com.example.periodvibe.data.repository.SettingsRepository
 import com.example.periodvibe.domain.model.Cycle
 import com.example.periodvibe.domain.model.DailyRecord
+import com.example.periodvibe.ui.displayNameRes
 import com.example.periodvibe.utils.AlarmScheduler
 import com.example.periodvibe.utils.NotificationScheduler
+import com.example.periodvibe.util.LanguageManager
 import androidx.room.withTransaction
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -37,7 +39,8 @@ class SettingsViewModel @Inject constructor(
     private val securityRepository: SecurityRepository,
     private val dataExportImportService: DataExportImportService,
     private val csvExportImportService: CsvExportImportService,
-    private val notificationScheduler: NotificationScheduler
+    private val notificationScheduler: NotificationScheduler,
+    private val languageManager: LanguageManager
 ) : ViewModel() {
 
     private val alarmScheduler = AlarmScheduler(context)
@@ -112,6 +115,7 @@ class SettingsViewModel @Inject constructor(
                         appLockEnabled = settings.appLockEnabled,
                         appLockDelayMinutes = settings.appLockDelayMinutes,
                         privacyModeEnabled = settings.privacyModeEnabled,
+                        language = settings.language,
                         periodNotificationEnabled = settings.periodNotificationEnabled,
                         ovulationNotificationEnabled = settings.ovulationNotificationEnabled,
                         ovulationNotificationDaysBefore = settings.ovulationNotificationDaysBefore
@@ -131,6 +135,7 @@ class SettingsViewModel @Inject constructor(
                         appLockEnabled = false,
                         appLockDelayMinutes = 0,
                         privacyModeEnabled = false,
+                        language = com.example.periodvibe.util.LanguageManager.LANG_SYSTEM,
                         periodNotificationEnabled = true,
                         ovulationNotificationEnabled = true,
                         ovulationNotificationDaysBefore = 1
@@ -230,7 +235,7 @@ class SettingsViewModel @Inject constructor(
                 }
 
                 if (success) {
-                    _exportResult.value = Pair(true, context.getString(com.example.periodvibe.R.string.set_export_success, cycles.size, dailyRecords.size, selectedExportFormat.displayName))
+                    _exportResult.value = Pair(true, context.getString(com.example.periodvibe.R.string.set_export_success, cycles.size, dailyRecords.size, context.getString(selectedExportFormat.displayNameRes())))
                 } else {
                     _exportResult.value = Pair(false, context.getString(com.example.periodvibe.R.string.set_write_file_failed))
                 }
@@ -597,6 +602,18 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    /** 更新应用语言（DB + 镜像 + 应用配置；API 31-32 由 UI 触发 Activity.recreate） */
+    fun updateLanguage(language: String) {
+        viewModelScope.launch {
+            val currentSettings = settingsRepository.getSettingsSync()
+            currentSettings?.let {
+                val updatedSettings = it.copy(language = language)
+                settingsRepository.updateSettings(updatedSettings)
+                languageManager.apply(language)
+            }
+        }
+    }
+
     fun toggleAppLock(enabled: Boolean) {
         viewModelScope.launch {
             if (enabled && !securityRepository.hasPin()) {
@@ -751,6 +768,7 @@ sealed class SettingsUiState {
         val appLockEnabled: Boolean,
         val appLockDelayMinutes: Int,
         val privacyModeEnabled: Boolean,
+        val language: String,
         val periodNotificationEnabled: Boolean,
         val ovulationNotificationEnabled: Boolean,
         val ovulationNotificationDaysBefore: Int

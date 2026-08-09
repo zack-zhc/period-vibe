@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import com.example.periodvibe.R
 import com.example.periodvibe.domain.model.CyclePhase
 import com.example.periodvibe.domain.usecase.GetHomeDataUseCase
+import com.example.periodvibe.ui.displayNameRes
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.flow.first
 import java.time.format.DateTimeFormatter
@@ -83,7 +84,7 @@ data class WidgetState(
             return WidgetState(
                 hasData = true,
                 privacyMode = privacyMode,
-                phaseName = phaseName(context, phase),
+                phaseName = context.getString(phase.displayNameRes()),
                 phaseColorHex = phase.color,
                 bigText = bigText,
                 subtitle = context.getString(
@@ -91,17 +92,6 @@ data class WidgetState(
                     nextStart.format(dateFormatter(context))
                 )
             )
-        }
-
-        private fun phaseName(context: Context, phase: CyclePhase): String {
-            return when (phase) {
-                CyclePhase.MENSTRATION -> context.getString(R.string.widget_phase_menstruation)
-                CyclePhase.FOLLICULAR -> context.getString(R.string.widget_phase_follicular)
-                CyclePhase.OVULATION -> context.getString(R.string.widget_phase_ovulation)
-                CyclePhase.LUTEAL -> context.getString(R.string.widget_phase_luteal)
-                CyclePhase.FERTILE -> context.getString(R.string.widget_phase_fertile)
-                CyclePhase.SAFE -> context.getString(R.string.widget_phase_safe)
-            }
         }
 
         private fun dateFormatter(context: Context): DateTimeFormatter {

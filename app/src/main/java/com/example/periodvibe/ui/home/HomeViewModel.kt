@@ -76,7 +76,7 @@ class HomeViewModel @Inject constructor(
                         hasCurrentCycle = data.cycleInfo.cycle.isCurrentCycle,
                         cycleLength = data.cycleLength,
                         daysUntilNextPhase = data.daysUntilNextPhase,
-                        nextPhaseName = data.nextPhaseName,
+                        nextPhase = data.nextPhase,
                         ovulationDate = data.ovulationDate
                     )
                 } else {
@@ -222,7 +222,7 @@ sealed class HomeUiState {
         val hasCurrentCycle: Boolean,
         val cycleLength: Int,
         val daysUntilNextPhase: Int,
-        val nextPhaseName: String,
+        val nextPhase: com.example.periodvibe.domain.model.CyclePhase?,
         val ovulationDate: java.time.LocalDate?
     ) : HomeUiState()
 }

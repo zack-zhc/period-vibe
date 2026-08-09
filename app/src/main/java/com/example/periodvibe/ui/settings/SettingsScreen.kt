@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.AdminPanelSettings
+import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
@@ -54,6 +55,7 @@ fun SettingsScreen(
     onNavigateToCycleParameters: () -> Unit,
     onNavigateToReminders: () -> Unit,
     onNavigateToTheme: () -> Unit,
+    onNavigateToLanguage: () -> Unit,
     onNavigateToPrivacy: () -> Unit,
     onNavigateToDataManagement: () -> Unit,
     onNavigateToAbout: () -> Unit,
@@ -67,6 +69,7 @@ fun SettingsScreen(
         onNavigateToCycleParameters = onNavigateToCycleParameters,
         onNavigateToReminders = onNavigateToReminders,
         onNavigateToTheme = onNavigateToTheme,
+        onNavigateToLanguage = onNavigateToLanguage,
         onNavigateToPrivacy = onNavigateToPrivacy,
         onNavigateToDataManagement = onNavigateToDataManagement,
         onNavigateToAbout = onNavigateToAbout,
@@ -81,6 +84,7 @@ private fun SettingsContent(
     onNavigateToCycleParameters: () -> Unit,
     onNavigateToReminders: () -> Unit,
     onNavigateToTheme: () -> Unit,
+    onNavigateToLanguage: () -> Unit,
     onNavigateToPrivacy: () -> Unit,
     onNavigateToDataManagement: () -> Unit,
     onNavigateToAbout: () -> Unit,
@@ -110,6 +114,7 @@ private fun SettingsContent(
                     Pair(Icons.Default.DateRange, stringResource(R.string.set_cycle_parameters)),
                     Pair(Icons.Default.Notifications, stringResource(R.string.set_reminders)),
                     Pair(Icons.Default.Palette, stringResource(R.string.set_theme)),
+                    Pair(Icons.Default.Translate, stringResource(R.string.set_language)),
                     Pair(Icons.Default.Lock, stringResource(R.string.set_privacy)),
                     Pair(Icons.Default.Folder, stringResource(R.string.set_data_management)),
                     Pair(Icons.Default.Info, stringResource(R.string.set_about))
@@ -119,6 +124,7 @@ private fun SettingsContent(
                     onNavigateToCycleParameters,
                     onNavigateToReminders,
                     onNavigateToTheme,
+                    onNavigateToLanguage,
                     onNavigateToPrivacy,
                     onNavigateToDataManagement,
                     onNavigateToAbout
@@ -238,7 +244,8 @@ private fun SettingsScreenPreview() {
                     appLockEnabled = false,
                     appLockDelayMinutes = 0,
                     privacyModeEnabled = false,
-    
+                    language = "system",
+
                     periodNotificationEnabled = true,
                     ovulationNotificationEnabled = true,
                     ovulationNotificationDaysBefore = 1
@@ -246,6 +253,7 @@ private fun SettingsScreenPreview() {
                 onNavigateToCycleParameters = { },
                 onNavigateToReminders = { },
                 onNavigateToTheme = { },
+                onNavigateToLanguage = { },
                 onNavigateToPrivacy = { },
                 onNavigateToDataManagement = { },
                 onNavigateToAbout = { },

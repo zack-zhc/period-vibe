@@ -31,6 +31,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Info
@@ -849,6 +850,120 @@ private fun ThemeContent(
     }
 }
 
+// ==================== 语言设置页面 ====================
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun LanguageScreen(
+    onNavigateBack: () -> Unit,
+    modifier: Modifier = Modifier,
+    viewModel: SettingsViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+
+    LanguageContent(
+        uiState = uiState,
+        onNavigateBack = onNavigateBack,
+        onSelectLanguage = { language ->
+            viewModel.updateLanguage(language)
+            // API 31-32 无系统级 per-app language，需手动重建 Activity 使新语言生效；
+            // API 33+ LocaleManager 会自动重建
+            if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.TIRAMISU) {
+                (context as? android.app.Activity)?.recreate()
+            }
+        },
+        modifier = modifier
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun LanguageContent(
+    uiState: SettingsUiState,
+    onNavigateBack: () -> Unit,
+    onSelectLanguage: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text(stringResource(R.string.set_language)) },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.set_back)
+                        )
+                    }
+                }
+            )
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
+            if (uiState !is SettingsUiState.Success) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(64.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    LoadingIndicator()
+                }
+                return@Column
+            }
+            if (uiState is SettingsUiState.Success) {
+                val state = uiState
+                Text(
+                    text = stringResource(R.string.set_language_hint),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+                val languageOptions = listOf(
+                    Pair(com.example.periodvibe.util.LanguageManager.LANG_SYSTEM, stringResource(R.string.set_language_system)),
+                    Pair(com.example.periodvibe.util.LanguageManager.LANG_ZH, stringResource(R.string.set_language_zh)),
+                    Pair(com.example.periodvibe.util.LanguageManager.LANG_EN, stringResource(R.string.set_language_en))
+                )
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)
+                ) {
+                    languageOptions.forEachIndexed { index, (value, label) ->
+                        SegmentedListItem(
+                            onClick = { onSelectLanguage(value) },
+                            shapes = ListItemDefaults.segmentedShapes(index = index, count = languageOptions.size),
+                            trailingContent = {
+                                if (state.language == value) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            },
+                            colors = ListItemDefaults.colors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainer
+                            )
+                        ) {
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 // ==================== 隐私设置页面 ====================
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -1557,6 +1672,7 @@ private fun RemindersScreenEnabledPreview() {
                 appLockEnabled = false,
                 appLockDelayMinutes = 0,
                 privacyModeEnabled = false,
+                language = "system",
 
                 periodNotificationEnabled = true,
                 ovulationNotificationEnabled = true,
@@ -1594,6 +1710,7 @@ private fun RemindersScreenDisabledPreview() {
                 appLockEnabled = false,
                 appLockDelayMinutes = 0,
                 privacyModeEnabled = false,
+                language = "system",
 
                 periodNotificationEnabled = true,
                 ovulationNotificationEnabled = true,
@@ -1631,6 +1748,7 @@ private fun CycleParametersScreenAutoPreview() {
                 appLockEnabled = false,
                 appLockDelayMinutes = 0,
                 privacyModeEnabled = false,
+                language = "system",
 
                 periodNotificationEnabled = true,
                 ovulationNotificationEnabled = true,
@@ -1662,6 +1780,7 @@ private fun CycleParametersScreenManualPreview() {
                 appLockEnabled = false,
                 appLockDelayMinutes = 0,
                 privacyModeEnabled = false,
+                language = "system",
 
                 periodNotificationEnabled = true,
                 ovulationNotificationEnabled = true,
@@ -1693,6 +1812,7 @@ private fun ThemeScreenPreview() {
                 appLockEnabled = false,
                 appLockDelayMinutes = 0,
                 privacyModeEnabled = false,
+                language = "system",
 
                 periodNotificationEnabled = true,
                 ovulationNotificationEnabled = true,
@@ -1722,6 +1842,7 @@ private fun PrivacyScreenPreview() {
                 appLockEnabled = true,
                 appLockDelayMinutes = 0,
                 privacyModeEnabled = true,
+                language = "system",
 
                 periodNotificationEnabled = true,
                 ovulationNotificationEnabled = true,

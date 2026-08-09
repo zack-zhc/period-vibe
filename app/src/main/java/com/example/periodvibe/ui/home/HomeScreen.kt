@@ -61,6 +61,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.periodvibe.R
 import com.example.periodvibe.domain.model.CyclePhase
+import com.example.periodvibe.ui.displayNameRes
 import com.example.periodvibe.ui.theme.PeriodVibeTheme
 import com.example.periodvibe.ui.home.CombinedInfoCard
 import com.example.periodvibe.ui.home.FeaturePreviewCard
@@ -147,7 +148,7 @@ fun HomeScreen(
                     hasCurrentCycle = state.hasCurrentCycle,
                     cycleLength = state.cycleLength,
                     daysUntilNextPhase = state.daysUntilNextPhase,
-                    nextPhaseName = state.nextPhaseName,
+                    nextPhase = state.nextPhase,
                     ovulationDate = state.ovulationDate,
                     darkTheme = darkTheme
                 )
@@ -233,7 +234,7 @@ private fun HomeContent(
     hasCurrentCycle: Boolean,
     cycleLength: Int,
     daysUntilNextPhase: Int,
-    nextPhaseName: String,
+    nextPhase: CyclePhase?,
     ovulationDate: java.time.LocalDate?,
     darkTheme: Boolean = false
 ) {
@@ -260,14 +261,13 @@ private fun HomeContent(
             cycleLength = cycleLength,
             daysUntilPeriod = daysUntilPeriod,
             daysUntilNextPhase = daysUntilNextPhase,
-            nextPhaseName = nextPhaseName,
             ovulationDate = ovulationDate
         )
 
         // 合并信息卡片
         CombinedInfoCard(
             phase = phase,
-            nextPhaseName = nextPhaseName,
+            nextPhaseName = nextPhase?.let { stringResource(it.displayNameRes()) } ?: "",
             daysUntilNextPhase = daysUntilNextPhase
         )
 
@@ -278,7 +278,7 @@ private fun HomeContent(
 
 @Composable
 private fun GreetingSection(modifier: Modifier = Modifier) {
-    val greeting = getGreeting()
+    val greeting = stringResource(getGreetingRes())
     val locale = LocalLocale.current.platformLocale
     val isChinese = locale.language == java.util.Locale.CHINESE.language
     val dateText = remember(locale) {
@@ -316,7 +316,6 @@ private fun MainStatusCard(
     cycleLength: Int,
     daysUntilPeriod: Int,
     daysUntilNextPhase: Int,
-    nextPhaseName: String,
     ovulationDate: java.time.LocalDate?,
     modifier: Modifier = Modifier
 ) {
@@ -328,12 +327,12 @@ private fun MainStatusCard(
     // 预测模式且预测日期已过时，不再显示误导性的"第 X 天"
     val showPredictedCountdown = !hasCurrentCycle && daysUntilPeriod > 0
     val mainText = when {
-        !hasCurrentCycle && daysUntilPeriod == 0 -> "月经临近，记得记录开始时间"
-        !hasCurrentCycle -> "预计下次月经还有 $daysUntilPeriod 天"
-        daysUntilPeriod == 0 -> "月经预计今天来"
-        daysUntilPeriod == 1 -> "距离下次月经还有 1 天"
-        phase == CyclePhase.MENSTRATION -> "本次月经第 $cycleDay 天"
-        else -> "距离下次月经还有 $daysUntilPeriod 天"
+        !hasCurrentCycle && daysUntilPeriod == 0 -> stringResource(R.string.home_status_period_approaching)
+        !hasCurrentCycle -> stringResource(R.string.home_status_predicted, daysUntilPeriod)
+        daysUntilPeriod == 0 -> stringResource(R.string.home_status_today)
+        daysUntilPeriod == 1 -> stringResource(R.string.home_status_one_day)
+        phase == CyclePhase.MENSTRATION -> stringResource(R.string.home_status_period_day, cycleDay)
+        else -> stringResource(R.string.home_status_days_left, daysUntilPeriod)
     }
 
     Card(
@@ -373,9 +372,9 @@ private fun MainStatusCard(
             backgroundColor = phaseData.container,
             progressColor = phaseData.primary,
             contentDescription = if (hasCurrentCycle) {
-                "周期进度，第 $cycleDay 天"
+                stringResource(R.string.home_cd_cycle_progress, cycleDay)
             } else {
-                "预计下次月经还有 $daysUntilPeriod 天"
+                stringResource(R.string.home_cd_predicted, daysUntilPeriod)
             }
         ) {
             Column(
@@ -384,7 +383,7 @@ private fun MainStatusCard(
             ) {
                 if (hasCurrentCycle) {
                     Text(
-                        text = "第",
+                        text = stringResource(R.string.home_ring_day_prefix),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -395,13 +394,13 @@ private fun MainStatusCard(
                         color = phaseData.primary
                     )
                     Text(
-                        text = "天",
+                        text = stringResource(R.string.home_ring_day_unit, cycleLength),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 } else if (showPredictedCountdown) {
                     Text(
-                        text = "还有",
+                        text = stringResource(R.string.home_ring_left_prefix),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -412,13 +411,13 @@ private fun MainStatusCard(
                         color = phaseData.primary
                     )
                     Text(
-                        text = "天",
+                        text = stringResource(R.string.home_ring_left_unit),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 } else {
                     Text(
-                        text = "今天",
+                        text = stringResource(R.string.home_ring_today),
                         style = MaterialTheme.typography.displayLarge,
                         fontWeight = FontWeight.Bold,
                         color = phaseData.primary
@@ -430,7 +429,7 @@ private fun MainStatusCard(
                     tonalElevation = 1.dp
                 ) {
                     Text(
-                        text = phase.displayName,
+                        text = stringResource(phase.displayNameRes()),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.SemiBold,
                         color = phaseData.primary,
@@ -451,8 +450,16 @@ private fun MainStatusCard(
 
         // 预计排卵日
         if (ovulationDate != null) {
+            val locale = LocalLocale.current.platformLocale
+            val isChinese = locale.language == java.util.Locale.CHINESE.language
+            val formatter = remember(locale) {
+                java.time.format.DateTimeFormatter.ofPattern(
+                    if (isChinese) "M月d日" else "MMM d",
+                    locale
+                )
+            }
             Text(
-                text = "预计排卵日 ${ovulationDate.monthValue}月${ovulationDate.dayOfMonth}日",
+                text = stringResource(R.string.home_ovulation_date, ovulationDate.format(formatter)),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -479,7 +486,7 @@ private fun RecordFAB(
         },
         text = {
             Text(
-                text = if (hasCurrentCycle) "记录" else "开始"
+                text = if (hasCurrentCycle) stringResource(R.string.home_fab_record) else stringResource(R.string.home_fab_start)
             )
         }
     )
@@ -497,7 +504,7 @@ private fun LoadingState(modifier: Modifier = Modifier) {
         ) {
             LoadingIndicator(modifier = Modifier.size(96.dp))
             Text(
-                text = "加载中...",
+                text = stringResource(R.string.home_loading),
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -520,13 +527,13 @@ private fun NoDataState(darkTheme: Boolean, modifier: Modifier = Modifier) {
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
-                text = "欢迎！",
+                text = stringResource(R.string.home_welcome),
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
             Text(
-                text = "开始记录你的健康旅程。",
+                text = stringResource(R.string.home_welcome_subtitle),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -587,7 +594,7 @@ private fun NoDataState(darkTheme: Boolean, modifier: Modifier = Modifier) {
 
                     // 标题
                     Text(
-                        text = "一切从今天开始",
+                        text = stringResource(R.string.home_empty_title),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -595,7 +602,7 @@ private fun NoDataState(darkTheme: Boolean, modifier: Modifier = Modifier) {
 
                     // 描述
                     Text(
-                        text = "记录你的第一次周期，解锁个性化洞察和预测。",
+                        text = stringResource(R.string.home_empty_message),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
@@ -621,14 +628,14 @@ private fun EndCycleConfirmationDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                text = "结束周期",
+                text = stringResource(R.string.home_end_cycle_title),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold
             )
         },
         text = {
             Text(
-                text = "确定要结束当前周期吗？这将标记当前周期的结束日期。",
+                text = stringResource(R.string.home_end_cycle_message),
                 style = MaterialTheme.typography.bodyLarge
             )
         },
@@ -640,14 +647,14 @@ private fun EndCycleConfirmationDialog(
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 )
             ) {
-                Text("确定")
+                Text(stringResource(R.string.home_confirm))
             }
         },
         dismissButton = {
             OutlinedButton(
                 onClick = onDismiss
             ) {
-                Text("取消")
+                Text(stringResource(R.string.home_cancel))
             }
         },
         modifier = modifier
@@ -664,14 +671,14 @@ internal fun NewCycleConfirmationDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                text = "开始新周期",
+                text = stringResource(R.string.home_new_cycle_title),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold
             )
         },
         text = {
             Text(
-                text = "这将同时结束上一个周期。上一个周期的结束日期将设为昨天。确定要继续吗？",
+                text = stringResource(R.string.home_new_cycle_message),
                 style = MaterialTheme.typography.bodyLarge
             )
         },
@@ -683,26 +690,26 @@ internal fun NewCycleConfirmationDialog(
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 )
             ) {
-                Text("确定")
+                Text(stringResource(R.string.home_confirm))
             }
         },
         dismissButton = {
             OutlinedButton(
                 onClick = onDismiss
             ) {
-                Text("取消")
+                Text(stringResource(R.string.home_cancel))
             }
         },
         modifier = modifier
     )
 }
 
-private fun getGreeting(): String {
+private fun getGreetingRes(): Int {
     val hour = LocalTime.now().hour
     return when (hour) {
-        in 5..11 -> "早上好"
-        in 12..17 -> "下午好"
-        else -> "晚上好"
+        in 5..11 -> com.example.periodvibe.R.string.home_greeting_morning
+        in 12..17 -> com.example.periodvibe.R.string.home_greeting_afternoon
+        else -> com.example.periodvibe.R.string.home_greeting_evening
     }
 }
 
@@ -769,7 +776,7 @@ private fun HomeScreenPreview_Menstruation() {
                     cycleLength = 28,
                     hasCurrentCycle = true,
                     daysUntilNextPhase = 4,
-                    nextPhaseName = "卵泡期",
+                    nextPhase = CyclePhase.FOLLICULAR,
                     ovulationDate = null
                 )
 
@@ -808,7 +815,7 @@ private fun HomeScreenPreview_Ovulation() {
                     cycleLength = 28,
                     hasCurrentCycle = true,
                     daysUntilNextPhase = 2,
-                    nextPhaseName = "黄体期",
+                    nextPhase = CyclePhase.LUTEAL,
                     ovulationDate = null
                 )
 
@@ -847,7 +854,7 @@ private fun HomeScreenPreview_Follicular() {
                     cycleLength = 28,
                     hasCurrentCycle = true,
                     daysUntilNextPhase = 6,
-                    nextPhaseName = "排卵期",
+                    nextPhase = CyclePhase.OVULATION,
                     ovulationDate = null
                 )
 
@@ -886,7 +893,7 @@ private fun HomeScreenPreview_Luteal() {
                     cycleLength = 28,
                     hasCurrentCycle = true,
                     daysUntilNextPhase = 6,
-                    nextPhaseName = "月经期",
+                    nextPhase = CyclePhase.MENSTRATION,
                     ovulationDate = null
                 )
 
@@ -925,7 +932,7 @@ private fun HomeScreenPreview_Safe() {
                     cycleLength = 28,
                     hasCurrentCycle = true,
                     daysUntilNextPhase = 2,
-                    nextPhaseName = "月经期",
+                    nextPhase = CyclePhase.MENSTRATION,
                     ovulationDate = null
                 )
 
@@ -1057,7 +1064,6 @@ private fun HomeScreenPreview_WithCombinedCard() {
                         cycleLength = 28,
                         daysUntilPeriod = 0,
                         daysUntilNextPhase = 4,
-                        nextPhaseName = "卵泡期",
                         ovulationDate = null
                     )
 

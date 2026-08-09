@@ -1,10 +1,13 @@
 package com.example.periodvibe.data.exportimport
 
+import android.content.Context
 import com.example.periodvibe.data.mapper.CycleMapper
 import com.example.periodvibe.data.mapper.DailyRecordMapper
 import com.example.periodvibe.domain.model.Cycle
 import com.example.periodvibe.domain.model.DailyRecord
 import com.example.periodvibe.domain.model.FlowLevel
+import io.mockk.every
+import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -19,7 +22,14 @@ class DataExportImportServiceTest {
 
     @Before
     fun setup() {
-        service = DataExportImportService(CycleMapper(), DailyRecordMapper())
+        val context = mockk<Context>(relaxed = true)
+        every { context.getString(com.example.periodvibe.R.string.import_error_version, *anyVararg()) } returns "unsupported version"
+        every { context.getString(com.example.periodvibe.R.string.import_error_cycle_duplicate, *anyVararg()) } returns "duplicate cycle"
+        every { context.getString(com.example.periodvibe.R.string.import_error_record_duplicate, *anyVararg()) } returns "duplicate record"
+        every { context.getString(com.example.periodvibe.R.string.import_error_invalid_flow_cycle, *anyVararg()) } returns "invalid flow: HUGE"
+        every { context.getString(com.example.periodvibe.R.string.import_error_invalid_flow_record, *anyVararg()) } returns "invalid flow: HUGE"
+        every { context.getString(com.example.periodvibe.R.string.import_error_parse, *anyVararg()) } returns "parse failed"
+        service = DataExportImportService(context, CycleMapper(), DailyRecordMapper())
     }
 
     @Test
@@ -120,7 +130,7 @@ class DataExportImportServiceTest {
         val result = service.importFromJson(json)
 
         assertTrue(result is ImportResult.Failure)
-        assertTrue((result as ImportResult.Failure).errorMessage.contains("不支持的数据格式版本"))
+        assertTrue((result as ImportResult.Failure).errorMessage.contains("unsupported version"))
     }
 
     @Test
@@ -135,7 +145,7 @@ class DataExportImportServiceTest {
         val result = service.importFromJson(json)
 
         assertTrue(result is ImportResult.Failure)
-        assertTrue((result as ImportResult.Failure).errorMessage.contains("周期数据重复"))
+        assertTrue((result as ImportResult.Failure).errorMessage.contains("duplicate cycle"))
     }
 
     @Test
@@ -150,7 +160,7 @@ class DataExportImportServiceTest {
         val result = service.importFromJson(json)
 
         assertTrue(result is ImportResult.Failure)
-        assertTrue((result as ImportResult.Failure).errorMessage.contains("日常记录数据重复"))
+        assertTrue((result as ImportResult.Failure).errorMessage.contains("duplicate record"))
     }
 
     @Test
@@ -164,7 +174,7 @@ class DataExportImportServiceTest {
         val result = service.importFromJson(json)
 
         assertTrue(result is ImportResult.Failure)
-        assertTrue((result as ImportResult.Failure).errorMessage.contains("无效的经量值: HUGE"))
+        assertTrue((result as ImportResult.Failure).errorMessage.contains("invalid flow: HUGE"))
     }
 
     @Test
@@ -178,7 +188,7 @@ class DataExportImportServiceTest {
         val result = service.importFromJson(json)
 
         assertTrue(result is ImportResult.Failure)
-        assertTrue((result as ImportResult.Failure).errorMessage.contains("无效的经量值: HUGE"))
+        assertTrue((result as ImportResult.Failure).errorMessage.contains("invalid flow: HUGE"))
     }
 
     @Test
@@ -199,7 +209,7 @@ class DataExportImportServiceTest {
         val result = service.importFromJson(json)
 
         assertTrue(result is ImportResult.Failure)
-        assertTrue((result as ImportResult.Failure).errorMessage.contains("start_date"))
+        assertTrue((result as ImportResult.Failure).errorMessage.contains("parse failed"))
     }
 
     @Test
@@ -213,7 +223,7 @@ class DataExportImportServiceTest {
         val result = service.importFromJson(json)
 
         assertTrue(result is ImportResult.Failure)
-        assertTrue((result as ImportResult.Failure).errorMessage.contains("date"))
+        assertTrue((result as ImportResult.Failure).errorMessage.contains("parse failed"))
     }
 
     @Test

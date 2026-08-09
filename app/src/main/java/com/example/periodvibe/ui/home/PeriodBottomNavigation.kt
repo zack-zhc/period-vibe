@@ -14,6 +14,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
@@ -44,12 +45,12 @@ fun PeriodBottomNavigation(
                 icon = {
                     Icon(
                         imageVector = item.icon,
-                        contentDescription = item.label
+                        contentDescription = stringResource(item.labelRes)
                     )
                 },
                 label = {
                     Text(
-                        text = item.label,
+                        text = stringResource(item.labelRes),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = if (currentRoute == item.route)
                             FontWeight.SemiBold
@@ -71,22 +72,22 @@ fun PeriodBottomNavigation(
 
 sealed class BottomNavItem(
     val route: String,
-    val label: String,
+    val labelRes: Int,
     val icon: ImageVector
 ) {
     object Home : BottomNavItem(
         route = "home",
-        label = "首页",
+        labelRes = com.example.periodvibe.R.string.nav_home,
         icon = Icons.Rounded.Home
     )
     object Calendar : BottomNavItem(
         route = "calendar",
-        label = "日历",
+        labelRes = com.example.periodvibe.R.string.nav_calendar,
         icon = Icons.Rounded.CalendarViewMonth
     )
     object Settings : BottomNavItem(
         route = "settings",
-        label = "设置",
+        labelRes = com.example.periodvibe.R.string.nav_settings,
         icon = Icons.Rounded.Settings
     )
 }

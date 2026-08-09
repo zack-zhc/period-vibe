@@ -31,11 +31,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.periodvibe.R
 import com.example.periodvibe.ui.theme.PrimaryContainerLight
 import com.example.periodvibe.ui.theme.PrimaryLight
 import kotlinx.coroutines.launch
@@ -139,7 +141,7 @@ fun OnboardingScreen(
                         }
                     ) {
                         Text(
-                            text = "上一步",
+                            text = stringResource(R.string.onb_previous),
                             color = MaterialTheme.colorScheme.primary,
                             fontSize = 16.sp
                         )
@@ -170,7 +172,7 @@ fun OnboardingScreen(
                     shape = RoundedCornerShape(28.dp)
                 ) {
                     Text(
-                        text = if (viewModel.isLastPage()) "开始使用" else "下一步",
+                        text = if (viewModel.isLastPage()) stringResource(R.string.onb_start) else stringResource(R.string.onb_next),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -209,7 +211,7 @@ private fun OnboardingPageContent(
         Spacer(modifier = Modifier.height(32.dp))
 
         Text(
-            text = page.title,
+            text = stringResource(page.titleRes),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
@@ -219,7 +221,7 @@ private fun OnboardingPageContent(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = page.description,
+            text = stringResource(page.descriptionRes),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,

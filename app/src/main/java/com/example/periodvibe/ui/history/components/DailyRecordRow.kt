@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import com.example.periodvibe.R
 import com.example.periodvibe.domain.model.DailyRecord
 import com.example.periodvibe.domain.model.FlowLevel
+import com.example.periodvibe.ui.historyDisplayNameRes
 import com.example.periodvibe.ui.theme.CalendarPeriodDark
 import com.example.periodvibe.ui.theme.CalendarPeriodLight
 import java.time.format.DateTimeFormatter
@@ -84,7 +85,7 @@ fun DailyRecordRow(
                         tonalElevation = 0.dp
                     ) {
                         Text(
-                            text = flowLevel.displayName,
+                            text = stringResource(flowLevel.historyDisplayNameRes()),
                             style = MaterialTheme.typography.labelMedium,
                             color = periodColor,
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)

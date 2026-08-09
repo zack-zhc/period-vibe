@@ -65,6 +65,7 @@ import com.example.periodvibe.ui.settings.DataManagementScreen
 import com.example.periodvibe.ui.settings.DeveloperOptionsScreen
 import com.example.periodvibe.ui.settings.PrivacyScreen
 import com.example.periodvibe.ui.settings.RemindersScreen
+import com.example.periodvibe.ui.settings.LanguageScreen
 import com.example.periodvibe.ui.settings.SettingsScreen
 import com.example.periodvibe.ui.settings.ThemeScreen
 import com.example.periodvibe.ui.setup.InitialSetupScreen
@@ -383,13 +384,13 @@ fun PeriodVibeNavHost(
                             IconButton(onClick = { navigateToDetail(Screen.History) }) {
                                 Icon(
                                     imageVector = Icons.Rounded.History,
-                                    contentDescription = "历史记录"
+                                    contentDescription = stringResource(com.example.periodvibe.R.string.history_title)
                                 )
                             }
                             IconButton(onClick = { showLegendDialog = true }) {
                                 Icon(
                                     imageVector = Icons.Rounded.Info,
-                                    contentDescription = "图例"
+                                    contentDescription = stringResource(com.example.periodvibe.R.string.cal_legend_title)
                                 )
                             }
                         }
@@ -447,6 +448,7 @@ fun PeriodVibeNavHost(
                     onNavigateToCycleParameters = { navigateToDetail(Screen.CycleParameters) },
                     onNavigateToReminders = { navigateToDetail(Screen.Reminders) },
                     onNavigateToTheme = { navigateToDetail(Screen.Theme) },
+                    onNavigateToLanguage = { navigateToDetail(Screen.Language) },
                     onNavigateToPrivacy = { navigateToDetail(Screen.Privacy) },
                     onNavigateToDataManagement = { navigateToDetail(Screen.DataManagement) },
                     onNavigateToAbout = { navigateToDetail(Screen.About) },
@@ -476,12 +478,12 @@ fun PeriodVibeNavHost(
                 modifier = Modifier.fillMaxSize(),
                 topBar = {
                     androidx.compose.material3.CenterAlignedTopAppBar(
-                        title = { Text("开发者选项") },
+                        title = { Text(stringResource(com.example.periodvibe.R.string.set_dev_options)) },
                         navigationIcon = {
                             IconButton(onClick = goBack) {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = "返回"
+                                    contentDescription = stringResource(com.example.periodvibe.R.string.set_back)
                                 )
                             }
                         }
@@ -518,6 +520,13 @@ fun PeriodVibeNavHost(
         // 子页面 - 主题设置（带滑动动画）
         entry<Screen.Theme>(metadata = SlideInFromRightMetadata) {
             ThemeScreen(
+                onNavigateBack = goBack
+            )
+        }
+
+        // 子页面 - 语言设置（带滑动动画）
+        entry<Screen.Language>(metadata = SlideInFromRightMetadata) {
+            LanguageScreen(
                 onNavigateBack = goBack
             )
         }

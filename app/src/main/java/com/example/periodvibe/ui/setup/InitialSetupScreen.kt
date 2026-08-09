@@ -45,9 +45,11 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.periodvibe.R
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -105,12 +107,12 @@ fun InitialSetupScreen(
                         showDatePicker = false
                     }
                 ) {
-                    Text("确定")
+                    Text(stringResource(R.string.setup_confirm))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDatePicker = false }) {
-                    Text("取消")
+                    Text(stringResource(R.string.setup_cancel))
                 }
             }
         ) {
@@ -134,7 +136,7 @@ fun InitialSetupScreen(
     ) {
 
         Text(
-            text = "初始设置",
+            text = stringResource(R.string.setup_title),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface
@@ -143,7 +145,7 @@ fun InitialSetupScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "请填写以下信息，帮助我们更好地为您服务",
+            text = stringResource(R.string.setup_subtitle),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -153,7 +155,7 @@ fun InitialSetupScreen(
 
         SetupCard {
             DatePickerField(
-                label = "上次经期开始日期（可选）",
+                label = stringResource(R.string.setup_last_period_label),
                 selectedDate = setupData.lastPeriodStartDate,
                 onClick = { showDatePicker = true },
                 onClear = { viewModel.clearLastPeriodStartDate() }
@@ -163,7 +165,7 @@ fun InitialSetupScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "暂不选择日期，您可以稍后在首页随时记录",
+                    text = stringResource(R.string.setup_no_date_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(start = 4.dp)
@@ -173,17 +175,17 @@ fun InitialSetupScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             NumberInputField(
-                label = "平均周期长度（天）",
+                label = stringResource(R.string.setup_cycle_length_label),
                 value = setupData.cycleLength,
                 onValueChange = viewModel::updateCycleLength,
                 range = 21..35,
-                hint = "请输入21-35之间的数字"
+                hint = stringResource(R.string.setup_cycle_length_hint)
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "可选，不输入将根据历史记录自动计算",
+                text = stringResource(R.string.setup_optional_hint),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 4.dp)
@@ -192,17 +194,17 @@ fun InitialSetupScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             NumberInputField(
-                label = "平均经期天数（天）",
+                label = stringResource(R.string.setup_period_length_label),
                 value = setupData.periodLength,
                 onValueChange = viewModel::updatePeriodLength,
                 range = 3..7,
-                hint = "请输入3-7之间的数字"
+                hint = stringResource(R.string.setup_period_length_hint)
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "可选，不输入将根据历史记录自动计算",
+                text = stringResource(R.string.setup_optional_hint),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 4.dp)
@@ -226,7 +228,7 @@ fun InitialSetupScreen(
                 shape = RoundedCornerShape(28.dp)
             ) {
                 Text(
-                    text = "跳过",
+                    text = stringResource(R.string.setup_skip),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -245,7 +247,7 @@ fun InitialSetupScreen(
                 shape = RoundedCornerShape(28.dp)
             ) {
                 Text(
-                    text = "完成",
+                    text = stringResource(R.string.setup_done),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -305,7 +307,7 @@ private fun DatePickerField(
             modifier = Modifier.fillMaxWidth(),
             placeholder = {
                 Text(
-                    text = "点击选择日期（可选）",
+                    text = stringResource(R.string.setup_date_placeholder),
                     color = MaterialTheme.colorScheme.outline
                 )
             },
@@ -315,7 +317,7 @@ private fun DatePickerField(
                         IconButton(onClick = onClear) {
                             Icon(
                                 imageVector = Icons.Default.Close,
-                                contentDescription = "清除日期",
+                                contentDescription = stringResource(R.string.setup_clear_date),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -323,7 +325,7 @@ private fun DatePickerField(
                     IconButton(onClick = onClick) {
                         Icon(
                             imageVector = Icons.Default.DateRange,
-                            contentDescription = "选择日期",
+                            contentDescription = stringResource(R.string.setup_select_date),
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
@@ -385,7 +387,7 @@ private fun NumberInputField(
             supportingText = if (isError) {
                 @Composable {
                     Text(
-                        text = "请输入${range.first}-${range.last}之间的数字",
+                        text = stringResource(R.string.setup_range_error, "${range.first}-${range.last}"),
                         color = MaterialTheme.colorScheme.error
                     )
                 }

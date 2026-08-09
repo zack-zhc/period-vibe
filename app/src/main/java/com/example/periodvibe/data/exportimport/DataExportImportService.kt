@@ -17,6 +17,7 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonPrimitive
 import com.google.gson.JsonSerializationContext
 import com.google.gson.JsonSerializer
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.lang.reflect.Type
@@ -72,6 +73,7 @@ private class LocalDateTimeSerializer : JsonSerializer<LocalDateTime>, JsonDeser
  */
 @Singleton
 class DataExportImportService @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val cycleMapper: CycleMapper,
     private val dailyRecordMapper: DailyRecordMapper
 ) {
@@ -121,7 +123,7 @@ class DataExportImportService @Inject constructor(
 
                 ImportResult.Success(cycles, dailyRecords)
             } catch (e: Exception) {
-                ImportResult.Failure("数据解析失败: ${e.message}")
+                ImportResult.Failure(context.getString(com.example.periodvibe.R.string.import_error_parse, e.message))
             }
         }
     }
@@ -193,7 +195,7 @@ class DataExportImportService @Inject constructor(
     }
 
     private fun dtoToCycle(dto: CycleDto): Cycle {
-        val startDate = requireNotNull(dto.startDate) { "周期缺少 start_date 字段" }
+        val startDate = requireNotNull(dto.startDate) { "cycle missing start_date field" }
         return Cycle(
             id = 0, // 导入时使用 0，让数据库自动生成 ID
             startDate = startDate,
@@ -208,7 +210,7 @@ class DataExportImportService @Inject constructor(
     }
 
     private fun dtoToDailyRecord(dto: DailyRecordDto, cycles: List<Cycle>): DailyRecord {
-        val date = requireNotNull(dto.date) { "日常记录缺少 date 字段" }
+        val date = requireNotNull(dto.date) { "daily record missing date field" }
 
         // 根据周期开始日期找到对应的周期 ID（导入后生成的新 ID）
         val cycleId = dto.cycleDate?.let { cycleDate ->
@@ -231,21 +233,21 @@ class DataExportImportService @Inject constructor(
 
         // 验证版本
         if (data.version != 1) {
-            errors.add("不支持的数据格式版本: ${data.version}")
+            errors.add(context.getString(com.example.periodvibe.R.string.import_error_version, data.version))
         }
 
         // 验证周期数据
         val cycleDates = mutableSetOf<LocalDate>()
         data.cycles.forEach { cycle ->
             if (cycleDates.contains(cycle.startDate)) {
-                errors.add("周期数据重复: ${cycle.startDate}")
+                errors.add(context.getString(com.example.periodvibe.R.string.import_error_cycle_duplicate, cycle.startDate.toString()))
             }
             cycleDates.add(cycle.startDate)
 
             // 验证 FlowLevel
             cycle.averageFlowLevel?.let { flowLevelName ->
                 if (!isValidFlowLevel(flowLevelName)) {
-                    errors.add("无效的经量值: $flowLevelName (周期开始日期: ${cycle.startDate})")
+                    errors.add(context.getString(com.example.periodvibe.R.string.import_error_invalid_flow_cycle, flowLevelName, cycle.startDate.toString()))
                 }
             }
         }
@@ -254,14 +256,14 @@ class DataExportImportService @Inject constructor(
         val recordDates = mutableSetOf<LocalDate>()
         data.dailyRecords.forEach { record ->
             if (recordDates.contains(record.date)) {
-                errors.add("日常记录数据重复: ${record.date}")
+                errors.add(context.getString(com.example.periodvibe.R.string.import_error_record_duplicate, record.date.toString()))
             }
             recordDates.add(record.date)
 
             // 验证 FlowLevel
             record.flowLevel?.let { flowLevelName ->
                 if (!isValidFlowLevel(flowLevelName)) {
-                    errors.add("无效的经量值: $flowLevelName (记录日期: ${record.date})")
+                    errors.add(context.getString(com.example.periodvibe.R.string.import_error_invalid_flow_record, flowLevelName, record.date.toString()))
                 }
             }
         }

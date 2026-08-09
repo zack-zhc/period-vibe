@@ -34,7 +34,9 @@ enum class ExportFormat(val displayName: String, val mimeType: String, val exten
  * CSV 导出/导入服务
  */
 @Singleton
-class CsvExportImportService @Inject constructor() {
+class CsvExportImportService @Inject constructor(
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context
+) {
 
     private val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE
     private val dateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
@@ -119,7 +121,7 @@ class CsvExportImportService @Inject constructor() {
                 .filter { it.isNotBlank() }
 
             if (lines.isEmpty()) {
-                return@withContext CsvImportResult.Failure("CSV 文件为空")
+                return@withContext CsvImportResult.Failure(context.getString(com.example.periodvibe.R.string.csv_error_empty))
             }
 
             // 找到表头行
@@ -144,7 +146,7 @@ class CsvExportImportService @Inject constructor() {
                     val cycle = parseCycleCsvLine(line)
                     cycles.add(cycle)
                 } catch (e: Exception) {
-                    errors.add("第 ${cycles.size + errors.size + 1} 行解析失败: ${e.message}")
+                    errors.add(context.getString(com.example.periodvibe.R.string.csv_error_row_parse, cycles.size + errors.size + 1, e.message))
                 }
             }
 
@@ -195,7 +197,7 @@ class CsvExportImportService @Inject constructor() {
                     val record = parseDailyRecordCsvLine(line, startDateToCycle)
                     records.add(record)
                 } catch (e: Exception) {
-                    errors.add("第 ${records.size + errors.size + 1} 行解析失败: ${e.message}")
+                    errors.add(context.getString(com.example.periodvibe.R.string.csv_error_row_parse, records.size + errors.size + 1, e.message))
                 }
             }
 
@@ -354,7 +356,7 @@ class CsvExportImportService @Inject constructor() {
 
     private fun parseCycleCsvLine(line: String): Cycle {
         val fields = parseCsvLine(line)
-        require(fields.size >= 2) { "至少需要包含 start_date 字段" }
+        require(fields.size >= 2) { "CSV must contain start_date field" }
 
         // 尝试找到 start_date 字段
         var startDateStr = ""
@@ -399,7 +401,7 @@ class CsvExportImportService @Inject constructor() {
         startDateToCycle: Map<LocalDate, Cycle>
     ): DailyRecord {
         val fields = parseCsvLine(line)
-        require(fields.size >= 2) { "至少需要包含 date 字段" }
+        require(fields.size >= 2) { "CSV must contain date field" }
 
         var dateStr = ""
         var cycleStartDateStr: String? = null

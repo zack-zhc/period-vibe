@@ -18,7 +18,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AppLockViewModel @Inject constructor(
-    private val securityRepository: SecurityRepository
+    private val securityRepository: SecurityRepository,
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<AppLockUiState>(AppLockUiState.Idle)
@@ -44,7 +45,7 @@ class AppLockViewModel @Inject constructor(
                 _uiState.value = AppLockUiState.Unlocked
             } else {
                 securityRepository.recordFailedAttempt()
-                _uiState.value = AppLockUiState.Error("PIN 码错误")
+                _uiState.value = AppLockUiState.Error(messageRes = com.example.periodvibe.R.string.applock_wrong_pin)
                 startLockoutTicker()
             }
         }
@@ -89,9 +90,9 @@ class AppLockViewModel @Inject constructor(
         when (biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL)) {
             BiometricManager.BIOMETRIC_SUCCESS -> {
                 val promptInfo = BiometricPrompt.PromptInfo.Builder()
-                    .setTitle("Period Vibe 生物识别登录")
-                    .setSubtitle("使用您的生物识别凭证登录")
-                    .setNegativeButtonText("使用 PIN 码")
+                    .setTitle(context.getString(com.example.periodvibe.R.string.applock_biometric_title))
+                    .setSubtitle(context.getString(com.example.periodvibe.R.string.applock_biometric_subtitle))
+                    .setNegativeButtonText(context.getString(com.example.periodvibe.R.string.applock_biometric_negative))
                     .build()
 
                 val biometricPrompt = BiometricPrompt(activity,
@@ -112,12 +113,12 @@ class AppLockViewModel @Inject constructor(
                                 _uiState.value = AppLockUiState.Idle
                                 return
                             }
-                            _uiState.value = AppLockUiState.Error(errString.toString())
+                            _uiState.value = AppLockUiState.Error(message = errString.toString())
                         }
 
                         override fun onAuthenticationFailed() {
                             super.onAuthenticationFailed()
-                            _uiState.value = AppLockUiState.Error("认证失败")
+                            _uiState.value = AppLockUiState.Error(messageRes = com.example.periodvibe.R.string.applock_auth_failed)
                         }
                     })
 
@@ -133,5 +134,10 @@ class AppLockViewModel @Inject constructor(
 sealed class AppLockUiState {
     object Idle : AppLockUiState()
     object Unlocked : AppLockUiState()
-    data class Error(val message: String) : AppLockUiState()
+
+    /** messageRes 优先（本应用文案，语言切换后自动更新）；message 为系统提供的错误文案 */
+    data class Error(
+        val messageRes: Int? = null,
+        val message: String? = null
+    ) : AppLockUiState()
 }

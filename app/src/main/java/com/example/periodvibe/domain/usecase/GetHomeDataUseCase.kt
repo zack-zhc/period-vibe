@@ -70,7 +70,7 @@ class GetHomeDataUseCase @Inject constructor(
                 cycleLength = cycleLength,
                 currentPhaseStartDay = phaseInfo?.startDay ?: 1,
                 currentPhaseEndDay = phaseInfo?.endDay ?: 28,
-                nextPhaseName = phaseInfo?.nextPhaseName ?: "月经期",
+                nextPhase = phaseInfo?.nextPhase,
                 daysUntilNextPhase = phaseInfo?.let { it.endDay - (cycleInfo?.dayInCycle ?: 1) + 1 } ?: 0,
                 ovulationDate = ovulationDate
             )
@@ -180,7 +180,7 @@ class GetHomeDataUseCase @Inject constructor(
         val phase: CyclePhase,
         val startDay: Int,
         val endDay: Int,
-        val nextPhaseName: String
+        val nextPhase: CyclePhase
     )
 
     private fun getPhaseInfo(cycle: Cycle, dayInCycle: Int): PhaseInfo {
@@ -192,25 +192,25 @@ class GetHomeDataUseCase @Inject constructor(
                 phase = CyclePhase.MENSTRATION,
                 startDay = 1,
                 endDay = periodLength,
-                nextPhaseName = "卵泡期"
+                nextPhase = CyclePhase.FOLLICULAR
             )
             dayInCycle <= cycleLength - 14 - 3 -> PhaseInfo(
                 phase = CyclePhase.FOLLICULAR,
                 startDay = periodLength + 1,
                 endDay = cycleLength - 14 - 3,
-                nextPhaseName = "排卵期"
+                nextPhase = CyclePhase.OVULATION
             )
             dayInCycle <= cycleLength - 14 + 3 -> PhaseInfo(
                 phase = CyclePhase.OVULATION,
                 startDay = cycleLength - 14 - 2,
                 endDay = cycleLength - 14 + 3,
-                nextPhaseName = "黄体期"
+                nextPhase = CyclePhase.LUTEAL
             )
             else -> PhaseInfo(
                 phase = CyclePhase.LUTEAL,
                 startDay = cycleLength - 14 + 4,
                 endDay = cycleLength,
-                nextPhaseName = "月经期"
+                nextPhase = CyclePhase.MENSTRATION
             )
         }
     }
@@ -225,25 +225,25 @@ class GetHomeDataUseCase @Inject constructor(
                 phase = CyclePhase.MENSTRATION,
                 startDay = 1,
                 endDay = periodLength,
-                nextPhaseName = "卵泡期"
+                nextPhase = CyclePhase.FOLLICULAR
             )
             today in prediction.fertileWindow && today !in prediction.ovulationWindow -> PhaseInfo(
                 phase = CyclePhase.FERTILE,
                 startDay = periodLength + 1,
                 endDay = cycleLength - 14 - 4,
-                nextPhaseName = "排卵期"
+                nextPhase = CyclePhase.OVULATION
             )
             today in prediction.ovulationWindow -> PhaseInfo(
                 phase = CyclePhase.OVULATION,
                 startDay = cycleLength - 14 - 3,
                 endDay = cycleLength - 14 + 3,
-                nextPhaseName = "黄体期"
+                nextPhase = CyclePhase.LUTEAL
             )
             else -> PhaseInfo(
                 phase = CyclePhase.LUTEAL,
                 startDay = cycleLength - 14 + 4,
                 endDay = cycleLength,
-                nextPhaseName = "月经期"
+                nextPhase = CyclePhase.MENSTRATION
             )
         }
     }
@@ -255,7 +255,7 @@ class GetHomeDataUseCase @Inject constructor(
         val cycleLength: Int,
         val currentPhaseStartDay: Int,
         val currentPhaseEndDay: Int,
-        val nextPhaseName: String,
+        val nextPhase: CyclePhase?,
         val daysUntilNextPhase: Int,
         val ovulationDate: LocalDate?
     )

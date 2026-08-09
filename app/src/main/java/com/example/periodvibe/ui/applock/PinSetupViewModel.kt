@@ -52,12 +52,12 @@ class PinSetupViewModel @Inject constructor(
 
     fun onSetPin() {
         if (pin.value.length < 4) {
-            _uiState.value = PinSetupUiState.Error("PIN 码必须为 4 位数字")
+            _uiState.value = PinSetupUiState.Error(com.example.periodvibe.R.string.pin_error_length)
             return
         }
 
         if (pin.value != confirmPin.value) {
-            _uiState.value = PinSetupUiState.Error("两次输入的 PIN 码不一致")
+            _uiState.value = PinSetupUiState.Error(com.example.periodvibe.R.string.pin_error_mismatch)
             return
         }
 
@@ -88,5 +88,5 @@ sealed class PinSetupUiState {
     object Idle : PinSetupUiState()
     object Loading : PinSetupUiState()
     object PinSet : PinSetupUiState()
-    data class Error(val message: String) : PinSetupUiState()
+    data class Error(val messageRes: Int) : PinSetupUiState()
 }

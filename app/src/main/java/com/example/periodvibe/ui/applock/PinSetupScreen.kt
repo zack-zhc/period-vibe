@@ -20,6 +20,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.periodvibe.R
@@ -35,6 +36,7 @@ fun PinSetupScreen(
     viewModel: PinSetupViewModel,
     mode: PinSetupMode = PinSetupMode.SETUP
 ) {
+    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val wrongPinText = stringResource(R.string.applock_wrong_pin)
@@ -45,7 +47,9 @@ fun PinSetupScreen(
         if (uiState is PinSetupUiState.PinSet) {
             onPinSet()
         } else if (uiState is PinSetupUiState.Error) {
-            snackbarHostState.showSnackbar((uiState as PinSetupUiState.Error).message)
+            snackbarHostState.showSnackbar(
+                context.getString((uiState as PinSetupUiState.Error).messageRes)
+            )
             // 两次输入不一致：清空并从首次输入重新开始
             viewModel.resetPin()
             stage = PinStage.NEW

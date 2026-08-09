@@ -33,6 +33,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -45,61 +46,27 @@ import com.example.periodvibe.ui.theme.cardBorderStroke
 // 获取怀孕几率信息（中性表述：受孕期/非受孕期）
 data class PregnancyInfo(
     val isFertile: Boolean,
-    val label: String
+    val labelRes: Int
 )
 
 fun getPregnancyInfo(currentPhase: CyclePhase): PregnancyInfo {
     return when (currentPhase) {
-        CyclePhase.OVULATION, CyclePhase.FERTILE -> PregnancyInfo(isFertile = true, label = "受孕期")
-        else -> PregnancyInfo(isFertile = false, label = "非受孕期")
+        CyclePhase.OVULATION, CyclePhase.FERTILE ->
+            PregnancyInfo(isFertile = true, labelRes = R.string.home_pregnancy_fertile)
+        else ->
+            PregnancyInfo(isFertile = false, labelRes = R.string.home_pregnancy_not_fertile)
     }
 }
 
-// 获取今日贴士
-fun getTodayTip(phase: CyclePhase): String {
+// 获取今日贴士（按阶段从 string-array 中随机取一条，返回资源 ID 数组由组合侧解析）
+fun getTodayTipResArray(phase: CyclePhase): Int {
     return when (phase) {
-        CyclePhase.MENSTRATION -> listOf(
-            "多喝热水，注意保暖",
-            "避免剧烈运动",
-            "补充铁质，吃些红肉或菠菜",
-            "保证充足睡眠",
-            "可以用暖水袋缓解不适"
-        ).random()
-        CyclePhase.FOLLICULAR -> listOf(
-            "能量回升，适合开始新计划",
-            "新陈代谢加快，是运动好时机",
-            "皮肤状态变好，注意保湿",
-            "可以尝试新的食谱",
-            "精力充沛，适合社交活动"
-        ).random()
-        CyclePhase.OVULATION -> listOf(
-            "精力最旺盛的时期",
-            "注意避孕（如果需要）",
-            "性欲可能会增强",
-            "白带可能增多，注意清洁",
-            "把握好状态，做重要的事"
-        ).random()
-        CyclePhase.FERTILE -> listOf(
-            "处于受孕期，注意身体变化",
-            "保持轻松心情",
-            "如果在备孕，可以安排同房",
-            "注意私处清洁",
-            "保持规律作息"
-        ).random()
-        CyclePhase.LUTEAL -> listOf(
-            "可能会有情绪波动",
-            "注意放松，听听音乐",
-            "可能出现乳房胀痛",
-            "饮食清淡，避免过咸",
-            "可以做些轻度运动缓解压力"
-        ).random()
-        CyclePhase.SAFE -> listOf(
-            "享受这段平稳的时光",
-            "可以安排些轻松的活动",
-            "保持规律作息",
-            "是工作学习的好时期",
-            "好好休息，为下周期做准备"
-        ).random()
+        CyclePhase.MENSTRATION -> R.array.home_tips_menstruation
+        CyclePhase.FOLLICULAR -> R.array.home_tips_follicular
+        CyclePhase.OVULATION -> R.array.home_tips_ovulation
+        CyclePhase.FERTILE -> R.array.home_tips_fertile
+        CyclePhase.LUTEAL -> R.array.home_tips_luteal
+        CyclePhase.SAFE -> R.array.home_tips_safe
     }
 }
 
@@ -113,7 +80,8 @@ fun CombinedInfoCard(
 ) {
     val pregnancyInfo = getPregnancyInfo(phase)
     // 同阶段内贴士保持稳定，避免重组时随机跳变
-    val todayTip = remember(phase) { getTodayTip(phase) }
+    val tipsArray = stringArrayResource(getTodayTipResArray(phase))
+    val todayTip = remember(phase, tipsArray) { tipsArray.random() }
 
     Card(
         modifier = modifier,
@@ -201,7 +169,7 @@ fun CombinedInfoCard(
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(
-                        text = pregnancyInfo.label,
+                        text = stringResource(pregnancyInfo.labelRes),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Black,
                         color = if (pregnancyInfo.isFertile) {
@@ -332,7 +300,7 @@ fun FeaturePreviewCard(
                     modifier = Modifier.size(20.dp)
                 )
                 Text(
-                    text = "记录后可获得".uppercase(),
+                    text = stringResource(R.string.home_feature_preview_title).uppercase(),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -343,13 +311,13 @@ fun FeaturePreviewCard(
             // 功能列表
             FeatureItem(
                 icon = Icons.Rounded.EventRepeat,
-                title = "周期预测",
-                description = "预测下次月经时间"
+                title = stringResource(R.string.home_feature_prediction),
+                description = stringResource(R.string.home_feature_prediction_desc)
             )
             FeatureItem(
                 icon = Icons.Rounded.Lightbulb,
-                title = "个性化贴士",
-                description = "根据阶段给出建议"
+                title = stringResource(R.string.home_feature_tips),
+                description = stringResource(R.string.home_feature_tips_desc)
             )
         }
     }

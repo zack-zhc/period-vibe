@@ -61,6 +61,9 @@ sealed interface Screen : NavKey {
     data object Theme : Screen
 
     @Serializable
+    data object Language : Screen
+
+    @Serializable
     data object Privacy : Screen
 
     @Serializable
