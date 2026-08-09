@@ -4,6 +4,7 @@ import com.example.periodvibe.data.local.dao.SettingsDao
 import com.example.periodvibe.data.mapper.SettingsMapper
 import com.example.periodvibe.domain.model.Settings
 import com.example.periodvibe.ui.widget.WidgetUpdater
+import android.util.Log
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -30,12 +31,14 @@ class SettingsRepository @Inject constructor(
     suspend fun insertSettings(settings: Settings) {
         val entity = settingsMapper.toEntity(settings)
         settingsDao.insertSettings(entity)
+        Log.d(TAG, "insertSettings: theme=${settings.themeMode} appLock=${settings.appLockEnabled} privacy=${settings.privacyModeEnabled}")
         widgetUpdater.refresh()
     }
 
     suspend fun updateSettings(settings: Settings) {
         val entity = settingsMapper.toEntity(settings)
         settingsDao.updateSettings(entity)
+        Log.d(TAG, "updateSettings: theme=${settings.themeMode} appLock=${settings.appLockEnabled} privacy=${settings.privacyModeEnabled} notification=${settings.notificationEnabled}")
         widgetUpdater.refresh()
     }
 
@@ -64,5 +67,9 @@ class SettingsRepository @Inject constructor(
         settings?.let {
             updateSettings(it.copy(autoCalculateCycle = enabled))
         }
+    }
+
+    private companion object {
+        const val TAG = "PV-LOG"
     }
 }

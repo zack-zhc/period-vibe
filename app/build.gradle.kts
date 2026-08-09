@@ -14,8 +14,8 @@ android {
         applicationId = "com.example.periodvibe"
         minSdk = 31
         targetSdk = 36
-        versionCode = 13
-        versionName = "1.0.30"
+        versionCode = 14
+        versionName = "1.0.31"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -37,6 +37,9 @@ android {
     }
     buildFeatures {
         compose = true
+    }
+    testOptions {
+        unitTests.isReturnDefaultValues = true
     }
     //noinspection WrongGradleMethod
     hilt {

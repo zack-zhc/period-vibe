@@ -6,6 +6,7 @@ import com.example.periodvibe.data.mapper.CycleMapper
 import com.example.periodvibe.data.mapper.DailyRecordMapper
 import com.example.periodvibe.domain.model.Cycle
 import com.example.periodvibe.ui.widget.WidgetUpdater
+import android.util.Log
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -25,7 +26,8 @@ class CycleRepository @Inject constructor(
 ) {
 
     /** 数据变更后刷新桌面小组件（内部已容错，不影响主流程） */
-    private suspend fun notifyWidgetChanged() {
+    private suspend fun notifyWidgetChanged(op: String) {
+        Log.d(TAG, "notifyWidgetChanged: op=$op")
         widgetUpdater.refresh()
     }
 
@@ -52,24 +54,30 @@ class CycleRepository @Inject constructor(
 
     suspend fun insertCycle(cycle: Cycle): Long {
         val entity = cycleMapper.toEntity(cycle)
-        return cycleDao.insertCycle(entity).also { notifyWidgetChanged() }
+        val id = cycleDao.insertCycle(entity)
+        Log.d(TAG, "insertCycle: id=$id startDate=${cycle.startDate} isCompleted=${cycle.isCompleted}")
+        notifyWidgetChanged("insertCycle")
+        return id
     }
 
     suspend fun updateCycle(cycle: Cycle) {
         val entity = cycleMapper.toEntity(cycle)
         cycleDao.updateCycle(entity)
-        notifyWidgetChanged()
+        Log.d(TAG, "updateCycle: id=${cycle.id} startDate=${cycle.startDate} endDate=${cycle.endDate} cycleLength=${cycle.cycleLength}")
+        notifyWidgetChanged("updateCycle")
     }
 
     suspend fun deleteCycle(cycle: Cycle) {
         val entity = cycleMapper.toEntity(cycle)
         cycleDao.deleteCycle(entity)
-        notifyWidgetChanged()
+        Log.d(TAG, "deleteCycle: id=${cycle.id}")
+        notifyWidgetChanged("deleteCycle")
     }
 
     suspend fun deleteAllCycles() {
         cycleDao.deleteAllCycles()
-        notifyWidgetChanged()
+        Log.d(TAG, "deleteAllCycles")
+        notifyWidgetChanged("deleteAllCycles")
     }
 
     suspend fun getAllCyclesOnce(): List<Cycle> {
@@ -78,7 +86,10 @@ class CycleRepository @Inject constructor(
 
     suspend fun insertAllCycles(cycles: List<Cycle>): List<Long> {
         val entities = cycleMapper.toEntityList(cycles)
-        return cycleDao.insertAllCycles(entities).also { notifyWidgetChanged() }
+        val ids = cycleDao.insertAllCycles(entities)
+        Log.d(TAG, "insertAllCycles: count=${cycles.size}")
+        notifyWidgetChanged("insertAllCycles")
+        return ids
     }
 
     suspend fun createInitialCycle(
@@ -243,29 +254,38 @@ class CycleRepository @Inject constructor(
 
     suspend fun saveDailyRecord(record: com.example.periodvibe.domain.model.DailyRecord): Long {
         val entity = dailyRecordMapper.toEntity(record)
-        return dailyRecordDao.insertDailyRecord(entity).also { notifyWidgetChanged() }
+        val id = dailyRecordDao.insertDailyRecord(entity)
+        Log.d(TAG, "saveDailyRecord: id=$id date=${record.date} isPeriod=${record.isPeriod} flow=${record.flowLevel} cycleId=${record.cycleId}")
+        notifyWidgetChanged("saveDailyRecord")
+        return id
     }
 
     suspend fun updateDailyRecord(record: com.example.periodvibe.domain.model.DailyRecord) {
         val entity = dailyRecordMapper.toEntity(record.copy(updatedAt = LocalDateTime.now()))
         dailyRecordDao.updateDailyRecord(entity)
-        notifyWidgetChanged()
+        Log.d(TAG, "updateDailyRecord: id=${record.id} date=${record.date} isPeriod=${record.isPeriod} flow=${record.flowLevel} cycleId=${record.cycleId}")
+        notifyWidgetChanged("updateDailyRecord")
     }
 
     suspend fun deleteDailyRecord(record: com.example.periodvibe.domain.model.DailyRecord) {
         val entity = dailyRecordMapper.toEntity(record)
         dailyRecordDao.deleteDailyRecord(entity)
-        notifyWidgetChanged()
+        Log.d(TAG, "deleteDailyRecord: id=${record.id} date=${record.date}")
+        notifyWidgetChanged("deleteDailyRecord")
     }
 
     suspend fun deleteCycles(cycles: List<Cycle>): Int {
         val entities = cycles.map { cycleMapper.toEntity(it) }
-        return cycleDao.deleteCycles(entities).also { notifyWidgetChanged() }
+        val count = cycleDao.deleteCycles(entities)
+        Log.d(TAG, "deleteCycles: count=${cycles.size} ids=${cycles.map { it.id }}")
+        notifyWidgetChanged("deleteCycles")
+        return count
     }
 
     suspend fun deleteAllDailyRecords() {
         dailyRecordDao.deleteAllDailyRecords()
-        notifyWidgetChanged()
+        Log.d(TAG, "deleteAllDailyRecords")
+        notifyWidgetChanged("deleteAllDailyRecords")
     }
 
     suspend fun getAllDailyRecordsOnce(): List<com.example.periodvibe.domain.model.DailyRecord> {
@@ -274,11 +294,18 @@ class CycleRepository @Inject constructor(
 
     suspend fun insertAllDailyRecords(records: List<com.example.periodvibe.domain.model.DailyRecord>): List<Long> {
         val entities = dailyRecordMapper.toEntityList(records)
-        return dailyRecordDao.insertAllDailyRecords(entities).also { notifyWidgetChanged() }
+        val ids = dailyRecordDao.insertAllDailyRecords(entities)
+        Log.d(TAG, "insertAllDailyRecords: count=${records.size}")
+        notifyWidgetChanged("insertAllDailyRecords")
+        return ids
     }
 
     suspend fun getPreviousDayRecord(date: java.time.LocalDate): com.example.periodvibe.domain.model.DailyRecord? {
         val previousDate = date.minusDays(1)
         return getDailyRecordByDate(previousDate)
+    }
+
+    private companion object {
+        const val TAG = "PV-LOG"
     }
 }

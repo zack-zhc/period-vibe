@@ -31,6 +31,7 @@ class WidgetRefreshReceiver : BroadcastReceiver() {
         val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
+                android.util.Log.d("PV-LOG", "WidgetRefreshReceiver: action=$action")
                 widgetUpdater.refresh()
             } finally {
                 pendingResult.finish()
